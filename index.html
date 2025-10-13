@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>線上塔羅牌占卜</title>
+    <style>
+        :root {
+            --bg-color: #f4f7f9;
+            --container-bg: #ffffff;
+            --text-primary: #2d3748;
+            --text-secondary: #718096;
+            --accent-color: #4299e1;
+            --border-color: #e2e8f0;
+            --bottom-card-bg: #ebf8ff;
+            --button-secondary-bg: var(--text-secondary);
+        }
+
+        body.dark-mode {
+            --bg-color: #1a202c;
+            --container-bg: #2d3748;
+            --text-primary: #edf2f7;
+            --text-secondary: #a0aec0;
+            --accent-color: #63b3ed;
+            --border-color: #4a5568;
+            --bottom-card-bg: #2c5282;
+            --button-secondary-bg: #718096;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 2rem 0;
+            margin: 0;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .container {
+            position: relative;
+            background: var(--container-bg);
+            padding: 3rem;
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            text-align: center;
+            max-width: 520px;
+            width: 90%;
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+        .theme-toggle {
+            position: absolute;
+            top: 1.5rem;
+            right: 0rem;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+        }
+        .theme-toggle:hover {
+            color: var(--text-primary);
+        }
+        .theme-toggle .sun-icon, .theme-toggle .moon-icon {
+            width: 24px;
+            height: 24px;
+        }
+        .sun-icon { display: none; }
+        .moon-icon { display: block; }
+        body.dark-mode .sun-icon { display: block; }
+        body.dark-mode .moon-icon { display: none; }
+        
+        h1, p, select, .card, .analysis-summary {
+            transition: background-color 0.3s, border-color 0.3s, color 0.3s;
+        }
+
+        h1 {
+            color: var(--text-primary);
+            margin-bottom: 0.75rem;
+            font-size: 2rem;
+            font-weight: 600;
+        }
+        p {
+            color: var(--text-secondary);
+            margin-bottom: 2.5rem;
+            line-height: 1.7;
+        }
+        select {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 1rem;
+            margin: 0.5rem 0;
+            width: 100%;
+            -webkit-appearance: none; appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23a0aec0' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            cursor: pointer;
+        }
+        button {
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: background-color 0.2s, opacity 0.2s;
+        }
+        #readButton {
+            background: var(--accent-color);
+            margin-top: 1.5rem;
+        }
+        #readButton:hover {
+            background: #3182ce;
+        }
+        .results {
+            display: none; text-align: left; margin-top: 2.5rem;
+        }
+        .results.show {
+            display: block; animation: fadeIn 0.6s ease-out;
+        }
+        .card {
+            background: var(--container-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+        }
+        .bottom-card {
+            border-color: var(--accent-color);
+            background-color: var(--bottom-card-bg);
+        }
+        .position {
+            font-weight: 600; color: var(--accent-color); margin-bottom: 0.75rem; font-size: 1rem;
+        }
+        .card-body {
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .card-name {
+            font-size: 1.25rem; font-weight: 600;
+        }
+        .card-orientation {
+            font-size: 1rem; color: var(--text-secondary);
+        }
+        .card-footer {
+            display: flex; justify-content: space-between; margin-top: 0.75rem; padding-top: 0.75rem;
+            border-top: 1px solid var(--border-color); font-size: 0.875rem; color: var(--text-secondary);
+        }
+        .analysis-summary {
+            background-color: var(--bg-color); border-radius: 8px; padding: 1.25rem;
+            margin-top: 1.5rem; font-size: 0.95rem; line-height: 1.7;
+        }
+        .analysis-summary h4 {
+            margin-top: 0; margin-bottom: 0.75rem; color: var(--text-primary); font-weight: 600;
+        }
+        #copyButton {
+            background: var(--button-secondary-bg);
+            margin-top: 1rem;
+        }
+        #copyButton:hover {
+            opacity: 0.85;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="dark-mode"> 
+    <div class="container">
+        <button class="theme-toggle" id="themeToggle" aria-label="切換主題">
+            <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.106a.75.75 0 010 1.06l-1.591 1.59a.75.75 0 11-1.06-1.06l1.59-1.59a.75.75 0 011.061 0zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.803 17.803a.75.75 0 01-1.06 0l-1.59-1.591a.75.75 0 111.06-1.06l1.59 1.59a.75.75 0 010 1.06zM12 18.75a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0v-2.25a.75.75 0 01.75-.75zM5.197 17.803a.75.75 0 010-1.06l1.59-1.59a.75.75 0 111.06 1.06l-1.59 1.59a.75.75 0 01-1.06 0zM3 12a.75.75 0 01.75-.75h2.25a.75.75 0 010 1.5H3.75A.75.75 0 013 12zM6.106 5.197a.75.75 0 011.06 0l1.59 1.59a.75.75 0 11-1.06 1.06l-1.59-1.59a.75.75 0 010-1.06z"/></svg>
+            <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M9.528 1.718a.75.75 0 01.162.819A8.97 8.97 0 009 6a9 9 0 009 9 8.97 8.97 0 003.463-.69.75.75 0 01.981.98 10.503 10.503 0 01-9.694 6.46c-5.799 0-10.5-4.701-10.5-10.5 0-3.864 2.11-7.25 5.282-9.022a.75.75 0 01.819.162z" clip-rule="evenodd" /></svg>
+        </button>
+
+        <h1>塔羅牌占卜</h1>
+        <p>專注於你的問題，選擇牌組與牌陣，然後抽出指引。</p>
+        <select id="deckType">
+            <option value="full" selected>完整牌組 (78張)</option>
+            <option value="major">大阿卡納 (22張)</option>
+        </select>
+        <select id="spreadType">
+             <option value="single" data-spread-name="單張牌指引">單張牌 (每日指引)</option>
+            <option value="three" data-spread-name="聖三角">聖三角 (過去/現在/未來)</option>
+            <option value="mbs" data-spread-name="身心靈牌陣">身心靈 (整體狀態)</option>
+            <option value="path" data-spread-name="抉擇之路">抉擇之路 (問題解決)</option>
+            <option value="twoChoice" data-spread-name="二擇一">二擇一 (選項/結果)</option>
+            <option value="prosCons" data-spread-name="優劣分析">優劣分析 (利弊)</option>
+            <option value="goal" data-spread-name="目標達成牌陣">目標達成 (行動規劃)</option>
+            <option value="relationship" data-spread-name="關係牌陣">關係牌陣 (兩人關係)</option>
+            <option value="weekly" data-spread-name="週運勢">週運勢 (每日指引)</option>
+            <option value="celtic" data-spread-name="凱爾特十字">凱爾特十字 (深入分析)</option>
+        </select>
+        <button id="readButton" onclick="performReading()">抽出指引</button>
+        <div id="results" class="results"></div>
+    </div>
+
+    <script>
+        const fullTarotCards = [
+            { name: "愚者", suit: "Major Arcana", number: "0", englishName: "The Fool" }, { name: "魔術師", suit: "Major Arcana", number: "I", englishName: "The Magician" }, { name: "女祭司", suit: "Major Arcana", number: "II", englishName: "The High Priestess" }, { name: "皇后", suit: "Major Arcana", number: "III", englishName: "The Empress" }, { name: "皇帝", suit: "Major Arcana", number: "IV", englishName: "The Emperor" }, { name: "教皇", suit: "Major Arcana", number: "V", englishName: "The Hierophant" }, { name: "戀人", suit: "Major Arcana", number: "VI", englishName: "The Lovers" }, { name: "戰車", suit: "Major Arcana", number: "VII", englishName: "The Chariot" }, { name: "力量", suit: "Major Arcana", number: "VIII", englishName: "Strength" }, { name: "隱士", suit: "Major Arcana", number: "IX", englishName: "The Hermit" }, { name: "命運之輪", suit: "Major Arcana", number: "X", englishName: "Wheel of Fortune" }, { name: "正義", suit: "Major Arcana", number: "XI", englishName: "Justice" }, { name: "倒吊人", suit: "Major Arcana", number: "XII", englishName: "The Hanged Man" }, { name: "死神", suit: "Major Arcana", number: "XIII", englishName: "Death" }, { name: "節制", suit: "Major Arcana", number: "XIV", englishName: "Temperance" }, { name: "惡魔", suit: "Major Arcana", number: "XV", englishName: "The Devil" }, { name: "高塔", suit: "Major Arcana", number: "XVI", englishName: "The Tower" }, { name: "星星", suit: "Major Arcana", number: "XVII", englishName: "The Star" }, { name: "月亮", suit: "Major Arcana", number: "XVIII", englishName: "The Moon" }, { name: "太陽", suit: "Major Arcana", number: "XIX", englishName: "The Sun" }, { name: "審判", suit: "Major Arcana", number: "XX", englishName: "Judgement" }, { name: "世界", suit: "Major Arcana", number: "XXI", englishName: "The World" },
+            { name: "權杖一", suit: "Wands", number: "Ace", englishName: "Ace of Wands" }, { name: "權杖二", suit: "Wands", number: "Two", englishName: "Two of Wands" }, { name: "權杖三", suit: "Wands", number: "Three", englishName: "Three of Wands" }, { name: "權杖四", suit: "Wands", number: "Four", englishName: "Four of Wands" }, { name: "權杖五", suit: "Wands", number: "Five", englishName: "Five of Wands" }, { name: "權杖六", suit: "Wands", number: "Six", englishName: "Six of Wands" }, { name: "權杖七", suit: "Wands", number: "Seven", englishName: "Seven of Wands" }, { name: "權杖八", suit: "Wands", number: "Eight", englishName: "Eight of Wands" }, { name: "權杖九", suit: "Wands", number: "Nine", englishName: "Nine of Wands" }, { name: "權杖十", suit: "Wands", number: "Ten", englishName: "Ten of Wands" }, { name: "權杖侍者", suit: "Wands", number: "Page", englishName: "Page of Wands" }, { name: "權杖騎士", suit: "Wands", number: "Knight", englishName: "Knight of Wands" }, { name: "權杖皇后", suit: "Wands", number: "Queen", englishName: "Queen of Wands" }, { name: "權杖國王", suit: "Wands", number: "King", englishName: "King of Wands" },
+            { name: "聖杯一", suit: "Cups", number: "Ace", englishName: "Ace of Cups" }, { name: "聖杯二", suit: "Cups", number: "Two", englishName: "Two of Cups" }, { name: "聖杯三", suit: "Cups", number: "Three", englishName: "Three of Cups" }, { name: "聖杯四", suit: "Cups", number: "Four", englishName: "Four of Cups" }, { name: "聖杯五", suit: "Cups", number: "Five", englishName: "Five of Cups" }, { name: "聖杯六", suit: "Cups", number: "Six", englishName: "Six of Cups" }, { name: "聖杯七", suit: "Cups", number: "Seven", englishName: "Seven of Cups" }, { name: "聖杯八", suit: "Cups", number: "Eight", englishName: "Eight of Cups" }, { name: "聖杯九", suit: "Cups", number: "Nine", englishName: "Nine of Cups" }, { name: "聖杯十", suit: "Cups", number: "Ten", englishName: "Ten of Cups" }, { name: "聖杯侍者", suit: "Cups", number: "Page", englishName: "Page of Cups" }, { name: "聖杯騎士", suit: "Cups", number: "Knight", englishName: "Knight of Cups" }, { name: "聖杯皇后", suit: "Cups", number: "Queen", englishName: "Queen of Cups" }, { name: "聖杯國王", suit: "Cups", number: "King", englishName: "King of Cups" },
+            { name: "寶劍一", suit: "Swords", number: "Ace", englishName: "Ace of Swords" }, { name: "寶劍二", suit: "Swords", number: "Two", englishName: "Two of Swords" }, { name: "寶劍三", suit: "Swords", number: "Three", englishName: "Three of Swords" }, { name: "寶劍四", suit: "Swords", number: "Four", englishName: "Four of Swords" }, { name: "寶劍五", suit: "Swords", number: "Five", englishName: "Five of Swords" }, { name: "寶劍六", suit: "Swords", number: "Six", englishName: "Six of Swords" }, { name: "寶劍七", suit: "Swords", number: "Seven", englishName: "Seven of Swords" }, { name: "寶劍八", suit: "Swords", number: "Eight", englishName: "Eight of Swords" }, { name: "寶劍九", suit: "Swords", number: "Nine", englishName: "Nine of Swords" }, { name: "寶劍十", suit: "Swords", number: "Ten", englishName: "Ten of Swords" }, { name: "寶劍侍者", suit: "Swords", number: "Page", englishName: "Page of Swords" }, { name: "寶劍騎士", suit: "Swords", number: "Knight", englishName: "Knight of Swords" }, { name: "寶劍皇后", suit: "Swords", number: "Queen", englishName: "Queen of Swords" }, { name: "寶劍國王", suit: "Swords", number: "King", englishName: "King of Swords" },
+            { name: "錢幣一", suit: "Pentacles", number: "Ace", englishName: "Ace of Pentacles" }, { name: "錢幣二", suit: "Pentacles", number: "Two", englishName: "Two of Pentacles" }, { name: "錢幣三", suit: "Pentacles", number: "Three", englishName: "Three of Pentacles" }, { name: "錢幣四", suit: "Pentacles", number: "Four", englishName: "Four of Pentacles" }, { name: "錢幣五", suit: "Pentacles", number: "Five", englishName: "Five of Pentacles" }, { name: "錢幣六", suit: "Pentacles", number: "Six", englishName: "Six of Pentacles" }, { name: "錢幣七", suit: "Pentacles", number: "Seven", englishName: "Seven of Pentacles" }, { name: "錢幣八", suit: "Pentacles", number: "Eight", englishName: "Eight of Pentacles" }, { name: "錢幣九", suit: "Pentacles", number: "Nine", englishName: "Nine of Pentacles" }, { name: "錢幣十", suit: "Pentacles", number: "Ten", englishName: "Ten of Pentacles" }, { name: "錢幣侍者", suit: "Pentacles", number: "Page", englishName: "Page of Pentacles" }, { name: "錢幣騎士", suit: "Pentacles", number: "Knight", englishName: "Knight of Pentacles" }, { name: "錢幣皇后", suit: "Pentacles", number: "Queen", englishName: "Queen of Pentacles" }, { name: "錢幣國王", suit: "Pentacles", number: "King", englishName: "King of Pentacles" }
+        ];
+
+        const majorArcana = fullTarotCards.slice(0, 22);
+        const spreads = { 
+            single: { positions: ['核心指引'] }, 
+            three: { positions: ['過去的影響', '現在的狀況', '未來的趨勢'] }, 
+            mbs: { positions: ['心態層面 (Mind)', '身體層面 (Body)', '靈性層面 (Spirit)'] }, 
+            path: { positions: ['當前問題', '面臨的挑戰', '給你的建議', '可能的結果'] }, 
+            twoChoice: { positions: ['目前狀況', '選擇A的過程', '選擇B的過程', '選擇A的結果', '選擇B的結果'] }, 
+            prosCons: { positions: ['選擇一的優點', '選擇一的缺點', '選擇二的優點', '選擇二的缺點', '核心建議'] }, 
+            goal: { positions: ['目標的核心', '目前的阻礙', '你的內在資源', '建議的行動步驟', '最終可能的結果'] }, 
+            relationship: { positions: ['你如何看待這段關係', '對方如何看待這段關係', '關係的現狀', '關係的挑戰', '關係的未來潛力'] }, 
+            weekly: { positions: ['本週的整體主題', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六', '星期日'] }, 
+            celtic: { positions: [ '核心：目前的狀況', '挑戰：眼前的阻礙', '根基：潛意識與成因', '過去：已發生的影響', '目標：意識與期望', '未來：即將發生的事', '內在：你自身的態度', '外在：周遭環境影響', '指引：你的希望與恐懼', '結果：最終的结局' ] }
+        };
+
+        let lastReadingData = {};
+
+        const themeToggle = document.getElementById('themeToggle');
+        const body = document.body;
+
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'light') {
+            body.classList.remove('dark-mode');
+        } else {
+            body.classList.add('dark-mode');
+        }
+
+        themeToggle.addEventListener('click', () => {
+            body.classList.toggle('dark-mode');
+            if (body.classList.contains('dark-mode')) {
+                localStorage.setItem('theme', 'dark');
+            } else {
+                localStorage.setItem('theme', 'light');
+            }
+        });
+
+        function performReading() {
+            const deckType = document.getElementById('deckType').value;
+            const originalDeck = deckType === 'major' ? [...majorArcana] : [...fullTarotCards];
+            
+            let shuffledDeck = originalDeck;
+            let currentIndex = shuffledDeck.length;
+            while (currentIndex !== 0) {
+                let randomIndex = Math.floor(Math.random() * currentIndex);
+                currentIndex--;
+                [shuffledDeck[currentIndex], shuffledDeck[randomIndex]] = [shuffledDeck[randomIndex], shuffledDeck[currentIndex]];
+            }
+
+            const spreadSelect = document.getElementById('spreadType');
+            const spreadType = spreadSelect.value;
+            const spreadName = spreadSelect.options[spreadSelect.selectedIndex].getAttribute('data-spread-name');
+            const spread = spreads[spreadType];
+            const numCards = spread.positions.length;
+            
+            if (shuffledDeck.length < numCards + 1) { 
+                alert("牌組數量不足以完成此占卜！"); 
+                return; 
+            }
+
+            const drawnCards = [];
+            for (let i = 0; i < numCards; i++) {
+                drawnCards.push({
+                    ...shuffledDeck[i],
+                    position: spread.positions[i],
+                    orientation: Math.random() > 0.5 ? '正位' : '逆位'
+                });
+            }
+            const bottomCard = {
+                ...shuffledDeck[shuffledDeck.length - 1],
+                position: '本次占卜的底牌',
+                orientation: Math.random() > 0.5 ? '正位' : '逆位'
+            };
+            
+            let analysisText = '';
+            if (deckType === 'full') {
+                const analysis = { major: 0, wands: 0, cups: 0, swords: 0, pentacles: 0 };
+                drawnCards.forEach(card => {
+                    switch (card.suit) {
+                        case "Major Arcana": analysis.major++; break;
+                        case "Wands": analysis.wands++; break;
+                        case "Cups": analysis.cups++; break;
+                        case "Swords": analysis.swords++; break;
+                        case "Pentacles": analysis.pentacles++; break;
+                    }
+                });
+                analysisText = generateAnalysisText(analysis, drawnCards.length);
+            }
+
+            lastReadingData = { spreadName, drawnCards, bottomCard, analysisText };
+
+            let html = '<h3>占卜結果</h3>';
+            drawnCards.forEach(card => {
+                html += `
+                    <div class="card">
+                        <div class="position">${card.position}</div>
+                        <div class="card-body">
+                            <span class="card-name">${card.name}</span>
+                            <span class="card-orientation">${card.orientation}</span>
+                        </div>
+                        <div class="card-footer">
+                            <span class="card-number">#${card.number}</span>
+                            <span class="card-english">${card.englishName}</span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `
+                <div class="card bottom-card">
+                    <div class="position">${bottomCard.position}</div>
+                    <div class="card-body">
+                        <span class="card-name">${bottomCard.name}</span>
+                        <span class="card-orientation">${bottomCard.orientation}</span>
+                    </div>
+                    <div class="card-footer">
+                        <span class="card-number">#${bottomCard.number}</span>
+                        <span class="card-english">${bottomCard.englishName}</span>
+                    </div>
+                </div>
+            `;
+
+            if (analysisText) {
+                html += `<div class="analysis-summary"><h4>牌陣元素分析</h4><p>${analysisText}</p></div>`;
+            }
+            
+            html += `<button id="copyButton" onclick="copyResults()">複製結果</button>`;
+            
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = html;
+            resultsDiv.classList.add('show');
+        }
+
+        function generateAnalysisText(analysis, totalCards) {
+            let minorArcana = totalCards - analysis.major;
+            let text = `牌陣組成：大阿卡納 ${analysis.major} 張 / 小阿卡納 ${minorArcana} 張<br>`;
+            text += `元素分佈：火(權杖) ${analysis.wands} / 水(聖杯) ${analysis.cups} / 風(寶劍) ${analysis.swords} / 土(錢幣) ${analysis.pentacles}`;
+            return text;
+        }
+
+        function copyResults() {
+            const { spreadName, drawnCards, bottomCard, analysisText } = lastReadingData;
+            if (!spreadName) return;
+
+            let textToCopy = `占卜主題：${spreadName}\n`;
+            textToCopy += '--------------------\n';
+            drawnCards.forEach(card => {
+                textToCopy += `${card.position}：${card.name} (${card.englishName}) #${card.number} - ${card.orientation}\n`;
+            });
+            textToCopy += '--------------------\n';
+            textToCopy += `${bottomCard.position}：${bottomCard.name} (${bottomCard.englishName}) #${bottomCard.number} - ${bottomCard.orientation}\n`;
+            
+            if (analysisText) {
+                const plainAnalysisText = analysisText.replace(/<br>/g, "\n");
+                textToCopy += `\n【牌陣元素分析】\n${plainAnalysisText}`;
+            }
+
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                const copyBtn = document.getElementById('copyButton');
+                if (copyBtn) {
+                    copyBtn.innerText = '已複製！';
+                    setTimeout(() => { copyBtn.innerText = '複製結果'; }, 2000);
+                }
+            }).catch(err => {
+                console.error('複製失敗: ', err);
+                alert('複製失敗，您的瀏覽器可能不支援。');
+            });
+        }
+    </script>
+</body>
+</html>
