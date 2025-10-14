@@ -1,387 +1,1896 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>線上塔羅牌占卜</title>
-    <style>
-        :root {
-            --bg-color: #f4f7f9;
-            --container-bg: #ffffff;
-            --text-primary: #2d3748;
-            --text-secondary: #718096;
-            --accent-color: #4299e1;
-            --border-color: #e2e8f0;
-            --bottom-card-bg: #ebf8ff;
-            --button-secondary-bg: var(--text-secondary);
-        }
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>線上塔羅牌占卜</title>
+  <style>
+    :root{
+      /* Color system - 優化對比度 */
+      --bg: #f8f9fb;
+      --surface: #ffffff;
+      --text: #0f172a;
+      --text-dim: #64748b;
+      --border: #e2e8f0;
+      --accent: #3b82f6;
+      --accent-600: #2563eb;
+      --accent-700: #1d4ed8;
+      --muted: #f1f5f9;
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
 
-        body.dark-mode {
-            --bg-color: #1a202c;
-            --container-bg: #2d3748;
-            --text-primary: #edf2f7;
-            --text-secondary: #a0aec0;
-            --accent-color: #63b3ed;
-            --border-color: #4a5568;
-            --bottom-card-bg: #2c5282;
-            --button-secondary-bg: #718096;
-        }
+      /* Radius & shadow */
+      --r-lg: 20px;
+      --r-md: 14px;
+      --r-sm: 10px;
+      --shadow-1: 0 1px 3px rgba(15, 23, 42, .08), 0 1px 2px rgba(15, 23, 42, .04);
+      --shadow-2: 0 10px 25px rgba(15, 23, 42, .08), 0 4px 10px rgba(15, 23, 42, .05);
+      --shadow-3: 0 20px 40px rgba(15, 23, 42, .12), 0 8px 16px rgba(15, 23, 42, .08);
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-primary);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 2rem 0;
-            margin: 0;
-            transition: background-color 0.3s, color 0.3s;
-        }
-        .container {
-            position: relative;
-            background: var(--container-bg);
-            padding: 3rem;
-            border-radius: 16px;
-            border: 1px solid var(--border-color);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-            text-align: center;
-            max-width: 520px;
-            width: 90%;
-            transition: background-color 0.3s, border-color 0.3s;
-        }
-        .theme-toggle {
-            position: absolute;
-            top: 1.5rem;
-            right: 0rem;
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            padding: 0.5rem;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--text-secondary);
-        }
-        .theme-toggle:hover {
-            color: var(--text-primary);
-        }
-        .theme-toggle .sun-icon, .theme-toggle .moon-icon {
-            width: 24px;
-            height: 24px;
-        }
-        .sun-icon { display: none; }
-        .moon-icon { display: block; }
-        body.dark-mode .sun-icon { display: block; }
-        body.dark-mode .moon-icon { display: none; }
-        
-        h1, p, select, .card, .analysis-summary {
-            transition: background-color 0.3s, border-color 0.3s, color 0.3s;
-        }
+      /* Spacing */
+      --sp-1: 4px;
+      --sp-2: 8px;
+      --sp-3: 12px;
+      --sp-4: 16px;
+      --sp-5: 24px;
+      --sp-6: 32px;
+      --sp-7: 40px;
+      --sp-8: 48px;
+      --sp-9: 64px;
 
-        h1 {
-            color: var(--text-primary);
-            margin-bottom: 0.75rem;
-            font-size: 2rem;
-            font-weight: 600;
+      /* Typography */
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+      --fs-xs: 12px;
+      --fs-sm: 14px;
+      --fs-base: 15px;
+      --fs-md: 16px;
+      --fs-lg: 18px;
+      --fs-xl: 20px;
+      --fs-2xl: 24px;
+      --fs-3xl: 30px;
+      
+      /* Line heights */
+      --lh-tight: 1.3;
+      --lh-base: 1.6;
+      --lh-loose: 1.75;
+    }
+
+    @media (prefers-color-scheme: dark){
+      :root{
+        --bg: #0a0f1a;
+        --surface: #0f172a;
+        --text: #f1f5f9;
+        --text-dim: #94a3b8;
+        --border: #1e293b;
+        --muted: #1e293b;
+        --shadow-1: 0 1px 3px rgba(0, 0, 0, .5), 0 1px 2px rgba(0, 0, 0, .3);
+        --shadow-2: 0 10px 25px rgba(0, 0, 0, .4), 0 4px 10px rgba(0, 0, 0, .3);
+        --shadow-3: 0 20px 40px rgba(0, 0, 0, .5), 0 8px 16px rgba(0, 0, 0, .4);
+      }
+    }
+
+    .light{
+      --bg: #f8f9fb; --surface: #ffffff; --text: #0f172a; --text-dim:#64748b; --border:#e2e8f0; --muted:#f1f5f9; --shadow-1:0 1px 3px rgba(15,23,42,.08), 0 1px 2px rgba(15,23,42,.04); --shadow-2:0 10px 25px rgba(15,23,42,.08), 0 4px 10px rgba(15,23,42,.05); --shadow-3:0 20px 40px rgba(15,23,42,.12), 0 8px 16px rgba(15,23,42,.08);
+    }
+    .dark{
+      --bg:#0a0f1a; --surface:#0f172a; --text:#f1f5f9; --text-dim:#94a3b8; --border:#1e293b; --muted:#1e293b; --shadow-1:0 1px 3px rgba(0,0,0,.5), 0 1px 2px rgba(0,0,0,.3); --shadow-2:0 10px 25px rgba(0,0,0,.4), 0 4px 10px rgba(0,0,0,.3); --shadow-3:0 20px 40px rgba(0,0,0,.5), 0 8px 16px rgba(0,0,0,.4);
+    }
+
+    *{box-sizing:border-box}
+    *::before, *::after{box-sizing:border-box}
+
+    html, body{
+      margin:0;
+      padding:0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      font-size: var(--fs-sm);
+      line-height: var(--lh-base);
+      height: auto;
+      min-height: 100%;
+      overflow-x: hidden;
+    }
+
+    @media (min-width: 768px){
+      html, body{
+        font-size: var(--fs-base);
+      }
+    }
+
+    @media (min-width: 1024px){
+      html, body{
+        font-size: var(--fs-md);
+      }
+    }
+
+    .wrap{
+      width: 100%;
+    }
+
+    /* Sticky header */
+    .app-header{
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: saturate(180%) blur(12px);
+      background: color-mix(in srgb, var(--surface) 85%, transparent);
+      border-bottom: 1px solid var(--border);
+      box-shadow: 0 1px 0 0 rgba(0,0,0,.02);
+    }
+    .header-inner{
+      max-width: 1120px;
+      margin: 0 auto;
+      display: flex; 
+      align-items: center; 
+      gap: var(--sp-4);
+      padding: var(--sp-4) var(--sp-4);
+      min-height: 64px;
+    }
+    @media (min-width: 768px){
+      .header-inner{
+        padding: var(--sp-5) var(--sp-5);
+        min-height: 72px;
+      }
+    }
+
+    .title{
+      display:flex; 
+      flex-direction:column; 
+      gap: var(--sp-1);
+    }
+    .title h1{
+      font-size: var(--fs-xl);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin: 0;
+      line-height: var(--lh-tight);
+    }
+    @media (min-width: 768px){
+      .title h1{
+        font-size: var(--fs-2xl);
+      }
+    }
+    .title p{
+      margin: 0;
+      color: var(--text-dim);
+      font-size: var(--fs-xs);
+      line-height: var(--lh-base);
+    }
+    @media (min-width: 768px){
+      .title p{
+        font-size: var(--fs-sm);
+      }
+    }
+
+    .spacer{flex:1}
+
+    .icon-btn{
+      appearance:none; 
+      border:1px solid var(--border); 
+      background:var(--surface);
+      padding: 10px 14px;
+      min-width: 44px;
+      min-height: 44px;
+      border-radius: var(--r-sm); 
+      cursor:pointer; 
+      color:var(--text-dim);
+      display:flex; 
+      align-items:center; 
+      justify-content: center;
+      gap: 8px; 
+      font-size: var(--fs-sm);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: var(--shadow-1);
+    }
+    .icon-btn:hover{
+      color:var(--text); 
+      background: var(--muted);
+      border-color: color-mix(in srgb, var(--border) 70%, var(--text));
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-2);
+    }
+    .icon-btn:active{
+      transform: translateY(0);
+    }
+    .icon{
+      width: 20px; 
+      height: 20px;
+      flex-shrink: 0;
+    }
+
+    /* Tabs */
+    .tabs{
+      display: flex;
+      gap: var(--sp-2);
+      border-bottom: 2px solid var(--border);
+      margin-bottom: var(--sp-5);
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .tabs::-webkit-scrollbar{display: none}
+    .tab{
+      appearance: none;
+      border: none;
+      background: transparent;
+      padding: var(--sp-3) var(--sp-4);
+      font-size: var(--fs-sm);
+      font-weight: 600;
+      color: var(--text-dim);
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .tab:hover{
+      color: var(--text);
+      background: var(--muted);
+    }
+    .tab.active{
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+
+    /* Section */
+    .section{
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: var(--sp-5) var(--sp-4);
+    }
+    @media (min-width: 768px){
+      .section{
+        padding: var(--sp-7) var(--sp-6);
+      }
+    }
+
+    .panel{
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      box-shadow: var(--shadow-2);
+      padding: var(--sp-5);
+    }
+    @media (min-width: 768px){
+      .panel{
+        padding: var(--sp-6);
+      }
+    }
+    @media (min-width: 1024px){
+      .panel{
+        padding: var(--sp-7);
+      }
+    }
+
+    /* Controls */
+    .controls{
+      display:grid; 
+      gap: var(--sp-5);
+      grid-template-columns: 1fr;
+    }
+
+    .field{
+      display:flex; 
+      flex-direction:column; 
+      gap: var(--sp-2);
+    }
+    label{
+      font-size: var(--fs-sm); 
+      color: var(--text-dim);
+      font-weight: 500;
+      letter-spacing: 0.01em;
+    }
+
+    input[type="text"], select{
+      width:100%;
+      border: 1.5px solid var(--border);
+      background: var(--muted);
+      color: var(--text);
+      border-radius: var(--r-md);
+      font-size: var(--fs-base);
+      padding: 14px 16px;
+      min-height: 48px;
+      outline: none;
+      transition: all 0.2s ease;
+      font-family: var(--font);
+      line-height: var(--lh-base);
+    }
+    @media (min-width: 768px){
+      input[type="text"], select{
+        font-size: var(--fs-md);
+        padding: 15px 18px;
+        min-height: 52px;
+      }
+    }
+    input[type="text"]:focus, select:focus{
+      border-color: var(--accent);
+      background: var(--surface);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent);
+    }
+    input[type="text"]::placeholder{
+      color: color-mix(in srgb, var(--text-dim) 60%, transparent);
+    }
+
+    .control-row{
+      display:grid; 
+      gap: var(--sp-4);
+      grid-template-columns: 1fr;
+    }
+    @media (min-width: 640px){
+      .control-row{
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .primary-actions{
+      display:flex; 
+      gap: var(--sp-4); 
+      flex-wrap: wrap;
+      align-items:stretch;
+    }
+    .btn{
+      appearance:none; 
+      border:none; 
+      cursor:pointer;
+      font-weight: 600; 
+      font-size: var(--fs-base);
+      letter-spacing: 0.01em;
+      padding: 16px 24px;
+      min-height: 52px;
+      border-radius: var(--r-md);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      user-select:none;
+      font-family: var(--font);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    @media (min-width: 768px){
+      .btn{
+        font-size: var(--fs-md);
+        padding: 17px 28px;
+        min-height: 56px;
+      }
+    }
+    .btn:active{
+      transform: scale(0.98);
+    }
+    .btn-primary{
+      background: var(--accent); 
+      color: #fff; 
+      flex: 1 1 200px;
+      box-shadow: 0 2px 8px rgba(59, 130, 246, .25);
+    }
+    .btn-primary:hover{
+      background: var(--accent-600);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, .35);
+      transform: translateY(-1px);
+    }
+    .btn-primary:active{
+      background: var(--accent-700);
+      transform: scale(0.98);
+    }
+    .btn-primary[disabled]{
+      opacity: 0.6; 
+      cursor: not-allowed;
+      transform: none;
+    }
+    .btn-outline{
+      background: var(--surface); 
+      color: var(--text);
+      border: 1.5px solid var(--border);
+      flex: 0 1 auto;
+      min-width: 140px;
+      box-shadow: var(--shadow-1);
+    }
+    .btn-outline:hover{
+      background: var(--muted);
+      border-color: color-mix(in srgb, var(--border) 60%, var(--text));
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-2);
+    }
+    .btn-sm{
+      padding: 10px 16px;
+      min-height: 40px;
+      font-size: var(--fs-sm);
+    }
+
+    /* Results */
+    .results{
+      margin-top: var(--sp-6);
+    }
+    @media (min-width: 768px){
+      .results{
+        margin-top: var(--sp-7);
+      }
+    }
+
+    .results-head{
+      display:flex; 
+      align-items:center; 
+      gap: var(--sp-3); 
+      margin-bottom: var(--sp-5);
+      flex-wrap: wrap;
+    }
+    @media (min-width: 768px){
+      .results-head{
+        margin-bottom: var(--sp-6);
+      }
+    }
+
+    .badge{
+      display:inline-flex; 
+      align-items:center; 
+      gap: 6px;
+      font-size: var(--fs-xs); 
+      color: var(--text-dim);
+      border: 1px solid var(--border); 
+      border-radius: var(--r-sm);
+      padding: 6px 12px; 
+      background: var(--muted);
+      font-weight: 500;
+      letter-spacing: 0.01em;
+    }
+    @media (min-width: 768px){
+      .badge{
+        font-size: var(--fs-sm);
+        padding: 7px 14px;
+      }
+    }
+
+    .results-title{
+      font-size: var(--fs-2xl); 
+      margin: 0; 
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: var(--lh-tight);
+    }
+    @media (min-width: 768px){
+      .results-title{
+        font-size: var(--fs-3xl);
+      }
+    }
+
+    .meta{
+      margin-left: auto; 
+      display: flex; 
+      align-items: center; 
+      gap: var(--sp-3); 
+      color: var(--text-dim); 
+      font-size: var(--fs-xs);
+      flex-wrap: wrap;
+    }
+    @media (min-width: 768px){
+      .meta{
+        font-size: var(--fs-sm);
+      }
+    }
+    .meta-divider{
+      width: 1px; 
+      height: 14px; 
+      background: var(--border);
+    }
+
+    /* Cards */
+    .cards{
+      display:grid; 
+      gap: var(--sp-4);
+      grid-template-columns: 1fr;
+    }
+    @media (min-width: 640px){
+      .cards{
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--sp-5);
+      }
+    }
+    @media (min-width: 960px){
+      .cards{
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    .card{
+      border: 1.5px solid var(--border);
+      border-radius: var(--r-md);
+      padding: var(--sp-5);
+      background: var(--surface);
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+      position: relative;
+    }
+    @media (min-width: 768px){
+      .card{
+        padding: var(--sp-6);
+      }
+    }
+    .card:hover{
+      transform: translateY(-2px); 
+      box-shadow: var(--shadow-3);
+      border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
+    }
+    .card:focus{
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .position{
+      color: var(--accent); 
+      font-weight: 600; 
+      font-size: var(--fs-sm); 
+      margin-bottom: var(--sp-3);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    @media (min-width: 768px){
+      .position{
+        font-size: var(--fs-base);
+      }
+    }
+
+    .row{
+      display:flex; 
+      align-items:center; 
+      justify-content:space-between; 
+      gap: var(--sp-3);
+    }
+
+    .name{
+      font-size: var(--fs-lg); 
+      font-weight: 700; 
+      letter-spacing: -0.01em;
+      line-height: var(--lh-tight);
+    }
+    @media (min-width: 768px){
+      .name{
+        font-size: var(--fs-xl);
+      }
+    }
+
+    .orientation{
+      color: var(--text-dim); 
+      font-size: var(--fs-sm);
+      display:flex; 
+      align-items:center; 
+      gap: 6px;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    @media (min-width: 768px){
+      .orientation{
+        font-size: var(--fs-base);
+      }
+    }
+
+    .ori-icon{
+      width: 14px; 
+      height: 14px; 
+      border-radius: 4px; 
+      border: 2.5px solid currentColor; 
+      transform: rotate(0deg);
+      transition: transform 0.3s ease;
+      flex-shrink: 0;
+    }
+    .ori-icon.rev{
+      transform: rotate(180deg);
+    }
+
+    .foot{
+      display:flex; 
+      align-items:center; 
+      justify-content:space-between;
+      margin-top: var(--sp-4); 
+      padding-top: var(--sp-4);
+      border-top: 1px solid var(--border); 
+      color: var(--text-dim); 
+      font-size: var(--fs-xs);
+      gap: var(--sp-2);
+    }
+    @media (min-width: 768px){
+      .foot{
+        font-size: var(--fs-sm);
+      }
+    }
+
+    .card.bottom{
+      background: linear-gradient(135deg, 
+        color-mix(in srgb, var(--accent) 8%, var(--surface)), 
+        color-mix(in srgb, var(--accent) 4%, var(--surface)));
+      border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+      border-width: 2px;
+    }
+    .card.bottom:hover{
+      border-color: color-mix(in srgb, var(--accent) 60%, var(--border));
+    }
+
+    .results-actions{
+      display:flex; 
+      gap: var(--sp-4); 
+      margin-top: var(--sp-6); 
+      flex-wrap: wrap;
+    }
+    @media (min-width: 768px){
+      .results-actions{
+        margin-top: var(--sp-7);
+      }
+    }
+
+    /* History */
+    .history-list{
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-3);
+      max-height: 600px;
+      overflow-y: auto;
+    }
+    .history-item{
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      padding: var(--sp-4);
+      background: var(--surface);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .history-item:hover{
+      border-color: var(--accent);
+      box-shadow: var(--shadow-2);
+      transform: translateX(4px);
+    }
+    .history-header{
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: var(--sp-3);
+      margin-bottom: var(--sp-2);
+    }
+    .history-spread{
+      font-weight: 600;
+      color: var(--text);
+    }
+    .history-time{
+      font-size: var(--fs-xs);
+      color: var(--text-dim);
+    }
+    .history-question{
+      font-size: var(--fs-sm);
+      color: var(--text-dim);
+      font-style: italic;
+    }
+    .history-empty{
+      text-align: center;
+      color: var(--text-dim);
+      padding: var(--sp-8) var(--sp-4);
+    }
+
+    /* Statistics */
+    .stats-grid{
+      display: grid;
+      gap: var(--sp-5);
+      grid-template-columns: 1fr;
+    }
+    @media (min-width: 768px){
+      .stats-grid{
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    .stat-card{
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      padding: var(--sp-5);
+      background: var(--surface);
+    }
+    .stat-title{
+      font-size: var(--fs-base);
+      font-weight: 600;
+      margin-bottom: var(--sp-4);
+      color: var(--text);
+    }
+    .stat-value{
+      font-size: var(--fs-3xl);
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: var(--sp-2);
+    }
+    .stat-label{
+      font-size: var(--fs-sm);
+      color: var(--text-dim);
+    }
+    .stat-list{
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-3);
+    }
+    .stat-item{
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: var(--sp-3);
+      background: var(--muted);
+      border-radius: var(--r-sm);
+    }
+    .stat-item-name{
+      font-weight: 500;
+    }
+    .stat-item-count{
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    /* Card Database */
+    .card-db-search{
+      margin-bottom: var(--sp-5);
+    }
+    .card-db-grid{
+      display: grid;
+      gap: var(--sp-4);
+      grid-template-columns: 1fr;
+    }
+    @media (min-width: 640px){
+      .card-db-grid{
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    @media (min-width: 960px){
+      .card-db-grid{
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+    .card-db-item{
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      padding: var(--sp-4);
+      background: var(--surface);
+      transition: all 0.2s;
+    }
+    .card-db-item:hover{
+      border-color: var(--accent);
+      box-shadow: var(--shadow-2);
+    }
+    .card-db-number{
+      color: var(--accent);
+      font-weight: 600;
+      font-size: var(--fs-sm);
+      margin-bottom: var(--sp-2);
+    }
+    .card-db-name{
+      font-size: var(--fs-lg);
+      font-weight: 700;
+      margin-bottom: var(--sp-1);
+    }
+    .card-db-english{
+      font-size: var(--fs-sm);
+      color: var(--text-dim);
+      margin-bottom: var(--sp-2);
+    }
+    .card-db-suit{
+      display: inline-block;
+      padding: 4px 10px;
+      background: var(--muted);
+      border-radius: var(--r-sm);
+      font-size: var(--fs-xs);
+      color: var(--text-dim);
+    }
+
+    /* Spread Info */
+    .spread-info{
+      background: var(--muted);
+      border-radius: var(--r-md);
+      padding: var(--sp-5);
+      margin-top: var(--sp-5);
+    }
+    .spread-info-title{
+      font-size: var(--fs-lg);
+      font-weight: 600;
+      margin-bottom: var(--sp-3);
+      display: flex;
+      align-items: center;
+      gap: var(--sp-2);
+    }
+    .spread-info-content{
+      font-size: var(--fs-sm);
+      line-height: var(--lh-loose);
+      color: var(--text-dim);
+    }
+    .spread-positions{
+      margin-top: var(--sp-4);
+      padding-top: var(--sp-4);
+      border-top: 1px solid var(--border);
+    }
+    .spread-positions-title{
+      font-weight: 600;
+      margin-bottom: var(--sp-3);
+      font-size: var(--fs-base);
+    }
+    .spread-positions-list{
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-2);
+    }
+    .spread-position-item{
+      display: flex;
+      gap: var(--sp-2);
+      font-size: var(--fs-sm);
+    }
+    .spread-position-num{
+      color: var(--accent);
+      font-weight: 600;
+      min-width: 24px;
+    }
+
+    /* Settings Panel */
+    .settings-section{
+      margin-bottom: var(--sp-6);
+    }
+    .settings-section:last-child{
+      margin-bottom: 0;
+    }
+    .settings-title{
+      font-size: var(--fs-lg);
+      font-weight: 600;
+      margin-bottom: var(--sp-4);
+    }
+    .checkbox-group{
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-3);
+    }
+    .checkbox-item{
+      display: flex;
+      align-items: center;
+      gap: var(--sp-3);
+      padding: var(--sp-3);
+      border-radius: var(--r-sm);
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .checkbox-item:hover{
+      background: var(--muted);
+    }
+    .checkbox-item input[type="checkbox"]{
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+    }
+    .checkbox-label{
+      font-size: var(--fs-base);
+      cursor: pointer;
+    }
+    .checkbox-desc{
+      font-size: var(--fs-sm);
+      color: var(--text-dim);
+      margin-left: 32px;
+    }
+
+    /* Footer */
+    .app-footer{
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      margin-top: var(--sp-9);
+    }
+    .footer-inner{
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: var(--sp-7) var(--sp-4);
+    }
+    @media (min-width: 768px){
+      .footer-inner{
+        padding: var(--sp-8) var(--sp-6);
+      }
+    }
+    .footer-grid{
+      display: grid;
+      gap: var(--sp-6);
+      grid-template-columns: 1fr;
+    }
+    @media (min-width: 768px){
+      .footer-grid{
+        grid-template-columns: 2fr 1fr 1fr;
+        gap: var(--sp-8);
+      }
+    }
+    .footer-section-title{
+      font-size: var(--fs-base);
+      font-weight: 600;
+      margin-bottom: var(--sp-3);
+      color: var(--text);
+    }
+    .footer-desc{
+      font-size: var(--fs-sm);
+      line-height: var(--lh-loose);
+      color: var(--text-dim);
+      margin-bottom: var(--sp-4);
+    }
+    .footer-version{
+      display: inline-block;
+      padding: 6px 12px;
+      background: var(--muted);
+      border-radius: var(--r-sm);
+      font-size: var(--fs-xs);
+      font-weight: 600;
+      color: var(--accent);
+      border: 1px solid var(--border);
+    }
+    .footer-links{
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-2);
+    }
+    .footer-link{
+      color: var(--text-dim);
+      text-decoration: none;
+      font-size: var(--fs-sm);
+      transition: color 0.2s;
+      display: flex;
+      align-items: center;
+      gap: var(--sp-2);
+    }
+    .footer-link:hover{
+      color: var(--accent);
+    }
+    .footer-bottom{
+      margin-top: var(--sp-6);
+      padding-top: var(--sp-6);
+      border-top: 1px solid var(--border);
+      text-align: center;
+      font-size: var(--fs-xs);
+      color: var(--text-dim);
+    }
+
+    /* Notice */
+    .notice{
+      max-width: 1120px;
+      margin: 0 auto;
+      color: var(--text-dim); 
+      font-size: var(--fs-sm);
+      line-height: var(--lh-loose);
+      padding: var(--sp-6) var(--sp-4) var(--sp-8);
+      text-align: center;
+    }
+    @media (min-width: 768px){
+      .notice{
+        font-size: var(--fs-base);
+        padding: var(--sp-7) var(--sp-6) 0;
+      }
+    }
+
+    /* Focus ring */
+    :focus-visible{
+      outline: 3px solid var(--accent);
+      outline-offset: 3px;
+      border-radius: var(--r-sm);
+    }
+    button:focus-visible, .btn:focus-visible{
+      outline-offset: 4px;
+    }
+
+    /* Motion */
+    @media (prefers-reduced-motion: no-preference){
+      .fade-in{
+        animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      @keyframes fadeIn{
+        from{
+          opacity: 0; 
+          transform: translateY(12px);
+        } 
+        to{
+          opacity: 1; 
+          transform: translateY(0);
         }
-        p {
-            color: var(--text-secondary);
-            margin-bottom: 2.5rem;
-            line-height: 1.7;
-        }
-        select {
-            background-color: var(--bg-color);
-            border: 1px solid var(--border-color);
-            color: var(--text-primary);
-            padding: 12px 16px;
-            border-radius: 8px;
-            font-size: 1rem;
-            margin: 0.5rem 0;
-            width: 100%;
-            -webkit-appearance: none; appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23a0aec0' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 1rem center;
-            cursor: pointer;
-        }
-        button {
-            color: white;
-            border: none;
-            padding: 14px 28px;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            width: 100%;
-            transition: background-color 0.2s, opacity 0.2s;
-        }
-        #readButton {
-            background: var(--accent-color);
-            margin-top: 1.5rem;
-        }
-        #readButton:hover {
-            background: #3182ce;
-        }
-        .results {
-            display: none; text-align: left; margin-top: 2.5rem;
-        }
-        .results.show {
-            display: block; animation: fadeIn 0.6s ease-out;
-        }
-        .card {
-            background: var(--container-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 1.25rem;
-            margin-bottom: 1rem;
-        }
-        .bottom-card {
-            border-color: var(--accent-color);
-            background-color: var(--bottom-card-bg);
-        }
-        .position {
-            font-weight: 600; color: var(--accent-color); margin-bottom: 0.75rem; font-size: 1rem;
-        }
-        .card-body {
-            display: flex; justify-content: space-between; align-items: center;
-        }
-        .card-name {
-            font-size: 1.25rem; font-weight: 600;
-        }
-        .card-orientation {
-            font-size: 1rem; color: var(--text-secondary);
-        }
-        .card-footer {
-            display: flex; justify-content: space-between; margin-top: 0.75rem; padding-top: 0.75rem;
-            border-top: 1px solid var(--border-color); font-size: 0.875rem; color: var(--text-secondary);
-        }
-        .analysis-summary {
-            background-color: var(--bg-color); border-radius: 8px; padding: 1.25rem;
-            margin-top: 1.5rem; font-size: 0.95rem; line-height: 1.7;
-        }
-        .analysis-summary h4 {
-            margin-top: 0; margin-bottom: 0.75rem; color: var(--text-primary); font-weight: 600;
-        }
-        #copyButton {
-            background: var(--button-secondary-bg);
-            margin-top: 1rem;
-        }
-        #copyButton:hover {
-            opacity: 0.85;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-    </style>
+      }
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--bg);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: color-mix(in srgb, var(--text-dim) 30%, transparent);
+      border-radius: 5px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: color-mix(in srgb, var(--text-dim) 50%, transparent);
+    }
+
+    /* Selection */
+    ::selection {
+      background: color-mix(in srgb, var(--accent) 30%, transparent);
+      color: var(--text);
+    }
+
+    /* Hidden */
+    .hidden{
+      display: none !important;
+    }
+  </style>
 </head>
-<body class="dark-mode"> 
-    <div class="container">
-        <button class="theme-toggle" id="themeToggle" aria-label="切換主題">
-            <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.106a.75.75 0 010 1.06l-1.591 1.59a.75.75 0 11-1.06-1.06l1.59-1.59a.75.75 0 011.061 0zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.803 17.803a.75.75 0 01-1.06 0l-1.59-1.591a.75.75 0 111.06-1.06l1.59 1.59a.75.75 0 010 1.06zM12 18.75a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0v-2.25a.75.75 0 01.75-.75zM5.197 17.803a.75.75 0 010-1.06l1.59-1.59a.75.75 0 111.06 1.06l-1.59 1.59a.75.75 0 01-1.06 0zM3 12a.75.75 0 01.75-.75h2.25a.75.75 0 010 1.5H3.75A.75.75 0 013 12zM6.106 5.197a.75.75 0 011.06 0l1.59 1.59a.75.75 0 11-1.06 1.06l-1.59-1.59a.75.75 0 010-1.06z"/></svg>
-            <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M9.528 1.718a.75.75 0 01.162.819A8.97 8.97 0 009 6a9 9 0 009 9 8.97 8.97 0 003.463-.69.75.75 0 01.981.98 10.503 10.503 0 01-9.694 6.46c-5.799 0-10.5-4.701-10.5-10.5 0-3.864 2.11-7.25 5.282-9.022a.75.75 0 01.819.162z" clip-rule="evenodd" /></svg>
+<body>
+  <div class="wrap">
+    <!-- Header -->
+    <header class="app-header" role="banner">
+      <div class="header-inner">
+        <div class="title">
+          <h1>塔羅牌占卜</h1>
+          <p>簡潔直覺的抽牌體驗，不提供任何解讀。</p>
+        </div>
+        <div class="spacer"></div>
+        <button id="themeToggle" class="icon-btn" aria-label="切換主題">
+          <svg class="icon" id="iconSun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="display:none"><path d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.106a.75.75 0 010 1.06l-1.591 1.59a.75.75 0 11-1.06-1.06l1.59-1.59a.75.75 0 011.061 0zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.803 17.803a.75.75 0 01-1.06 0l-1.59-1.591a.75.75 0 111.06-1.06l1.59 1.59a.75.75 0 010 1.06zM12 18.75a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0v-2.25a.75.75 0 01.75-.75zM5.197 17.803a.75.75 0 010-1.06l1.59-1.59a.75.75 0 111.06 1.06l-1.59 1.59a.75.75 0 01-1.06 0zM3 12a.75.75 0 01.75-.75h2.25a.75.75 0 010 1.5H3.75A.75.75 0 013 12z"/></svg>
+          <svg class="icon" id="iconMoon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M9.528 1.718a.75.75 0 01.162.819A8.97 8.97 0 009 6a9 9 0 009 9 8.97 8.97 0 003.463-.69.75.75 0 01.981.98 10.503 10.503 0 01-9.694 6.46c-5.799 0-10.5-4.701-10.5-10.5 0-3.864 2.11-7.25 5.282-9.022a.75.75 0 01.819.162z" clip-rule="evenodd"/></svg>
         </button>
+      </div>
+    </header>
 
-        <h1>塔羅牌占卜</h1>
-        <p>專注於你的問題，選擇牌組與牌陣，然後抽出指引。</p>
-        <select id="deckType">
-            <option value="full" selected>完整牌組 (78張)</option>
-            <option value="major">大阿卡納 (22張)</option>
-        </select>
-        <select id="spreadType">
-             <option value="single" data-spread-name="單張牌指引">單張牌 (每日指引)</option>
-            <option value="three" data-spread-name="聖三角">聖三角 (過去/現在/未來)</option>
-            <option value="mbs" data-spread-name="身心靈牌陣">身心靈 (整體狀態)</option>
-            <option value="path" data-spread-name="抉擇之路">抉擇之路 (問題解決)</option>
-            <option value="twoChoice" data-spread-name="二擇一">二擇一 (選項/結果)</option>
-            <option value="prosCons" data-spread-name="優劣分析">優劣分析 (利弊)</option>
-            <option value="goal" data-spread-name="目標達成牌陣">目標達成 (行動規劃)</option>
-            <option value="relationship" data-spread-name="關係牌陣">關係牌陣 (兩人關係)</option>
-            <option value="weekly" data-spread-name="週運勢">週運勢 (每日指引)</option>
-            <option value="celtic" data-spread-name="凱爾特十字">凱爾特十字 (深入分析)</option>
-        </select>
-        <button id="readButton" onclick="performReading()">抽出指引</button>
-        <div id="results" class="results"></div>
-    </div>
+    <!-- Main Section -->
+    <section class="section" aria-label="主要功能">
+      <!-- Tabs -->
+      <div class="tabs" role="tablist">
+        <button class="tab active" data-tab="reading" role="tab" aria-selected="true">占卜</button>
+        <button class="tab" data-tab="history" role="tab">歷史記錄</button>
+        <button class="tab" data-tab="statistics" role="tab">統計分析</button>
+        <button class="tab" data-tab="database" role="tab">牌卡資料庫</button>
+        <button class="tab" data-tab="settings" role="tab">設定</button>
+      </div>
 
-    <script>
-        const fullTarotCards = [
-            { name: "愚者", suit: "Major Arcana", number: "0", englishName: "The Fool" }, { name: "魔術師", suit: "Major Arcana", number: "I", englishName: "The Magician" }, { name: "女祭司", suit: "Major Arcana", number: "II", englishName: "The High Priestess" }, { name: "皇后", suit: "Major Arcana", number: "III", englishName: "The Empress" }, { name: "皇帝", suit: "Major Arcana", number: "IV", englishName: "The Emperor" }, { name: "教皇", suit: "Major Arcana", number: "V", englishName: "The Hierophant" }, { name: "戀人", suit: "Major Arcana", number: "VI", englishName: "The Lovers" }, { name: "戰車", suit: "Major Arcana", number: "VII", englishName: "The Chariot" }, { name: "力量", suit: "Major Arcana", number: "VIII", englishName: "Strength" }, { name: "隱士", suit: "Major Arcana", number: "IX", englishName: "The Hermit" }, { name: "命運之輪", suit: "Major Arcana", number: "X", englishName: "Wheel of Fortune" }, { name: "正義", suit: "Major Arcana", number: "XI", englishName: "Justice" }, { name: "倒吊人", suit: "Major Arcana", number: "XII", englishName: "The Hanged Man" }, { name: "死神", suit: "Major Arcana", number: "XIII", englishName: "Death" }, { name: "節制", suit: "Major Arcana", number: "XIV", englishName: "Temperance" }, { name: "惡魔", suit: "Major Arcana", number: "XV", englishName: "The Devil" }, { name: "高塔", suit: "Major Arcana", number: "XVI", englishName: "The Tower" }, { name: "星星", suit: "Major Arcana", number: "XVII", englishName: "The Star" }, { name: "月亮", suit: "Major Arcana", number: "XVIII", englishName: "The Moon" }, { name: "太陽", suit: "Major Arcana", number: "XIX", englishName: "The Sun" }, { name: "審判", suit: "Major Arcana", number: "XX", englishName: "Judgement" }, { name: "世界", suit: "Major Arcana", number: "XXI", englishName: "The World" },
-            { name: "權杖一", suit: "Wands", number: "Ace", englishName: "Ace of Wands" }, { name: "權杖二", suit: "Wands", number: "Two", englishName: "Two of Wands" }, { name: "權杖三", suit: "Wands", number: "Three", englishName: "Three of Wands" }, { name: "權杖四", suit: "Wands", number: "Four", englishName: "Four of Wands" }, { name: "權杖五", suit: "Wands", number: "Five", englishName: "Five of Wands" }, { name: "權杖六", suit: "Wands", number: "Six", englishName: "Six of Wands" }, { name: "權杖七", suit: "Wands", number: "Seven", englishName: "Seven of Wands" }, { name: "權杖八", suit: "Wands", number: "Eight", englishName: "Eight of Wands" }, { name: "權杖九", suit: "Wands", number: "Nine", englishName: "Nine of Wands" }, { name: "權杖十", suit: "Wands", number: "Ten", englishName: "Ten of Wands" }, { name: "權杖侍者", suit: "Wands", number: "Page", englishName: "Page of Wands" }, { name: "權杖騎士", suit: "Wands", number: "Knight", englishName: "Knight of Wands" }, { name: "權杖皇后", suit: "Wands", number: "Queen", englishName: "Queen of Wands" }, { name: "權杖國王", suit: "Wands", number: "King", englishName: "King of Wands" },
-            { name: "聖杯一", suit: "Cups", number: "Ace", englishName: "Ace of Cups" }, { name: "聖杯二", suit: "Cups", number: "Two", englishName: "Two of Cups" }, { name: "聖杯三", suit: "Cups", number: "Three", englishName: "Three of Cups" }, { name: "聖杯四", suit: "Cups", number: "Four", englishName: "Four of Cups" }, { name: "聖杯五", suit: "Cups", number: "Five", englishName: "Five of Cups" }, { name: "聖杯六", suit: "Cups", number: "Six", englishName: "Six of Cups" }, { name: "聖杯七", suit: "Cups", number: "Seven", englishName: "Seven of Cups" }, { name: "聖杯八", suit: "Cups", number: "Eight", englishName: "Eight of Cups" }, { name: "聖杯九", suit: "Cups", number: "Nine", englishName: "Nine of Cups" }, { name: "聖杯十", suit: "Cups", number: "Ten", englishName: "Ten of Cups" }, { name: "聖杯侍者", suit: "Cups", number: "Page", englishName: "Page of Cups" }, { name: "聖杯騎士", suit: "Cups", number: "Knight", englishName: "Knight of Cups" }, { name: "聖杯皇后", suit: "Cups", number: "Queen", englishName: "Queen of Cups" }, { name: "聖杯國王", suit: "Cups", number: "King", englishName: "King of Cups" },
-            { name: "寶劍一", suit: "Swords", number: "Ace", englishName: "Ace of Swords" }, { name: "寶劍二", suit: "Swords", number: "Two", englishName: "Two of Swords" }, { name: "寶劍三", suit: "Swords", number: "Three", englishName: "Three of Swords" }, { name: "寶劍四", suit: "Swords", number: "Four", englishName: "Four of Swords" }, { name: "寶劍五", suit: "Swords", number: "Five", englishName: "Five of Swords" }, { name: "寶劍六", suit: "Swords", number: "Six", englishName: "Six of Swords" }, { name: "寶劍七", suit: "Swords", number: "Seven", englishName: "Seven of Swords" }, { name: "寶劍八", suit: "Swords", number: "Eight", englishName: "Eight of Swords" }, { name: "寶劍九", suit: "Swords", number: "Nine", englishName: "Nine of Swords" }, { name: "寶劍十", suit: "Swords", number: "Ten", englishName: "Ten of Swords" }, { name: "寶劍侍者", suit: "Swords", number: "Page", englishName: "Page of Swords" }, { name: "寶劍騎士", suit: "Swords", number: "Knight", englishName: "Knight of Swords" }, { name: "寶劍皇后", suit: "Swords", number: "Queen", englishName: "Queen of Swords" }, { name: "寶劍國王", suit: "Swords", number: "King", englishName: "King of Swords" },
-            { name: "錢幣一", suit: "Pentacles", number: "Ace", englishName: "Ace of Pentacles" }, { name: "錢幣二", suit: "Pentacles", number: "Two", englishName: "Two of Pentacles" }, { name: "錢幣三", suit: "Pentacles", number: "Three", englishName: "Three of Pentacles" }, { name: "錢幣四", suit: "Pentacles", number: "Four", englishName: "Four of Pentacles" }, { name: "錢幣五", suit: "Pentacles", number: "Five", englishName: "Five of Pentacles" }, { name: "錢幣六", suit: "Pentacles", number: "Six", englishName: "Six of Pentacles" }, { name: "錢幣七", suit: "Pentacles", number: "Seven", englishName: "Seven of Pentacles" }, { name: "錢幣八", suit: "Pentacles", number: "Eight", englishName: "Eight of Pentacles" }, { name: "錢幣九", suit: "Pentacles", number: "Nine", englishName: "Nine of Pentacles" }, { name: "錢幣十", suit: "Pentacles", number: "Ten", englishName: "Ten of Pentacles" }, { name: "錢幣侍者", suit: "Pentacles", number: "Page", englishName: "Page of Pentacles" }, { name: "錢幣騎士", suit: "Pentacles", number: "Knight", englishName: "Knight of Pentacles" }, { name: "錢幣皇后", suit: "Pentacles", number: "Queen", englishName: "Queen of Pentacles" }, { name: "錢幣國王", suit: "Pentacles", number: "King", englishName: "King of Pentacles" }
-        ];
+      <!-- Tab: Reading -->
+      <div id="tabReading" class="tab-content">
+        <div class="panel">
+          <div class="controls">
+            <div class="field">
+              <label for="question">問題（可選）</label>
+              <input id="question" type="text" inputmode="text" placeholder="例：目前的專注方向？"/>
+            </div>
 
-        const majorArcana = fullTarotCards.slice(0, 22);
-        const spreads = { 
-            single: { positions: ['核心指引'] }, 
-            three: { positions: ['過去的影響', '現在的狀況', '未來的趨勢'] }, 
-            mbs: { positions: ['心態層面 (Mind)', '身體層面 (Body)', '靈性層面 (Spirit)'] }, 
-            path: { positions: ['當前問題', '面臨的挑戰', '給你的建議', '可能的結果'] }, 
-            twoChoice: { positions: ['目前狀況', '選擇A的過程', '選擇B的過程', '選擇A的結果', '選擇B的結果'] }, 
-            prosCons: { positions: ['選擇一的優點', '選擇一的缺點', '選擇二的優點', '選擇二的缺點', '核心建議'] }, 
-            goal: { positions: ['目標的核心', '目前的阻礙', '你的內在資源', '建議的行動步驟', '最終可能的結果'] }, 
-            relationship: { positions: ['你如何看待這段關係', '對方如何看待這段關係', '關係的現狀', '關係的挑戰', '關係的未來潛力'] }, 
-            weekly: { positions: ['本週的整體主題', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六', '星期日'] }, 
-            celtic: { positions: [ '核心：目前的狀況', '挑戰：眼前的阻礙', '根基：潛意識與成因', '過去：已發生的影響', '目標：意識與期望', '未來：即將發生的事', '內在：你自身的態度', '外在：周遭環境影響', '指引：你的希望與恐懼', '結果：最終的结局' ] }
+            <div class="control-row">
+              <div class="field">
+                <label for="deckType">牌組</label>
+                <select id="deckType" aria-label="選擇牌組">
+                  <option value="full" selected>完整牌組 (78張)</option>
+                  <option value="major">大阿卡納 (22張)</option>
+                  <option value="minor">小阿卡納 (56張)</option>
+                  <option value="court">宮廷牌 (16張)</option>
+                  <option value="numbered">數字牌 (40張)</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="spreadType">牌陣</label>
+                <select id="spreadType" aria-label="選擇牌陣">
+                  <option value="single" data-spread-name="單張牌指引">單張牌</option>
+                  <option value="three" data-spread-name="聖三角">聖三角（過去/現在/未來）</option>
+                  <option value="mbs" data-spread-name="身心靈牌陣">身心靈（三向度）</option>
+                  <option value="path" data-spread-name="抉擇之路">抉擇之路</option>
+                  <option value="twoChoice" data-spread-name="二擇一">二擇一</option>
+                  <option value="prosCons" data-spread-name="優劣分析">優劣分析</option>
+                  <option value="goal" data-spread-name="目標達成牌陣">目標達成</option>
+                  <option value="relationship" data-spread-name="關係牌陣">關係牌陣</option>
+                  <option value="weekly" data-spread-name="週運勢">週運勢</option>
+                  <option value="monthly" data-spread-name="月運勢">月運勢（12張）</option>
+                  <option value="quarterly" data-spread-name="季度展望">季度展望（4張）</option>
+                  <option value="yearly" data-spread-name="年度主題">年度主題（13張）</option>
+                  <option value="chakra" data-spread-name="脈輪牌陣">脈輪牌陣（7張）</option>
+                  <option value="elements" data-spread-name="四元素牌陣">四元素（5張）</option>
+                  <option value="celtic" data-spread-name="凱爾特十字">凱爾特十字</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="primary-actions">
+              <button id="readButton" class="btn btn-primary" aria-label="抽出指引">抽出指引</button>
+              <button id="shareButton" class="btn btn-outline" aria-label="複製分享連結">分享連結</button>
+            </div>
+          </div>
+
+          <!-- Spread Info -->
+          <div id="spreadInfo" class="spread-info hidden">
+            <div class="spread-info-title">
+              <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm8.706-1.442c1.146-.573 2.437.463 2.126 1.706l-.709 2.836.042-.02a.75.75 0 01.67 1.34l-.04.022c-1.147.573-2.438-.463-2.127-1.706l.71-2.836-.042.02a.75.75 0 11-.671-1.34l.041-.022zM12 9a.75.75 0 100-1.5.75.75 0 000 1.5z" clip-rule="evenodd"/></svg>
+              牌陣說明
+            </div>
+            <div class="spread-info-content" id="spreadInfoContent"></div>
+            <div class="spread-positions">
+              <div class="spread-positions-title">牌位說明</div>
+              <div class="spread-positions-list" id="spreadPositionsList"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Results -->
+        <div id="results" class="results" role="region" aria-live="polite"></div>
+      </div>
+
+      <!-- Tab: History -->
+      <div id="tabHistory" class="tab-content hidden">
+        <div class="panel">
+          <div class="results-head">
+            <h2 class="results-title">歷史記錄</h2>
+            <div class="spacer"></div>
+            <button id="clearHistory" class="btn btn-outline btn-sm">清除全部</button>
+          </div>
+          <div id="historyList" class="history-list"></div>
+        </div>
+      </div>
+
+      <!-- Tab: Statistics -->
+      <div id="tabStatistics" class="tab-content hidden">
+        <div class="panel">
+          <h2 class="results-title" style="margin-bottom: var(--sp-6)">統計分析</h2>
+          <div id="statisticsContent" class="stats-grid"></div>
+        </div>
+      </div>
+
+      <!-- Tab: Database -->
+      <div id="tabDatabase" class="tab-content hidden">
+        <div class="panel">
+          <h2 class="results-title" style="margin-bottom: var(--sp-5)">牌卡資料庫</h2>
+          <div class="card-db-search">
+            <input type="text" id="cardSearch" placeholder="搜尋牌名或英文名..." />
+          </div>
+          <div id="cardDatabaseGrid" class="card-db-grid"></div>
+        </div>
+      </div>
+
+      <!-- Tab: Settings -->
+      <div id="tabSettings" class="tab-content hidden">
+        <div class="panel">
+          <h2 class="results-title" style="margin-bottom: var(--sp-6)">設定</h2>
+          
+          <div class="settings-section">
+            <div class="settings-title">音效設定</div>
+            <div class="checkbox-group">
+              <label class="checkbox-item">
+                <input type="checkbox" id="soundEnabled" />
+                <span class="checkbox-label">啟用音效</span>
+              </label>
+              <div class="checkbox-desc">抽牌時播放音效（尚未實作）</div>
+            </div>
+          </div>
+
+          <div class="settings-section">
+            <div class="settings-title">顯示設定</div>
+            <div class="checkbox-group">
+              <label class="checkbox-item">
+                <input type="checkbox" id="showSpreadInfo" checked />
+                <span class="checkbox-label">顯示牌陣說明</span>
+              </label>
+              <div class="checkbox-desc">在占卜頁面顯示牌陣詳細說明</div>
+            </div>
+          </div>
+
+          <div class="settings-section">
+            <div class="settings-title">資料管理</div>
+            <div class="primary-actions">
+              <button id="exportData" class="btn btn-outline">匯出資料</button>
+              <button id="importData" class="btn btn-outline">匯入資料</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notice -->
+      <div class="notice">
+        本工具僅呈現抽取之卡牌名稱、位置與正逆位，不提供任何解讀或建議。
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="app-footer" role="contentinfo">
+      <div class="footer-inner">
+        <div class="footer-grid">
+          <div>
+            <h3 class="footer-section-title">關於本站</h3>
+            <p class="footer-desc">
+              這是一個純粹的線上塔羅牌占卜工具，僅提供抽牌功能，不包含任何牌義解讀。所有資料儲存於您的瀏覽器本地，不會上傳至伺服器。
+            </p>
+            <span class="footer-version">v3.0.1</span>
+          </div>
+          
+          <div>
+            <h3 class="footer-section-title">友情連結</h3>
+            <div class="footer-links">
+              <a href="https://google.com" class="footer-link" target="_blank" rel="noopener">
+                <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12.378 1.602a.75.75 0 00-.756 0L3 6.632l9 5.25 9-5.25-8.622-5.03zM21.75 7.93l-9 5.25v9l8.628-5.032a.75.75 0 00.372-.648V7.93zM11.25 22.18v-9l-9-5.25v8.57a.75.75 0 00.372.648l8.628 5.033z"/></svg>
+                範例連結 1
+              </a>
+              <a href="https://google.com" class="footer-link" target="_blank" rel="noopener">
+                <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12.378 1.602a.75.75 0 00-.756 0L3 6.632l9 5.25 9-5.25-8.622-5.03zM21.75 7.93l-9 5.25v9l8.628-5.032a.75.75 0 00.372-.648V7.93zM11.25 22.18v-9l-9-5.25v8.57a.75.75 0 00.372.648l8.628 5.033z"/></svg>
+                範例連結 2
+              </a>
+              <a href="https://google.com" class="footer-link" target="_blank" rel="noopener">
+                <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12.378 1.602a.75.75 0 00-.756 0L3 6.632l9 5.25 9-5.25-8.622-5.03zM21.75 7.93l-9 5.25v9l8.628-5.032a.75.75 0 00.372-.648V7.93zM11.25 22.18v-9l-9-5.25v8.57a.75.75 0 00.372.648l8.628 5.033z"/></svg>
+                範例連結 3
+              </a>
+            </div>
+          </div>
+
+          <div>
+            <h3 class="footer-section-title">相關資源</h3>
+            <div class="footer-links">
+              <a href="#" class="footer-link" id="linkAbout">
+                <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm8.706-1.442c1.146-.573 2.437.463 2.126 1.706l-.709 2.836.042-.02a.75.75 0 01.67 1.34l-.04.022c-1.147.573-2.438-.463-2.127-1.706l.71-2.836-.042.02a.75.75 0 11-.671-1.34l.041-.022zM12 9a.75.75 0 100-1.5.75.75 0 000 1.5z" clip-rule="evenodd"/></svg>
+                使用說明
+              </a>
+              <a href="#" class="footer-link" id="linkPrivacy">
+                <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M12 1.5a5.25 5.25 0 00-5.25 5.25v3a3 3 0 00-3 3v6.75a3 3 0 003 3h10.5a3 3 0 003-3v-6.75a3 3 0 00-3-3v-3c0-2.9-2.35-5.25-5.25-5.25zm3.75 8.25v-3a3.75 3.75 0 10-7.5 0v3h7.5z" clip-rule="evenodd"/></svg>
+                隱私政策
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div class="footer-bottom">
+          © 2025 線上塔羅牌占卜工具 · 僅供娛樂參考 · 本站不提供解牌服務
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    // ----- Data -----
+    const fullTarotCards = [
+      { name: "愚者", suit: "Major Arcana", number: "0", englishName: "The Fool" }, { name: "魔術師", suit: "Major Arcana", number: "I", englishName: "The Magician" }, { name: "女祭司", suit: "Major Arcana", number: "II", englishName: "The High Priestess" }, { name: "皇后", suit: "Major Arcana", number: "III", englishName: "The Empress" }, { name: "皇帝", suit: "Major Arcana", number: "IV", englishName: "The Emperor" }, { name: "教皇", suit: "Major Arcana", number: "V", englishName: "The Hierophant" }, { name: "戀人", suit: "Major Arcana", number: "VI", englishName: "The Lovers" }, { name: "戰車", suit: "Major Arcana", number: "VII", englishName: "The Chariot" }, { name: "力量", suit: "Major Arcana", number: "VIII", englishName: "Strength" }, { name: "隱士", suit: "Major Arcana", number: "IX", englishName: "The Hermit" }, { name: "命運之輪", suit: "Major Arcana", number: "X", englishName: "Wheel of Fortune" }, { name: "正義", suit: "Major Arcana", number: "XI", englishName: "Justice" }, { name: "倒吊人", suit: "Major Arcana", number: "XII", englishName: "The Hanged Man" }, { name: "死神", suit: "Major Arcana", number: "XIII", englishName: "Death" }, { name: "節制", suit: "Major Arcana", number: "XIV", englishName: "Temperance" }, { name: "惡魔", suit: "Major Arcana", number: "XV", englishName: "The Devil" }, { name: "高塔", suit: "Major Arcana", number: "XVI", englishName: "The Tower" }, { name: "星星", suit: "Major Arcana", number: "XVII", englishName: "The Star" }, { name: "月亮", suit: "Major Arcana", number: "XVIII", englishName: "The Moon" }, { name: "太陽", suit: "Major Arcana", number: "XIX", englishName: "The Sun" }, { name: "審判", suit: "Major Arcana", number: "XX", englishName: "Judgement" }, { name: "世界", suit: "Major Arcana", number: "XXI", englishName: "The World" },
+      { name: "權杖一", suit: "Wands", number: "Ace", englishName: "Ace of Wands" }, { name: "權杖二", suit: "Wands", number: "Two", englishName: "Two of Wands" }, { name: "權杖三", suit: "Wands", number: "Three", englishName: "Three of Wands" }, { name: "權杖四", suit: "Wands", number: "Four", englishName: "Four of Wands" }, { name: "權杖五", suit: "Wands", number: "Five", englishName: "Five of Wands" }, { name: "權杖六", suit: "Wands", number: "Six", englishName: "Six of Wands" }, { name: "權杖七", suit: "Wands", number: "Seven", englishName: "Seven of Wands" }, { name: "權杖八", suit: "Wands", number: "Eight", englishName: "Eight of Wands" }, { name: "權杖九", suit: "Wands", number: "Nine", englishName: "Nine of Wands" }, { name: "權杖十", suit: "Wands", number: "Ten", englishName: "Ten of Wands" }, { name: "權杖侍者", suit: "Wands", number: "Page", englishName: "Page of Wands" }, { name: "權杖騎士", suit: "Wands", number: "Knight", englishName: "Knight of Wands" }, { name: "權杖皇后", suit: "Wands", number: "Queen", englishName: "Queen of Wands" }, { name: "權杖國王", suit: "Wands", number: "King", englishName: "King of Wands" },
+      { name: "聖杯一", suit: "Cups", number: "Ace", englishName: "Ace of Cups" }, { name: "聖杯二", suit: "Cups", number: "Two", englishName: "Two of Cups" }, { name: "聖杯三", suit: "Cups", number: "Three", englishName: "Three of Cups" }, { name: "聖杯四", suit: "Cups", number: "Four", englishName: "Four of Cups" }, { name: "聖杯五", suit: "Cups", number: "Five", englishName: "Five of Cups" }, { name: "聖杯六", suit: "Cups", number: "Six", englishName: "Six of Cups" }, { name: "聖杯七", suit: "Cups", number: "Seven", englishName: "Seven of Cups" }, { name: "聖杯八", suit: "Cups", number: "Eight", englishName: "Eight of Cups" }, { name: "聖杯九", suit: "Cups", number: "Nine", englishName: "Nine of Cups" }, { name: "聖杯十", suit: "Cups", number: "Ten", englishName: "Ten of Cups" }, { name: "聖杯侍者", suit: "Cups", number: "Page", englishName: "Page of Cups" }, { name: "聖杯騎士", suit: "Cups", number: "Knight", englishName: "Knight of Cups" }, { name: "聖杯皇后", suit: "Cups", number: "Queen", englishName: "Queen of Cups" }, { name: "聖杯國王", suit: "Cups", number: "King", englishName: "King of Cups" },
+      { name: "寶劍一", suit: "Swords", number: "Ace", englishName: "Ace of Swords" }, { name: "寶劍二", suit: "Swords", number: "Two", englishName: "Two of Swords" }, { name: "寶劍三", suit: "Swords", number: "Three", englishName: "Three of Swords" }, { name: "寶劍四", suit: "Swords", number: "Four", englishName: "Four of Swords" }, { name: "寶劍五", suit: "Swords", number: "Five", englishName: "Five of Swords" }, { name: "寶劍六", suit: "Swords", number: "Six", englishName: "Six of Swords" }, { name: "寶劍七", suit: "Swords", number: "Seven", englishName: "Seven of Swords" }, { name: "寶劍八", suit: "Swords", number: "Eight", englishName: "Eight of Swords" }, { name: "寶劍九", suit: "Swords", number: "Nine", englishName: "Nine of Swords" }, { name: "寶劍十", suit: "Swords", number: "Ten", englishName: "Ten of Swords" }, { name: "寶劍侍者", suit: "Swords", number: "Page", englishName: "Page of Swords" }, { name: "寶劍騎士", suit: "Swords", number: "Knight", englishName: "Knight of Swords" }, { name: "寶劍皇后", suit: "Swords", number: "Queen", englishName: "Queen of Swords" }, { name: "寶劍國王", suit: "Swords", number: "King", englishName: "King of Swords" },
+      { name: "錢幣一", suit: "Pentacles", number: "Ace", englishName: "Ace of Pentacles" }, { name: "錢幣二", suit: "Pentacles", number: "Two", englishName: "Two of Pentacles" }, { name: "錢幣三", suit: "Pentacles", number: "Three", englishName: "Three of Pentacles" }, { name: "錢幣四", suit: "Pentacles", number: "Four", englishName: "Four of Pentacles" }, { name: "錢幣五", suit: "Pentacles", number: "Five", englishName: "Five of Pentacles" }, { name: "錢幣六", suit: "Pentacles", number: "Six", englishName: "Six of Pentacles" }, { name: "錢幣七", suit: "Pentacles", number: "Seven", englishName: "Seven of Pentacles" }, { name: "錢幣八", suit: "Pentacles", number: "Eight", englishName: "Eight of Pentacles" }, { name: "錢幣九", suit: "Pentacles", number: "Nine", englishName: "Nine of Pentacles" }, { name: "錢幣十", suit: "Pentacles", number: "Ten", englishName: "Ten of Pentacles" }, { name: "錢幣侍者", suit: "Pentacles", number: "Page", englishName: "Page of Pentacles" }, { name: "錢幣騎士", suit: "Pentacles", number: "Knight", englishName: "Knight of Pentacles" }, { name: "錢幣皇后", suit: "Pentacles", number: "Queen", englishName: "Queen of Pentacles" }, { name: "錢幣國王", suit: "Pentacles", number: "King", englishName: "King of Pentacles" }
+    ];
+    const majorArcana = fullTarotCards.slice(0, 22);
+    const minorArcana = fullTarotCards.slice(22);
+    const courtCards = fullTarotCards.filter(c => ['Page', 'Knight', 'Queen', 'King'].includes(c.number));
+    const numberedCards = fullTarotCards.filter(c => !['Page', 'Knight', 'Queen', 'King'].includes(c.number) && c.suit !== 'Major Arcana');
+
+    const spreads = {
+      single: {
+        positions: ['核心指引'],
+        description: '最簡單直接的牌陣，適合日常指引或快速問答。抽取一張牌作為當下的核心訊息。'
+      },
+      three: {
+        positions: ['過去的影響', '現在的狀況', '未來的趨勢'],
+        description: '經典的三張牌時間線牌陣，呈現事件的發展脈絡。從過去、現在到未來的能量流動。'
+      },
+      mbs: {
+        positions: ['心態層面 (Mind)', '身體層面 (Body)', '靈性層面 (Spirit)'],
+        description: '身心靈整體檢視牌陣，從三個維度觀察當前狀態的平衡與需要關注的面向。'
+      },
+      path: {
+        positions: ['當前問題', '面臨的挑戰', '建議方向', '可能的結果'],
+        description: '四張牌路徑牌陣，協助釐清問題、挑戰、方向與結果的完整流程。'
+      },
+      twoChoice: {
+        positions: ['目前狀況', '選擇A的過程', '選擇B的過程', '選擇A的結果', '選擇B的結果'],
+        description: '面對兩個選擇時使用，呈現兩條路徑各自的過程與可能結果，不做價值判斷。'
+      },
+      prosCons: {
+        positions: ['選擇一的優點', '選擇一的缺點', '選擇二的優點', '選擇二的缺點', '核心提示'],
+        description: '優劣分析牌陣，客觀呈現兩個選項的正反面，最後一張提供整體觀點。'
+      },
+      goal: {
+        positions: ['目標的核心', '目前的阻礙', '可用資源', '建議步驟', '可能結果'],
+        description: '目標達成牌陣，從核心到結果的五個關鍵面向，適合規劃與執行參考。'
+      },
+      relationship: {
+        positions: ['你看待關係', '對方看待關係', '關係現況', '關係挑戰', '未來潛力'],
+        description: '關係探索牌陣，呈現雙方視角、現況、挑戰與發展可能性。'
+      },
+      weekly: {
+        positions: ['本週主題', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六', '星期日'],
+        description: '週運勢牌陣，第一張為整週基調，後七張對應每日能量提示。'
+      },
+      monthly: {
+        positions: ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月'],
+        description: '月運勢牌陣，十二張牌對應十二個月份的能量主題與關注重點。'
+      },
+      quarterly: {
+        positions: ['春季（1-3月）', '夏季（4-6月）', '秋季（7-9月）', '冬季（10-12月）'],
+        description: '季度展望牌陣，以四季為單位觀察全年的能量流動與週期變化。'
+      },
+      yearly: {
+        positions: ['全年總主題', '一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月'],
+        description: '年度主題牌陣，第一張為全年基調，後十二張對應各月重點。'
+      },
+      chakra: {
+        positions: ['海底輪（安全感）', '臍輪（創造力）', '太陽神經叢（力量）', '心輪（愛與連結）', '喉輪（表達）', '眉心輪（直覺）', '頂輪（靈性）'],
+        description: '脈輪牌陣，對應七個能量中心，檢視各層面的能量狀態與平衡程度。'
+      },
+      elements: {
+        positions: ['火元素（行動）', '水元素（情感）', '風元素（思維）', '土元素（物質）', '靈元素（核心）'],
+        description: '四元素加中心牌陣，從五個基本元素觀察整體狀態的構成與平衡。'
+      },
+      celtic: {
+        positions: ['核心狀況', '眼前阻礙', '根基/成因', '已發生影響', '意識/期望', '即將發生', '你的態度', '外在環境', '希望與顧慮', '可能結果'],
+        description: '經典凱爾特十字牌陣，十張牌構成的複雜系統，從多角度深入探索議題。'
+      }
+    };
+
+    // ----- State -----
+    let lastReadingData = {};
+    let readingHistory = JSON.parse(localStorage.getItem('readingHistory') || '[]');
+    let currentTab = 'reading';
+
+    // ----- Elements -----
+    const resultsEl = document.getElementById('results');
+    const readBtn = document.getElementById('readButton');
+    const shareBtn = document.getElementById('shareButton');
+    const themeToggle = document.getElementById('themeToggle');
+    const iconSun = document.getElementById('iconSun');
+    const iconMoon = document.getElementById('iconMoon');
+    const spreadTypeEl = document.getElementById('spreadType');
+    const spreadInfoEl = document.getElementById('spreadInfo');
+    const showSpreadInfoCheckbox = document.getElementById('showSpreadInfo');
+
+    // ----- Theme -----
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'light') {
+      document.documentElement.classList.add('light');
+      iconSun.style.display = 'none';
+      iconMoon.style.display = 'block';
+    }
+    if (savedTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+      iconSun.style.display = 'block';
+      iconMoon.style.display = 'none';
+    }
+
+    themeToggle.addEventListener('click', () => {
+      const root = document.documentElement;
+      const isDark = root.classList.contains('dark');
+      const isLight = root.classList.contains('light');
+      if (isDark) {
+        root.classList.remove('dark');
+        root.classList.add('light');
+        localStorage.setItem('theme', 'light');
+        iconSun.style.display = 'none';
+        iconMoon.style.display = 'block';
+      } else if (isLight) {
+        root.classList.remove('light');
+        root.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+        iconSun.style.display = 'block';
+        iconMoon.style.display = 'none';
+      } else {
+        root.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+        iconSun.style.display = 'block';
+        iconMoon.style.display = 'none';
+      }
+    });
+
+    // ----- Tabs -----
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        const tabName = tab.dataset.tab;
+        switchTab(tabName);
+      });
+    });
+
+    function switchTab(tabName) {
+      currentTab = tabName;
+      document.querySelectorAll('.tab').forEach(t => {
+        t.classList.toggle('active', t.dataset.tab === tabName);
+        t.setAttribute('aria-selected', t.dataset.tab === tabName);
+      });
+      document.querySelectorAll('.tab-content').forEach(tc => {
+        tc.classList.toggle('hidden', tc.id !== 'tab' + tabName.charAt(0).toUpperCase() + tabName.slice(1));
+      });
+
+      if (tabName === 'history') renderHistory();
+      if (tabName === 'statistics') renderStatistics();
+      if (tabName === 'database') renderCardDatabase();
+    }
+
+    // ----- Spread Info -----
+    function updateSpreadInfo() {
+      const spreadType = spreadTypeEl.value;
+      const spread = spreads[spreadType];
+      const showInfo = showSpreadInfoCheckbox.checked;
+
+      if (!showInfo) {
+        spreadInfoEl.classList.add('hidden');
+        return;
+      }
+
+      spreadInfoEl.classList.remove('hidden');
+      document.getElementById('spreadInfoContent').textContent = spread.description;
+      
+      const positionsList = document.getElementById('spreadPositionsList');
+      positionsList.innerHTML = spread.positions.map((pos, idx) => 
+        `<div class="spread-position-item">
+          <span class="spread-position-num">${idx + 1}.</span>
+          <span>${escapeHTML(pos)}</span>
+        </div>`
+      ).join('');
+    }
+
+    spreadTypeEl.addEventListener('change', updateSpreadInfo);
+    showSpreadInfoCheckbox.addEventListener('change', updateSpreadInfo);
+
+    // ----- Utils -----
+    function escapeHTML(str) {
+      return String(str).replace(/[&<>"']/g, s => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[s]));
+    }
+    function mulberry32(a) {
+      return function () {
+        let t = a += 0x6D2B79F5;
+        t = Math.imul(t ^ t >>> 15, t | 1);
+        t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+      };
+    }
+    function shuffle(arr, rng = Math.random) {
+      const a = arr.slice();
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(rng() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+    function getSeed() {
+      const url = new URL(location.href);
+      const s = url.searchParams.get('seed');
+      return s ? Number(s) : Math.floor(Math.random() * 1e9);
+    }
+    function updateURL(params) {
+      const url = new URL(location.href);
+      Object.entries(params).forEach(([k, v]) => {
+        if (v === undefined || v === null || v === '') url.searchParams.delete(k);
+        else url.searchParams.set(k, String(v));
+      });
+      history.replaceState(null, '', url.toString());
+    }
+    function setLoading(loading) {
+      readBtn.disabled = loading;
+      readBtn.textContent = loading ? '抽牌中…' : '抽出指引';
+    }
+    function formatDate(timestamp) {
+      const d = new Date(timestamp);
+      return `${d.getFullYear()}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getDate().toString().padStart(2, '0')} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+    }
+
+    // ----- Deck Selection -----
+    function getDeck(deckType) {
+      switch (deckType) {
+        case 'major': return [...majorArcana];
+        case 'minor': return [...minorArcana];
+        case 'court': return [...courtCards];
+        case 'numbered': return [...numberedCards];
+        default: return [...fullTarotCards];
+      }
+    }
+
+    // ----- Core -----
+    function performReading(seedOverride) {
+      const deckTypeEl = document.getElementById('deckType');
+      const spreadTypeEl = document.getElementById('spreadType');
+      const questionEl = document.getElementById('question');
+
+      const deckType = deckTypeEl.value;
+      const spreadType = spreadTypeEl.value;
+      const spreadName = spreadTypeEl.options[spreadTypeEl.selectedIndex].getAttribute('data-spread-name');
+      const question = questionEl.value.trim();
+
+      const originalDeck = getDeck(deckType);
+
+      const seed = typeof seedOverride === 'number' ? seedOverride : getSeed();
+      const rng = mulberry32(seed);
+      const shuffled = shuffle(originalDeck, rng);
+
+      const spread = spreads[spreadType];
+      const num = spread.positions.length;
+
+      if (shuffled.length < num + 1) {
+        alert('牌組數量不足以完成此占卜');
+        return;
+      }
+
+      setLoading(true);
+
+      setTimeout(() => {
+        const drawn = [];
+        for (let i = 0; i < num; i++) {
+          drawn.push({
+            ...shuffled[i],
+            position: spread.positions[i],
+            orientation: rng() > 0.5 ? '正位' : '逆位'
+          });
+        }
+        const bottomCard = {
+          ...shuffled[shuffled.length - 1],
+          position: '底牌',
+          orientation: rng() > 0.5 ? '正位' : '逆位'
         };
 
-        let lastReadingData = {};
+        lastReadingData = { 
+          seed, 
+          deckType, 
+          spreadType, 
+          spreadName, 
+          question, 
+          drawnCards: drawn, 
+          bottomCard,
+          timestamp: Date.now()
+        };
 
-        const themeToggle = document.getElementById('themeToggle');
-        const body = document.body;
+        // Save to history
+        readingHistory.unshift(lastReadingData);
+        if (readingHistory.length > 50) readingHistory = readingHistory.slice(0, 50);
+        localStorage.setItem('readingHistory', JSON.stringify(readingHistory));
 
-        const savedTheme = localStorage.getItem('theme');
-        if (savedTheme === 'light') {
-            body.classList.remove('dark-mode');
-        } else {
-            body.classList.add('dark-mode');
-        }
+        renderResults(lastReadingData);
+        updateURL({ seed, deck: deckType, spread: spreadType, q: question ? encodeURIComponent(question) : null });
+        setLoading(false);
 
-        themeToggle.addEventListener('click', () => {
-            body.classList.toggle('dark-mode');
-            if (body.classList.contains('dark-mode')) {
-                localStorage.setItem('theme', 'dark');
-            } else {
-                localStorage.setItem('theme', 'light');
-            }
-        });
+        const resultsTop = document.getElementById('results');
+        if (resultsTop) resultsTop.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 220);
+    }
 
-        function performReading() {
-            const deckType = document.getElementById('deckType').value;
-            const originalDeck = deckType === 'major' ? [...majorArcana] : [...fullTarotCards];
-            
-            let shuffledDeck = originalDeck;
-            let currentIndex = shuffledDeck.length;
-            while (currentIndex !== 0) {
-                let randomIndex = Math.floor(Math.random() * currentIndex);
-                currentIndex--;
-                [shuffledDeck[currentIndex], shuffledDeck[randomIndex]] = [shuffledDeck[randomIndex], shuffledDeck[currentIndex]];
-            }
+    function renderResults(data) {
+      const { spreadName, question, drawnCards, bottomCard, seed } = data;
+      let html = '';
 
-            const spreadSelect = document.getElementById('spreadType');
-            const spreadType = spreadSelect.value;
-            const spreadName = spreadSelect.options[spreadSelect.selectedIndex].getAttribute('data-spread-name');
-            const spread = spreads[spreadType];
-            const numCards = spread.positions.length;
-            
-            if (shuffledDeck.length < numCards + 1) { 
-                alert("牌組數量不足以完成此占卜！"); 
-                return; 
-            }
+      html += `
+        <div class="panel fade-in">
+          <div class="results-head">
+            <h2 class="results-title">結果</h2>
+            <span class="badge" title="牌陣">${escapeHTML(spreadName)}</span>
+            <div class="meta">
+              <span>SEED ${escapeHTML(seed)}</span>
+              <span class="meta-divider" aria-hidden="true"></span>
+              ${question ? `<span title="問題">${escapeHTML(question)}</span>` : `<span>無問題</span>`}
+            </div>
+          </div>
 
-            const drawnCards = [];
-            for (let i = 0; i < numCards; i++) {
-                drawnCards.push({
-                    ...shuffledDeck[i],
-                    position: spread.positions[i],
-                    orientation: Math.random() > 0.5 ? '正位' : '逆位'
-                });
-            }
-            const bottomCard = {
-                ...shuffledDeck[shuffledDeck.length - 1],
-                position: '本次占卜的底牌',
-                orientation: Math.random() > 0.5 ? '正位' : '逆位'
-            };
-            
-            let analysisText = '';
-            if (deckType === 'full') {
-                const analysis = { major: 0, wands: 0, cups: 0, swords: 0, pentacles: 0 };
-                drawnCards.forEach(card => {
-                    switch (card.suit) {
-                        case "Major Arcana": analysis.major++; break;
-                        case "Wands": analysis.wands++; break;
-                        case "Cups": analysis.cups++; break;
-                        case "Swords": analysis.swords++; break;
-                        case "Pentacles": analysis.pentacles++; break;
-                    }
-                });
-                analysisText = generateAnalysisText(analysis, drawnCards.length);
-            }
-
-            lastReadingData = { spreadName, drawnCards, bottomCard, analysisText };
-
-            let html = '<h3>占卜結果</h3>';
-            drawnCards.forEach(card => {
-                html += `
-                    <div class="card">
-                        <div class="position">${card.position}</div>
-                        <div class="card-body">
-                            <span class="card-name">${card.name}</span>
-                            <span class="card-orientation">${card.orientation}</span>
-                        </div>
-                        <div class="card-footer">
-                            <span class="card-number">#${card.number}</span>
-                            <span class="card-english">${card.englishName}</span>
-                        </div>
+          <div class="cards">
+            ${drawnCards.map(c => {
+        const rev = c.orientation === '逆位';
+        return `
+                <article class="card" tabindex="0" aria-label="${escapeHTML(c.position)}：${escapeHTML(c.name)} ${escapeHTML(c.orientation)}">
+                  <div class="position">${escapeHTML(c.position)}</div>
+                  <div class="row">
+                    <div class="name">${escapeHTML(c.name)}</div>
+                    <div class="orientation">
+                      <span class="ori-icon ${rev ? 'rev' : ''}" aria-hidden="true"></span>
+                      ${escapeHTML(c.orientation)}
                     </div>
-                `;
-            });
-
-            html += `
-                <div class="card bottom-card">
-                    <div class="position">${bottomCard.position}</div>
-                    <div class="card-body">
-                        <span class="card-name">${bottomCard.name}</span>
-                        <span class="card-orientation">${bottomCard.orientation}</span>
-                    </div>
-                    <div class="card-footer">
-                        <span class="card-number">#${bottomCard.number}</span>
-                        <span class="card-english">${bottomCard.englishName}</span>
-                    </div>
+                  </div>
+                  <div class="foot">
+                    <span>#${escapeHTML(c.number)}</span>
+                    <span>${escapeHTML(c.englishName)}</span>
+                  </div>
+                </article>
+              `;
+      }).join('')}
+            <article class="card bottom" tabindex="0" aria-label="底牌：${escapeHTML(bottomCard.name)} ${escapeHTML(bottomCard.orientation)}">
+              <div class="position">底牌</div>
+              <div class="row">
+                <div class="name">${escapeHTML(bottomCard.name)}</div>
+                <div class="orientation">
+                  <span class="ori-icon ${bottomCard.orientation === '逆位' ? 'rev' : ''}" aria-hidden="true"></span>
+                  ${escapeHTML(bottomCard.orientation)}
                 </div>
-            `;
+              </div>
+              <div class="foot">
+                <span>#${escapeHTML(bottomCard.number)}</span>
+                <span>${escapeHTML(bottomCard.englishName)}</span>
+              </div>
+            </article>
+          </div>
 
-            if (analysisText) {
-                html += `<div class="analysis-summary"><h4>牌陣元素分析</h4><p>${analysisText}</p></div>`;
+          <div class="results-actions">
+            <button id="copyRich" class="btn btn-outline" aria-label="複製結果（含格式）">複製結果</button>
+            <button id="copyPlain" class="btn btn-outline" aria-label="複製純文字">複製純文字</button>
+          </div>
+        </div>
+      `;
+
+      resultsEl.innerHTML = html;
+
+      document.getElementById('copyRich').addEventListener('click', () => copyResults(false));
+      document.getElementById('copyPlain').addEventListener('click', () => copyResults(true));
+    }
+
+    function copyResults(plainOnly = false) {
+      const { spreadName, question, drawnCards, bottomCard } = lastReadingData || {};
+      if (!spreadName) return;
+
+      const url = new URL(location.href).toString();
+
+      const header = `占卜主題:${spreadName}${question ? `\n問題:${question}` : ''}\n--------------------`;
+      const lines = drawnCards.map(c => `${c.position}:${c.name} (${c.englishName}) #${c.number} - ${c.orientation}`);
+      const bottom = `--------------------\n底牌:${bottomCard.name} (${bottomCard.englishName}) #${bottomCard.number} - ${bottomCard.orientation}`;
+      const footer = `\n分享連結:${url}`;
+      const textToCopy = [header, ...lines, bottom, footer].join('\n');
+
+      const htmlVersion = `
+        <div><strong>占卜主題:</strong>${escapeHTML(spreadName)}${question ? `<br><strong>問題:</strong>${escapeHTML(question)}` : ''}</div>
+        <hr>
+        <ul>
+          ${drawnCards.map(c => `<li>${escapeHTML(c.position)}:<strong>${escapeHTML(c.name)}</strong> (${escapeHTML(c.englishName)}) #${escapeHTML(c.number)} - ${escapeHTML(c.orientation)}</li>`).join('')}
+        </ul>
+        <div><strong>底牌:</strong>${escapeHTML(bottomCard.name)} (${escapeHTML(bottomCard.englishName)} #${escapeHTML(bottomCard.number)} - ${escapeHTML(bottomCard.orientation)}</div>
+        <div style="margin-top:8px">分享連結:<a href="${escapeHTML(url)}">${escapeHTML(url)}</a></div>
+      `;
+
+      if (!plainOnly && navigator.clipboard && navigator.clipboard.write) {
+        const htmlBlob = new Blob([htmlVersion], { type: "text/html" });
+        const textBlob = new Blob([textToCopy], { type: "text/plain" });
+        const item = new ClipboardItem({ "text/html": htmlBlob, "text/plain": textBlob });
+        navigator.clipboard.write([item]).then(() => flashCopyButton()).catch(() => fallbackCopy(textToCopy));
+      } else if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(textToCopy).then(() => flashCopyButton()).catch(() => fallbackCopy(textToCopy));
+      } else {
+        fallbackCopy(textToCopy);
+      }
+    }
+
+    function flashCopyButton() {
+      const btn = document.getElementById('copyRich');
+      if (!btn) return;
+      const orig = btn.textContent;
+      btn.textContent = '已複製！';
+      btn.style.borderColor = 'transparent';
+      btn.style.background = 'var(--success)';
+      btn.style.color = '#fff';
+      setTimeout(() => {
+        btn.textContent = orig;
+        btn.removeAttribute('style');
+      }, 1400);
+    }
+
+    function fallbackCopy(text) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      try {
+        document.execCommand('copy');
+        flashCopyButton();
+      } catch (e) {
+        alert('複製失敗，請手動選取文字');
+      }
+      document.body.removeChild(ta);
+    }
+
+    // ----- History -----
+    function renderHistory() {
+      const historyList = document.getElementById('historyList');
+      if (readingHistory.length === 0) {
+        historyList.innerHTML = '<div class="history-empty">尚無歷史記錄</div>';
+        return;
+      }
+
+      historyList.innerHTML = readingHistory.map((item, idx) => `
+        <div class="history-item" data-index="${idx}">
+          <div class="history-header">
+            <span class="history-spread">${escapeHTML(item.spreadName)}</span>
+            <span class="history-time">${formatDate(item.timestamp)}</span>
+          </div>
+          ${item.question ? `<div class="history-question">${escapeHTML(item.question)}</div>` : ''}
+        </div>
+      `).join('');
+
+      document.querySelectorAll('.history-item').forEach(item => {
+        item.addEventListener('click', () => {
+          const idx = parseInt(item.dataset.index);
+          const data = readingHistory[idx];
+          performReading(data.seed);
+          switchTab('reading');
+        });
+      });
+    }
+
+    document.getElementById('clearHistory').addEventListener('click', () => {
+      if (confirm('確定要清除所有歷史記錄嗎？')) {
+        readingHistory = [];
+        localStorage.setItem('readingHistory', '[]');
+        renderHistory();
+      }
+    });
+
+    // ----- Statistics -----
+    function renderStatistics() {
+      const statsContent = document.getElementById('statisticsContent');
+      
+      if (readingHistory.length === 0) {
+        statsContent.innerHTML = '<div class="history-empty">尚無統計資料</div>';
+        return;
+      }
+
+      const totalReadings = readingHistory.length;
+      let totalCards = 0;
+      let uprightCount = 0;
+      let reversedCount = 0;
+      const cardCount = {};
+      const suitCount = { 'Major Arcana': 0, 'Wands': 0, 'Cups': 0, 'Swords': 0, 'Pentacles': 0 };
+
+      readingHistory.forEach(reading => {
+        const allCards = [...reading.drawnCards, reading.bottomCard];
+        totalCards += allCards.length;
+        allCards.forEach(card => {
+          if (card.orientation === '正位') uprightCount++;
+          else reversedCount++;
+
+          const key = card.name;
+          cardCount[key] = (cardCount[key] || 0) + 1;
+          suitCount[card.suit]++;
+        });
+      });
+
+      const topCards = Object.entries(cardCount)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10);
+
+      statsContent.innerHTML = `
+        <div class="stat-card">
+          <div class="stat-title">總占卜次數</div>
+          <div class="stat-value">${totalReadings}</div>
+          <div class="stat-label">次</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-title">總抽牌數</div>
+          <div class="stat-value">${totalCards}</div>
+          <div class="stat-label">張</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-title">正位比例</div>
+          <div class="stat-value">${((uprightCount / totalCards) * 100).toFixed(1)}%</div>
+          <div class="stat-label">${uprightCount} / ${totalCards}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-title">逆位比例</div>
+          <div class="stat-value">${((reversedCount / totalCards) * 100).toFixed(1)}%</div>
+          <div class="stat-label">${reversedCount} / ${totalCards}</div>
+        </div>
+        <div class="stat-card" style="grid-column: 1 / -1;">
+          <div class="stat-title">花色分布</div>
+          <div class="stat-list">
+            ${Object.entries(suitCount).map(([suit, count]) => `
+              <div class="stat-item">
+                <span class="stat-item-name">${suit}</span>
+                <span class="stat-item-count">${count} 次 (${((count / totalCards) * 100).toFixed(1)}%)</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+        <div class="stat-card" style="grid-column: 1 / -1;">
+          <div class="stat-title">最常出現的牌（Top 10）</div>
+          <div class="stat-list">
+            ${topCards.map(([name, count]) => `
+              <div class="stat-item">
+                <span class="stat-item-name">${escapeHTML(name)}</span>
+                <span class="stat-item-count">${count} 次</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    // ----- Card Database -----
+    function renderCardDatabase() {
+      const grid = document.getElementById('cardDatabaseGrid');
+      const searchInput = document.getElementById('cardSearch');
+
+      function render(filter = '') {
+        const filtered = fullTarotCards.filter(card =>
+          card.name.includes(filter) || card.englishName.toLowerCase().includes(filter.toLowerCase())
+        );
+
+        grid.innerHTML = filtered.map(card => `
+          <div class="card-db-item">
+            <div class="card-db-number">#${escapeHTML(card.number)}</div>
+            <div class="card-db-name">${escapeHTML(card.name)}</div>
+            <div class="card-db-english">${escapeHTML(card.englishName)}</div>
+            <span class="card-db-suit">${escapeHTML(card.suit)}</span>
+          </div>
+        `).join('');
+      }
+
+      searchInput.addEventListener('input', (e) => {
+        render(e.target.value);
+      });
+
+      render();
+    }
+
+    // ----- Settings -----
+    document.getElementById('exportData').addEventListener('click', () => {
+      const data = {
+        version: '3.0.1',
+        history: readingHistory,
+        exportDate: new Date().toISOString()
+      };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `tarot-reading-backup-${Date.now()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    document.getElementById('importData').addEventListener('click', () => {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.json';
+      input.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            const data = JSON.parse(e.target.result);
+            if (data.history && Array.isArray(data.history)) {
+              readingHistory = data.history;
+              localStorage.setItem('readingHistory', JSON.stringify(readingHistory));
+              alert('資料匯入成功！');
+            } else {
+              alert('檔案格式錯誤');
             }
-            
-            html += `<button id="copyButton" onclick="copyResults()">複製結果</button>`;
-            
-            const resultsDiv = document.getElementById('results');
-            resultsDiv.innerHTML = html;
-            resultsDiv.classList.add('show');
-        }
+          } catch (err) {
+            alert('檔案解析失敗');
+          }
+        };
+        reader.readAsText(file);
+      });
+      input.click();
+    });
 
-        function generateAnalysisText(analysis, totalCards) {
-            let minorArcana = totalCards - analysis.major;
-            let text = `牌陣組成：大阿卡納 ${analysis.major} 張 / 小阿卡納 ${minorArcana} 張<br>`;
-            text += `元素分佈：火(權杖) ${analysis.wands} / 水(聖杯) ${analysis.cups} / 風(寶劍) ${analysis.swords} / 土(錢幣) ${analysis.pentacles}`;
-            return text;
-        }
+    // ----- Share -----
+    shareBtn.addEventListener('click', () => {
+      const url = new URL(location.href).toString();
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(() => {
+          const orig = shareBtn.textContent;
+          shareBtn.textContent = '已複製連結';
+          setTimeout(() => shareBtn.textContent = orig, 1200);
+        });
+      } else {
+        alert(url);
+      }
+    });
 
-        function copyResults() {
-            const { spreadName, drawnCards, bottomCard, analysisText } = lastReadingData;
-            if (!spreadName) return;
+    // ----- Read Button -----
+    readBtn.addEventListener('click', () => performReading());
 
-            let textToCopy = `占卜主題：${spreadName}\n`;
-            textToCopy += '--------------------\n';
-            drawnCards.forEach(card => {
-                textToCopy += `${card.position}：${card.name} (${card.englishName}) #${card.number} - ${card.orientation}\n`;
-            });
-            textToCopy += '--------------------\n';
-            textToCopy += `${bottomCard.position}：${bottomCard.name} (${bottomCard.englishName}) #${bottomCard.number} - ${bottomCard.orientation}\n`;
-            
-            if (analysisText) {
-                const plainAnalysisText = analysisText.replace(/<br>/g, "\n");
-                textToCopy += `\n【牌陣元素分析】\n${plainAnalysisText}`;
-            }
+    // ----- Restore from URL -----
+    (function restore() {
+      const url = new URL(location.href);
+      const deck = url.searchParams.get('deck');
+      const spread = url.searchParams.get('spread');
+      const seed = url.searchParams.get('seed');
+      const q = url.searchParams.get('q');
 
-            navigator.clipboard.writeText(textToCopy).then(() => {
-                const copyBtn = document.getElementById('copyButton');
-                if (copyBtn) {
-                    copyBtn.innerText = '已複製！';
-                    setTimeout(() => { copyBtn.innerText = '複製結果'; }, 2000);
-                }
-            }).catch(err => {
-                console.error('複製失敗: ', err);
-                alert('複製失敗，您的瀏覽器可能不支援。');
-            });
-        }
-    </script>
+      if (deck) document.getElementById('deckType').value = deck;
+      if (spread) document.getElementById('spreadType').value = spread;
+      if (q) document.getElementById('question').value = decodeURIComponent(q);
+
+      updateSpreadInfo();
+
+      if (seed) {
+        performReading(Number(seed));
+      }
+    })();
+
+    // ----- Footer Links -----
+    document.getElementById('linkAbout').addEventListener('click', (e) => {
+      e.preventDefault();
+      alert('這是一個開源的塔羅牌占卜工具，僅提供抽牌功能，不包含解讀。\n\n所有資料儲存於瀏覽器本地，絕不上傳至伺服器。');
+    });
+
+    document.getElementById('linkPrivacy').addEventListener('click', (e) => {
+      e.preventDefault();
+      alert('隱私政策：\n\n1. 本站不收集任何個人資料\n2. 所有占卜記錄僅存於您的瀏覽器\n3. 不使用 Cookie 追蹤\n4. 不傳送資料至第三方');
+    });
+  </script>
 </body>
 </html>
