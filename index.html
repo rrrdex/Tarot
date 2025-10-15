@@ -3056,68 +3056,104 @@
       });
     });
 
-    // ==================== CARD RENDERING ====================
-    function renderCard(card, isBottom = false) {
-      const gradient = suitGradients[card.suit];
-      const emoji = cardEmojis[card.name] || '🎴';
-      
-      let cardHTML = '';
-      let visualClass = '';
-      
-      if (visualStyle === 'text') {
-        visualClass = '';
-      } else if (visualStyle === 'css') {
-        visualClass = 'visual-css';
-      } else if (visualStyle === 'emoji') {
-        visualClass = 'visual-emoji';
-      } else if (visualStyle === 'api') {
-        visualClass = 'visual-api';
-      }
-      
-      cardHTML = `
-        <div class="card ${isBottom ? 'bottom' : ''} ${visualClass} slide-in" 
-             style="${visualStyle === 'css' ? `--card-gradient-start: ${gradient.start}; --card-gradient-end: ${gradient.end};` : ''}"
-             tabindex="0">
-          ${visualStyle === 'api' ? `
-            <div class="card-image-container">
-              <img class="card-image" 
-                   src="https://tarot-api-3hv5.onrender.com/api/v1/cards/${card.nameKey}" 
-                   alt="${card.name}"
-                   loading="lazy"
-                   onerror="this.parentElement.innerHTML='<div class=card-image-loading>載入圖片...</div>'"/>
-            </div>
-            <div class="card-info">
-          ` : ''}
-          
-          <div class="card-position">${escapeHTML(card.position)}</div>
-          
-          ${visualStyle === 'css' ? `
-            <div class="card-visual-number">${escapeHTML(card.number)}</div>
-            <div class="card-visual-emoji">${emoji}</div>
-          ` : ''}
-          
-          ${visualStyle === 'emoji' ? `
-            <div class="card-emoji-large">${emoji}</div>
-          ` : ''}
-          
-          <div class="card-content">
-            <div class="card-name">${escapeHTML(card.name)}</div>
-            <div class="card-orientation">
-              <span class="ori-icon ${card.orientation === '逆位' ? 'reversed' : ''}"></span>
-              ${escapeHTML(card.orientation)}
-            </div>
-          </div>
-          <div class="card-footer">
-            <span>${escapeHTML(card.number)}</span>
-            <span>${escapeHTML(card.englishName)}</span>
-          </div>
-          
-          ${visualStyle === 'api' ? '</div>' : ''}
+// ==================== CARD RENDERING ====================
+function renderCard(card, isBottom = false) {
+  const gradient = suitGradients[card.suit];
+  const emoji = cardEmojis[card.name] || '🎴';
+  
+  let cardHTML = '';
+  let visualClass = '';
+  
+  if (visualStyle === 'text') {
+    visualClass = '';
+  } else if (visualStyle === 'css') {
+    visualClass = 'visual-css';
+  } else if (visualStyle === 'emoji') {
+    visualClass = 'visual-emoji';
+  } else if (visualStyle === 'api') {
+    visualClass = 'visual-api';
+  }
+  
+  // 修正：構建正確的 API URL
+  let apiImageUrl = '';
+  if (visualStyle === 'api') {
+    // 使用正確的 API 端點
+    apiImageUrl = `https://tarot-api-3hv5.onrender.com/api/v1/cards/${card.nameKey}`;
+    // 備用方案：如果主 API 失敗，使用另一個 Tarot API
+    // apiImageUrl = `https://tarotapi.dev/api/v1/cards/${card.nameKey}`;
+  }
+  
+  cardHTML = `
+    <div class="card ${isBottom ? 'bottom' : ''} ${visualClass} slide-in" 
+         style="${visualStyle === 'css' ? `--card-gradient-start: ${gradient.start}; --card-gradient-end: ${gradient.end};` : ''}"
+         tabindex="0">
+      ${visualStyle === 'api' ? `
+        <div class="card-image-container">
+          <div class="card-image-loading">載入中...</div>
+          <img class="card-image" 
+               src="${apiImageUrl}" 
+               alt="${card.name}"
+               loading="lazy"
+               style="display: none;"
+               onload="this.style.display='block'; this.previousElementSibling.style.display='none';"
+               onerror="handleImageError(this, '${escapeHTML(card.name)}', '${emoji}')"/>
         </div>
-      `;
+        <div class="card-info">
+      ` : ''}
       
-      return cardHTML;
-    }
+      <div class="card-position">${escapeHTML(card.position)}</div>
+      
+      ${visualStyle === 'css' ? `
+        <div class="card-visual-number">${escapeHTML(card.number)}</div>
+        <div class="card-visual-emoji">${emoji}</div>
+      ` : ''}
+      
+      ${visualStyle === 'emoji' ? `
+        <div class="card-emoji-large">${emoji}</div>
+      ` : ''}
+      
+      <div class="card-content">
+        <div class="card-name">${escapeHTML(card.name)}</div>
+        <div class="card-orientation">
+          <span class="ori-icon ${card.orientation === '逆位' ? 'reversed' : ''}"></span>
+          ${escapeHTML(card.orientation)}
+        </div>
+      </div>
+      <div class="card-footer">
+        <span>${escapeHTML(card.number)}</span>
+        <span>${escapeHTML(card.englishName)}</span>
+      </div>
+      
+      ${visualStyle === 'api' ? '</div>' : ''}
+    </div>
+  `;
+  
+  return cardHTML;
+}
+
+// 新增：圖片載入錯誤處理函數
+function handleImageError(img, cardName, emoji) {
+  const container = img.parentElement;
+  container.innerHTML = `
+    <div style="
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-secondary);
+      gap: var(--space-4);
+      padding: var(--space-6);
+    ">
+      <div style="font-size: 64px;">${emoji}</div>
+      <div style="font-size: var(--text-sm); color: var(--text-secondary); text-align: center;">
+        圖片載入失敗<br/>
+        <span style="font-size: var(--text-xs);">${cardName}</span>
+      </div>
+    </div>
+  `;
+}
 
     // ==================== ELEMENTS ====================
     const resultsEl = document.getElementById('results');
