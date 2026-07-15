@@ -1,0 +1,1364 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh-Hant" xml:lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>亨利的祈禱手冊 Henry’s Prayer Journal</title>
+  <style>
+:root {
+  --parchment: #f5ecd7;
+  --ink: #3b2e1e;
+  --rubric: #8a1f1f;
+  --gold: #a97e2f;
+  --line: #cbb98e;
+  --card: rgba(255, 252, 240, 0.55);
+}
+html {
+  background: #2e241a;
+  scroll-behavior: smooth;
+}
+body {
+  margin: 2.5rem auto;
+  max-width: 72em;
+  padding: 3.2rem 3.8rem;
+  background:
+    radial-gradient(ellipse at top left, rgba(255,255,255,0.4), transparent 55%),
+    radial-gradient(ellipse at bottom right, rgba(120,90,40,0.14), transparent 55%),
+    var(--parchment);
+  color: var(--ink);
+  font-family: 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, PMingLiU, '新細明體', 'Noto Serif TC', serif;
+  line-height: 1.9;
+  border: 1px solid #a88b5f;
+  outline: 2px solid #8a6d3f;
+  outline-offset: -12px;
+  box-shadow: 0 12px 45px rgba(0,0,0,0.55);
+  hyphens: auto;
+  overflow-wrap: break-word;
+  text-rendering: optimizeLegibility;
+  font-kerning: normal;
+}
+section[id] { scroll-margin-top: 1rem; }
+p { margin: 0.9em 0; }
+a { color: var(--rubric); }
+a:visited { color: var(--rubric); }
+img { max-width: 100%; }
+h1 {
+  text-align: center;
+  color: var(--rubric);
+  font-size: 1.95rem;
+  line-height: 1.5;
+  letter-spacing: 0.05em;
+  margin: 0.2em 0 0.5em;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.55);
+}
+h2 {
+  color: var(--rubric);
+  font-size: 1.45rem;
+  margin-top: 2.8em;
+  padding-bottom: 0.3em;
+  border-bottom: 3px double var(--gold);
+  letter-spacing: 0.04em;
+}
+h2::before { content: "❧ "; color: var(--gold); }
+h3 {
+  color: #5a3d1e;
+  font-size: 1.16rem;
+  margin-top: 2em;
+  padding-left: 0.6em;
+  border-left: 4px solid var(--rubric);
+}
+h4 {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--rubric);
+  opacity: 0.85;
+  margin: 0 0 0.7em;
+  font-weight: 700;
+}
+hr {
+  border: none;
+  margin: 1.4em 0;
+}
+hr::before {
+  content: "❦ ❦ ❦";
+  display: block;
+  text-align: center;
+  color: var(--gold);
+  letter-spacing: 1.1em;
+  padding-left: 1.1em;
+  font-size: 0.9em;
+}
+section.level4 hr { display: none; }
+section.level4 {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 0.9em 1.25em 1em;
+  margin-top: 1em;
+  min-width: 0;
+}
+section.level4 em { color: #7a6544; font-size: 0.92em; }
+section.level3 { margin-bottom: 2.2em; }
+section.level3 > p:first-of-type {
+  font-size: 0.94em;
+  color: #6b5233;
+  line-height: 1.8;
+}
+section.level3 > p:first-of-type strong { color: var(--rubric); }
+section.level2 > p:first-of-type { color: #6b5233; }
+section.level2 > p:first-of-type strong { color: var(--rubric); }
+@media (min-width: 900px) {
+  section.level3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 1.4em;
+    align-items: stretch;
+  }
+  section.level3 > h3,
+  section.level3 > p,
+  section.level3 > hr { grid-column: 1 / -1; }
+  section.level3:has(> section.level4:nth-of-type(3)) { display: block; }
+}
+nav#TOC {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 1.4em 1.9em 1.6em;
+  margin: 2em 0 2.5em;
+  font-size: 0.95em;
+}
+nav#TOC p.toc-title {
+  text-align: center;
+  color: var(--rubric);
+  font-weight: bold;
+  font-size: 1.15em;
+  letter-spacing: 0.35em;
+  margin: 0 0 0.9em;
+}
+nav#TOC ul { list-style: none; padding: 0; margin: 0; }
+nav#TOC > ul { columns: 2; column-gap: 2.6em; }
+nav#TOC > ul > li { break-inside: avoid; margin-bottom: 0.85em; }
+nav#TOC > ul > li > a { font-weight: bold; color: var(--rubric); }
+nav#TOC ul ul { padding-left: 1.1em; margin-top: 0.1em; }
+nav#TOC ul ul li { line-height: 1.75; }
+nav#TOC a { text-decoration: none; color: var(--ink); }
+nav#TOC > ul > li > a { color: var(--rubric); }
+nav#TOC a:hover { color: var(--rubric); text-decoration: underline; }
+a.top-link {
+  position: fixed;
+  right: 1.2rem;
+  bottom: 1.2rem;
+  background: var(--rubric);
+  color: #f5ecd7;
+  text-decoration: none;
+  padding: 0.5em 0.95em;
+  border-radius: 3px;
+  font-size: 0.9em;
+  border: 1px solid #5e1414;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.4);
+  z-index: 10;
+}
+a.top-link:hover { background: #a12727; color: #ffffff; }
+blockquote {
+  margin: 1em 0 1em 1.5em;
+  padding-left: 1em;
+  border-left: 2px solid var(--line);
+  color: #6b5233;
+}
+table {
+  margin: 1em 0;
+  border-collapse: collapse;
+  width: 100%;
+  overflow-x: auto;
+  display: block;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+th, td { padding: 0.25em 0.6em; border-bottom: 1px solid var(--line); }
+ol, ul { padding-left: 1.7em; margin-top: 1em; }
+li > ol, li > ul { margin-top: 0; }
+code {
+  font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+  font-size: 85%;
+  white-space: pre-wrap;
+}
+@media (max-width: 700px) {
+  body {
+    margin: 0;
+    padding: 1.4rem 1.1rem;
+    max-width: 100%;
+    border: none;
+    outline: none;
+    box-shadow: none;
+    font-size: 0.95em;
+  }
+  h1 { font-size: 1.45rem; }
+  h2 { font-size: 1.25rem; }
+  nav#TOC > ul { columns: 1; }
+  a.top-link { right: 0.8rem; bottom: 0.8rem; }
+}
+@media print {
+  html { background: #ffffff; }
+  body {
+    background: #ffffff;
+    color: #000000;
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+    border: none;
+    outline: none;
+    box-shadow: none;
+    font-size: 11.5pt;
+  }
+  a.top-link { display: none; }
+  section.level4 { background: none; }
+  nav#TOC a { color: #000000; }
+  p, h2, h3 { orphans: 3; widows: 3; }
+  h2, h3, h4 { page-break-after: avoid; }
+}
+</style>
+</head>
+<body>
+<section id="亨利史凱利茲的祈禱手冊-henrys-prayer-journal" class="level1">
+<h1>⚔️ 亨利．史凱利茲的祈禱手冊 (Henry’s Prayer Journal)</h1>
+<hr />
+<a class="top-link" href="#TOC">☰ 目錄</a>
+<nav id="TOC">
+<p class="toc-title">目　錄</p>
+<ul>
+<li><a href="#第一部分每日定時課-the-daily-office">第一部分：每日定時課</a>
+<ul>
+<li><a href="#晨禱午禱與晚禱三鐘經-the-angelus">1. 三鐘經</a></li>
+<li><a href="#晨起感恩禱-morning-thanksgiving">2. 晨起感恩禱</a></li>
+<li><a href="#核心禱告天主經-the-lords-prayer">3. 天主經</a></li>
+<li><a href="#晚禱宗徒信經-the-apostles-creed">4. 宗徒信經</a></li>
+</ul></li>
+<li><a href="#第二部分所求與渴望-needs-desires">第二部分：所求與渴望</a>
+<ul>
+<li><a href="#勇氣之禱聖詠-144篇-psalm-144">5. 勇氣之禱：聖詠144</a></li>
+<li><a href="#生計之禱求食糧與財富-prayer-for-provision-prosperity">6. 生計之禱：求食糧與財富</a></li>
+<li><a href="#求偶之禱向聖辣法爾祈禱-prayer-to-st.-raphael">7. 求偶之禱：聖辣法爾</a></li>
+<li><a href="#婚姻意向托比亞的禱詞-prayer-of-tobias">8. 婚姻意向：托比亞的禱詞</a></li>
+</ul></li>
+<li><a href="#第三部分智慧與守護-wisdom-providence">第三部分：智慧與守護</a>
+<ul>
+<li><a href="#求智之禱伏求聖神降臨-come-holy-spirit">9. 伏求聖神降臨</a></li>
+<li><a href="#守護之禱聖詠-23篇-psalm-23">10. 守護之禱：聖詠23</a></li>
+</ul></li>
+<li><a href="#第四部分悔罪與淨化-penance-contrition">第四部分：悔罪與淨化</a>
+<ul>
+<li><a href="#懺悔經-the-confiteor">11. 懺悔經</a></li>
+<li><a href="#痛悔經-act-of-contrition">12. 痛悔經</a></li>
+<li><a href="#悔罪之禱聖詠-51篇-psalm-51">13. 悔罪之禱：聖詠51</a></li>
+</ul></li>
+<li><a href="#第五部分寬恕與和平-forgiveness-peace">第五部分：寬恕與和平</a>
+<ul>
+<li><a href="#為仇敵祈禱-prayer-for-enemies">14. 為仇敵祈禱</a></li>
+<li><a href="#求和平頌-da-pacem-domine">15. 求和平頌</a></li>
+</ul></li>
+<li><a href="#第六部分夜禱-night-prayers">第六部分：夜禱</a>
+<ul>
+<li><a href="#夜間守護聖詠-91篇-psalm-91">16. 夜間守護：聖詠91</a></li>
+<li><a href="#又聖母經-salve-regina">17. 又聖母經</a></li>
+<li><a href="#護守天使經-angele-dei">18. 護守天使經</a></li>
+<li><a href="#臨終託付頌-in-manus-tuas">19. 臨終託付頌</a></li>
+<li><a href="#家宅祝福禱-visita-quaesumus">20. 家宅祝福禱</a></li>
+</ul></li>
+<li><a href="#第七部分騎士的武裝-the-knights-armour">第七部分：騎士的武裝</a>
+<ul>
+<li><a href="#基督的靈魂-anima-christi">21. 基督的靈魂</a></li>
+<li><a href="#仰賴聖母誦-sub-tuum-praesidium">22. 仰賴聖母誦</a></li>
+<li><a href="#騎士主保向聖喬治祈禱-prayer-to-st.-george">23. 騎士主保：聖喬治</a></li>
+<li><a href="#善終之禱向聖巴巴拉祈禱-prayer-to-st.-barbara">24. 善終之禱：聖巴巴拉</a></li>
+<li><a href="#病中之禱向聖巴斯弟盎祈禱-prayer-to-st.-sebastian">25. 病中之禱：聖巴斯弟盎</a></li>
+<li><a href="#鍛造之禱向聖艾利吉祈禱-prayer-to-st.-eligius">26. 鍛造之禱：聖艾利吉</a></li>
+</ul></li>
+<li><a href="#第八部分旅途與日常-the-road-daily-life">第八部分：旅途與日常</a>
+<ul>
+<li><a href="#旅途之禱托彼特的祝福-the-blessing-of-tobit">27. 旅途之禱：托彼特的祝福</a></li>
+<li><a href="#狩獵之禱向聖胡伯特祈禱-prayer-to-st.-hubert">28. 狩獵之禱：聖胡伯特</a></li>
+<li><a href="#尋失物之禱向聖安多尼祈禱-prayer-to-st.-anthony">29. 尋失物之禱：聖安多尼</a></li>
+</ul></li>
+<li><a href="#第九部分波西米亞之聲-voices-of-bohemia">第九部分：波西米亞之聲</a>
+<ul>
+<li><a href="#上主求你垂憐-hospodine-pomiluj-ny">30. 上主，求你垂憐</a></li>
+<li><a href="#聖溫塞斯拉斯讚歌-svaty-vaclave">31. 聖溫塞斯拉斯讚歌</a></li>
+</ul></li>
+<li><a href="#第十部分凱旋感恩-thanksgiving">第十部分：凱旋感恩</a>
+<ul>
+<li><a href="#讚主頌節選-te-deum">32. 讚主頌（節選）</a></li>
+</ul></li>
+<li><a href="#第十一部分結尾短頌-doxology">第十一部分：結尾短頌</a>
+<ul>
+<li><a href="#聖三光榮頌-glory-be">33. 聖三光榮頌</a></li>
+<li><a href="#亨利的口頭禪-henrys-motto">34. 亨利的口頭禪</a></li>
+</ul></li>
+<li><a href="#附錄亨利的拉丁文與生活祈禱-appendix-latin-life-prayers">附錄：拉丁文與生活祈禱</a>
+<ul>
+<li><a href="#a.-拉丁文原版天主經-pater-noster-in-latin">A. 拉丁文原版天主經</a></li>
+<li><a href="#b.-餐前禱告-grace-before-meals">B. 餐前禱告</a></li>
+<li><a href="#c.-飯後禱告-grace-after-meals">C. 飯後禱告</a></li>
+<li><a href="#d.-為亡者祈禱-prayer-for-the-dead-requiem">D. 為亡者祈禱（安息經）</a></li>
+<li><a href="#e.-為亡者的聖詠聖詠-130篇-de-profundis">E. 聖詠130（De Profundis）</a></li>
+<li><a href="#f.-玫瑰經誦唸指南-how-to-pray-the-rosary">F. 玫瑰經誦唸指南</a></li>
+</ul></li>
+</ul>
+</nav>
+<section id="第一部分每日定時課-the-daily-office" class="level2">
+<h2>第一部分：每日定時課 (The Daily Office)</h2>
+<p><strong>用途：</strong> 建立紀律，安頓身心，將一天的時間獻給上主。</p>
+<section id="晨禱午禱與晚禱三鐘經-the-angelus" class="level3">
+<h3>1. 晨禱、午禱與晚禱：三鐘經 (The Angelus)</h3>
+<p><strong>【使用時刻】</strong> 每日 06:00 (起床)、12:00 (午休)、18:00 (日落) <strong>【說明】</strong> 此禱文包含三段對話與三遍完整的聖母經，請依序誦讀。</p>
+<section id="english-version" class="level4">
+<h4>English Version</h4>
+<p><strong>(Sign of the Cross)</strong> In the name of the Father, and of the Son, and of the Holy Spirit. Amen.</p>
+<p>The Angel of the Lord declared unto Mary. And she conceived by the Holy Spirit.</p>
+<p>Hail Mary, full of grace, the Lord is with thee; blessed art thou amongst women, and blessed is the fruit of thy womb, Jesus. Holy Mary, Mother of God, pray for us sinners, now and at the hour of our death. Amen.</p>
+<p>Behold the handmaid of the Lord. Be it done unto me according to thy word.</p>
+<p>Hail Mary, full of grace, the Lord is with thee; blessed art thou amongst women, and blessed is the fruit of thy womb, Jesus. Holy Mary, Mother of God, pray for us sinners, now and at the hour of our death. Amen.</p>
+<p>And the Word was made flesh. And dwelt among us.</p>
+<p>Hail Mary, full of grace, the Lord is with thee; blessed art thou amongst women, and blessed is the fruit of thy womb, Jesus. Holy Mary, Mother of God, pray for us sinners, now and at the hour of our death. Amen.</p>
+<p><strong>V.</strong> Pray for us, O holy Mother of God. <strong>R.</strong> That we may be made worthy of the promises of Christ.</p>
+<p><strong>Let us pray.</strong> Pour forth, we beseech Thee, O Lord, Thy grace into our hearts; that we, to whom the incarnation of Christ, Thy Son, was made known by the message of an angel, may by His passion and cross be brought to the glory of His resurrection, through the same Christ our Lord. Amen.</p>
+</section>
+<section id="繁體中文版-天主教譯本" class="level4">
+<h4>繁體中文版 (天主教譯本)</h4>
+<p><strong>(劃十字聖號)</strong> 因父、及子、及聖神之名。阿們。</p>
+<p>上主的天使向瑪利亞報喜。 她因聖神受孕。</p>
+<p>萬福瑪利亞，妳充滿聖寵，主與妳同在；妳在婦女中受讚頌，妳的親子耶穌同受讚頌。天主聖母瑪利亞，求妳現在和我們臨終時，為我們罪人祈求天主。阿們。</p>
+<p>我是上主的婢女。 請照你的話，在我身上完成。</p>
+<p>萬福瑪利亞，妳充滿聖寵，主與妳同在；妳在婦女中受讚頌，妳的親子耶穌同受讚頌。天主聖母瑪利亞，求妳現在和我們臨終時，為我們罪人祈求天主。阿們。</p>
+<p>天主聖子降生成人。 居住在我們中間。</p>
+<p>萬福瑪利亞，妳充滿聖寵，主與妳同在；妳在婦女中受讚頌，妳的親子耶穌同受讚頌。天主聖母瑪利亞，求妳現在和我們臨終時，為我們罪人祈求天主。阿們。</p>
+<p><strong>領：</strong> 天主聖母，請為我們祈求。 <strong>答：</strong> 使我們堪當承受基督的恩許。</p>
+<p><strong>請大家祈禱。</strong> 天主，求你把你的聖寵，注入我們心中；我們既因天使的傳報，得悉你的聖子耶穌降生成人，願我們仰賴他的苦難和十字聖架，獲享復活的光榮。以上所求是靠我們的主基督。阿們。</p>
+<hr />
+</section>
+</section>
+<section id="晨起感恩禱-morning-thanksgiving" class="level3">
+<h3>2. 晨起感恩禱 (Morning Thanksgiving upon Waking)</h3>
+<p><strong>【使用時刻】</strong> 睜開眼睛、下床劃十字聖號之後——比三鐘經更早的「睜眼第一禱」 <strong>【說明】</strong> 中世紀信徒醒來的第一件事，是劃十字並感謝天主護佑一夜平安，把新的一天交託給他。（傳統風格改編）</p>
+<section id="english-version-morning" class="level4">
+<h4>English Version</h4>
+<p>I give Thee thanks, O almighty God, who hast kept me through this night and brought me safely to the beginning of this day. Into Thy hands I commend my body and my soul; order Thou my steps, and grant that all my works this day may be done according to Thy holy will. Amen.</p>
+</section>
+<section id="繁體中文版-morning" class="level4">
+<h4>繁體中文版 (傳統風格改編)</h4>
+<p>全能的天主，我感謝你，你護佑我一夜平安，領我安然來到今天的開始。我把我的肉身和靈魂交託在你的手中；求你安排我今日的腳步，使我這一天所做的一切，都承行你的旨意。阿們。</p>
+<hr />
+</section>
+</section>
+<section id="核心禱告天主經-the-lords-prayer" class="level3">
+<h3>3. 核心禱告：天主經 (The Lord’s Prayer)</h3>
+<p><strong>【使用時刻】</strong> 每日早晨出門前、感到迷惘時、路過教堂或十字架時 <strong>【說明】</strong> 這是最完美的禱文，包含對上主的讚美與個人的祈求。</p>
+<section id="english-version-1" class="level4">
+<h4>English Version</h4>
+<p>Our Father, who art in heaven, hallowed be thy name; thy kingdom come; thy will be done on earth as it is in heaven. Give us this day our daily bread. And forgive us our trespasses, as we forgive those who trespass against us. And lead us not into temptation, but deliver us from evil. Amen.</p>
+</section>
+<section id="繁體中文版-天主教譯本-1" class="level4">
+<h4>繁體中文版 (天主教譯本)</h4>
+<p>我們的天父，願你的名受顯揚；願你的國來臨；願你的旨意奉行在人間，如同在天上。求你今天賞給我們日用的食糧。求你寬恕我們的罪過，如同我們寬恕別人一樣。不要讓我們陷於誘惑，但救我們免於凶惡。阿們。</p>
+<hr />
+</section>
+</section>
+<section id="晚禱宗徒信經-the-apostles-creed" class="level3">
+<h3>4. 晚禱：宗徒信經 (The Apostles’ Creed)</h3>
+<p><strong>【使用時刻】</strong> 睡前、主日（星期天） <strong>【說明】</strong> 完整的信仰宣示，用於一天結束時堅定信念。</p>
+<section id="english-version-2" class="level4">
+<h4>English Version</h4>
+<p>I believe in God, the Father Almighty, Creator of heaven and earth, and in Jesus Christ, His only Son, our Lord, who was conceived by the Holy Spirit, born of the Virgin Mary, suffered under Pontius Pilate, was crucified, died and was buried. He descended into hell; on the third day He rose again from the dead. He ascended into heaven, and is seated at the right hand of God the Father Almighty. From there He will come to judge the living and the dead.</p>
+<p>I believe in the Holy Spirit, the holy catholic Church, the communion of saints, the forgiveness of sins, the resurrection of the body, and life everlasting. Amen.</p>
+</section>
+<section id="繁體中文版-天主教譯本-2" class="level4">
+<h4>繁體中文版 (天主教譯本)</h4>
+<p>我信全能的天主父，天地萬物的創造者。我信父的唯一子，我們的主耶穌基督。他因聖神降孕，由童貞瑪利亞誕生。他在比拉多執政時蒙難，被釘在十字架上，死而安葬。他下降陰府，第三日從死者中復活。他升了天，坐在全能天主父的右邊。他要從天降來，審判生者死者。</p>
+<p>我信聖神，我信聖而公教會，諸聖的相通。我信罪過的赦免，我信肉身的復活，我信永恆的生命。阿們。</p>
+<hr />
+</section>
+</section>
+</section>
+<section id="第二部分所求與渴望-needs-desires" class="level2">
+<h2>第二部分：所求與渴望 (Needs &amp; Desires)</h2>
+<p><strong>用途：</strong> 針對生命中的具體挑戰（工作/戰鬥）與渴望（愛情/婚姻）祈求恩典。</p>
+<section id="勇氣之禱聖詠-144篇-psalm-144" class="level3">
+<h3>5. 勇氣之禱：聖詠 144篇 (Psalm 144)</h3>
+<p><strong>【使用時刻】</strong> 重要工作開始前、面試前、健身鍛鍊前、面對巨大壓力時 <strong>【說明】</strong> 祈求上主賜予面對困難挑戰的技藝與勇氣。</p>
+<section id="english-version-3" class="level4">
+<h4>English Version</h4>
+<p>Blessed be the Lord my strength, which teacheth my hands to war, and my fingers to fight. My goodness, and my fortress; my high tower, and my deliverer; my shield, and he in whom I trust.</p>
+</section>
+<section id="繁體中文版-思高聖經" class="level4">
+<h4>繁體中文版 (思高聖經)</h4>
+<p>上主，我的磐石，他應該常受頌讚！他教我的手能鬥，教我的指能戰。他是我的力量，我的堡壘，他是我的干城，我的救主，我的盾牌及我的避難所。</p>
+<hr />
+</section>
+</section>
+<section id="生計之禱求食糧與財富-prayer-for-provision-prosperity" class="level3">
+<h3>6. 生計之禱：求食糧與財富 (Prayer for Provision &amp; Prosperity)</h3>
+<p><strong>【使用時刻】</strong> 收成、買賣、領取工錢之前；家中米缸見底、錢囊空虛時 <strong>【說明】</strong> 由三段聖詠的應許組成：上主按時賞糧（聖詠145:15–16）、勞動的雙手必得溫飽（聖詠128:1–2）、敬畏上主者家業興旺（聖詠112:1,3）。中世紀人求糧求富，總以敬畏天主與誠實勞動為本。</p>
+<section id="english-version-provision" class="level4">
+<h4>English Version</h4>
+<p>The eyes of all wait upon thee; and thou givest them their meat in due season. Thou openest thine hand, and satisfiest the desire of every living thing.</p>
+<p>Blessed is every one that feareth the LORD; that walketh in his ways. For thou shalt eat the labour of thine hands: happy shalt thou be, and it shall be well with thee.</p>
+<p>Blessed is the man that feareth the LORD, that delighteth greatly in his commandments. Wealth and riches shall be in his house: and his righteousness endureth for ever.</p>
+</section>
+<section id="繁體中文版-思高聖經-provision" class="level4">
+<h4>繁體中文版 (思高聖經)</h4>
+<p>眾生的眼睛都仰望你，你準時賞給他們糧食。你伸出了你的雙手，滿足了眾生的需求。</p>
+<p>不拘你是誰，只要你敬畏上主，在他的道路上行走，就算有福！你能吃你雙手賺來的食物，你便實在幸運，也萬事有福！</p>
+<p>凡敬畏上主的人，真是有福，喜歡他誡命的人，真是有福！他家中必有權勢財產，他的仁義必存留永遠。</p>
+<hr />
+</section>
+</section>
+<section id="求偶之禱向聖辣法爾祈禱-prayer-to-st.-raphael" class="level3">
+<h3>7. 求偶之禱：向聖辣法爾祈禱 (Prayer to St. Raphael)</h3>
+<p><strong>【使用時刻】</strong> 感到孤單時、渴望遇見對象時 <strong>【說明】</strong> 聖辣法爾是「快樂相遇」的主保天使，祈求祂引導我們遇見合適的伴侶。</p>
+<section id="english-version-4" class="level4">
+<h4>English Version</h4>
+<p>O glorious St. Raphael, Patron and Lover of the Young, I call upon thee and plead with thee for my needs.</p>
+<p>Thou didst lead the young Tobias to a happy marriage. Lead me also, I beseech thee, to the one whom God has prepared for me. Guide us towards a happy meeting, that we may walk together in the path of holiness and love.</p>
+<p>Prepare my heart, and the heart of my future companion, that our union may be blessed, and that we may serve God faithfully through our love for one another. Amen.</p>
+</section>
+<section id="繁體中文版-天主教傳統風格" class="level4">
+<h4>繁體中文版 (天主教傳統風格)</h4>
+<p>光榮的聖辣法爾，青年的主保與守護者，我呼求你，將我的需求託付於你。</p>
+<p>你曾引導年輕的托比亞締結美滿的婚姻。我懇求你，也引導我走向天主為我預備的那一位。指引我們幸福地相遇，使我們能在聖潔與愛的道路上同行。</p>
+<p>求你預備我的心，以及我未來伴侶的心，使我們的結合蒙受祝福，並藉著彼此的愛，忠信地侍奉天主。阿們。</p>
+<hr />
+</section>
+</section>
+<section id="婚姻意向托比亞的禱詞-prayer-of-tobias" class="level3">
+<h3>8. 婚姻意向：托比亞的禱詞 (Prayer of Tobias)</h3>
+<p><strong>【使用時刻】</strong> 當你已有心儀對象，或祈願未來的婚姻能長久穩固時 <strong>【說明】</strong> 強調婚姻的神聖性與白頭偕老的願望。與前篇聖辣法爾禱文互為前後篇：未婚時求相遇，成婚後夫妻同唸此篇，求婚姻恆久穩固。</p>
+<section id="english-version-5" class="level4">
+<h4>English Version</h4>
+<p>Blessed art Thou, O God of our fathers, and blessed is Thy holy and glorious name for ever.</p>
+<p>Lord, Thou knowest that not for fleshly lust do I seek a companion, but only for the love of posterity, in which Thy name may be blessed for ever and ever.</p>
+<p>Mercifully ordain that we may grow aged together. Amen.</p>
+</section>
+<section id="繁體中文版-思高聖經改編" class="level4">
+<h4>繁體中文版 (思高聖經改編)</h4>
+<p>我們祖宗的天主，你是應受讚美的，願你聖名永受讚頌，世世無窮。</p>
+<p>主，你知道我尋求伴侶，並不是由於情慾，而是出於純正的意向，為能建立家庭，顯揚你的聖名。</p>
+<p>求你憐憫我們，賜我們白頭偕老，永享康寧。阿們。</p>
+<hr />
+</section>
+</section>
+</section>
+<section id="第三部分智慧與守護-wisdom-providence" class="level2">
+<h2>第三部分：智慧與守護 (Wisdom &amp; Providence)</h2>
+<p><strong>用途：</strong> 在人生的十字路口尋求指引，或在運勢低迷時尋求平安。</p>
+<section id="求智之禱伏求聖神降臨-come-holy-spirit" class="level3">
+<h3>9. 求智之禱：伏求聖神降臨 (Come, Holy Spirit)</h3>
+<p><strong>【使用時刻】</strong> 學習、讀書、談判前、或是不知道該往哪裡走時 <strong>【說明】</strong> 這是修道院中尋求智慧的標準禱文，祈求聖神賜予正確的判斷力。</p>
+<section id="english-version-6" class="level4">
+<h4>English Version</h4>
+<p>Come, Holy Spirit, fill the hearts of Thy faithful and kindle in them the fire of Thy love.</p>
+<p><strong>V.</strong> Send forth Thy Spirit and they shall be created. <strong>R.</strong> And Thou shalt renew the face of the earth.</p>
+<p><strong>Let us pray.</strong> O God, who by the light of the Holy Spirit, didst instruct the hearts of the faithful, grant that by the same Holy Spirit we may be truly wise and ever enjoy His consolations. Through Christ Our Lord. Amen.</p>
+</section>
+<section id="繁體中文版-天主教譯本-3" class="level4">
+<h4>繁體中文版 (天主教譯本)</h4>
+<p>天主聖神，求你降臨，充滿你信徒的心，並在他們心中，燃起你的愛火。</p>
+<p><strong>領：</strong> 求你派遣你的聖神，萬物將被創造。 <strong>答：</strong> 你將使大地的面貌煥然一新。</p>
+<p><strong>請大家祈禱。</strong> 天主，你曾以聖神的光，啟迪了信徒的心；求你藉著同一聖神，賜我們正確的判斷，並常享他的安慰。以上所求是靠我們的主基督。阿們。</p>
+<hr />
+</section>
+</section>
+<section id="守護之禱聖詠-23篇-psalm-23" class="level3">
+<h3>10. 守護之禱：聖詠 23篇 (Psalm 23)</h3>
+<p><strong>【使用時刻】</strong> 進入危險森林、開始長途旅行、或運氣不順時 <strong>【說明】</strong> 這是最著名的「轉運」與「平安」經文，確信上主如牧羊人般帶領。</p>
+<section id="english-version-7" class="level4">
+<h4>English Version</h4>
+<p>The Lord is my shepherd; I shall not want. He maketh me to lie down in green pastures: he leadeth me beside the still waters. He restoreth my soul: he leadeth me in the paths of righteousness for his name’s sake.</p>
+<p>Yea, though I walk through the valley of the shadow of death, I will fear no evil: for thou art with me; thy rod and thy staff they comfort me.</p>
+<p>Thou preparest a table before me in the presence of mine enemies: thou anointest my head with oil; my cup runneth over. Surely goodness and mercy shall follow me all the days of my life: and I will dwell in the house of the Lord for ever.</p>
+</section>
+<section id="繁體中文版-思高聖經-1" class="level4">
+<h4>繁體中文版 (思高聖經)</h4>
+<p>上主是我的牧者，我實在一無所缺。 他使我臥在青綠的草場，又領我走近幽靜的水旁，還使我的心靈得到舒暢。 他為了自己名號的原由，領我踏上了正義的坦途。</p>
+<p>縱使我應走過陰森的幽谷，我不怕凶險，因你與我同住。 你的牧杖和短棒，是我的安慰舒暢。</p>
+<p>在我對頭面前，你為我擺設了筵席； 在我的頭上傅油，使我的杯爵滿溢。 在我一生歲月裡，幸福與慈愛常隨不離； 我將住在上主的殿裡，直至悠遠的時日。</p>
+<hr />
+</section>
+</section>
+</section>
+<section id="第四部分悔罪與淨化-penance-contrition" class="level2">
+<h2>第四部分：悔罪與淨化 (Penance &amp; Contrition)</h2>
+<p><strong>用途：</strong> 承認過犯，求主寬恕，重獲內心的平安。</p>
+<section id="懺悔經-the-confiteor" class="level3">
+<h3>11. 懺悔經 (The Confiteor)</h3>
+<p><strong>【使用時刻】</strong> 辦告解前、參與彌撒時、夜間省察良心後 <strong>【說明】</strong> 中世紀彌撒必用的認罪經文。誦唸「我罪，我罪，我的重罪」時，傳統上以右手輕搥胸口三次。</p>
+<section id="english-version-confiteor" class="level4">
+<h4>English Version</h4>
+<p>I confess to almighty God and to you, my brothers and sisters, that I have greatly sinned, in my thoughts and in my words, in what I have done and in what I have failed to do, through my fault, through my fault, through my most grievous fault; therefore I ask blessed Mary ever-Virgin, all the Angels and Saints, and you, my brothers and sisters, to pray for me to the Lord our God. Amen.</p>
+</section>
+<section id="繁體中文版-confiteor" class="level4">
+<h4>繁體中文版 (天主教彌撒經文)</h4>
+<p>我向全能的天主和各位教友，承認我在思、言、行為上的過失。我罪，我罪，我的重罪。為此，懇請終身童貞聖母瑪利亞、天使、聖人和各位教友，為我祈求上主，我們的天主。阿們。</p>
+<hr />
+</section>
+</section>
+<section id="痛悔經-act-of-contrition" class="level3">
+<h3>12. 痛悔經 (Act of Contrition)</h3>
+<p><strong>【使用時刻】</strong> 告解聖事中神父指示時、每晚省察之後、任何深感愧疚的時刻 <strong>【說明】</strong> 與懺悔經同為告解的核心經文：懺悔經「承認」罪過，痛悔經「痛悔並定志改過」。</p>
+<section id="english-version-contrition" class="level4">
+<h4>English Version</h4>
+<p>O my God, I am heartily sorry for having offended Thee, and I detest all my sins because I dread the loss of heaven and the pains of hell; but most of all because they offend Thee, my God, who art all-good and deserving of all my love. I firmly resolve, with the help of Thy grace, to confess my sins, to do penance, and to amend my life. Amen.</p>
+</section>
+<section id="繁體中文版-contrition" class="level4">
+<h4>繁體中文版 (天主教譯本)</h4>
+<p>我的天主，我的慈父，我犯罪得罪了你，很覺慚愧，也真心痛悔。因為我辜負了你的慈愛，妄用了你的恩寵。我今定志，寧死再不得罪你，並盡力躲避犯罪的機會。我的天主，求你垂憐我，寬赦我。阿們。</p>
+<hr />
+</section>
+</section>
+<section id="悔罪之禱聖詠-51篇-psalm-51" class="level3">
+<h3>13. 悔罪之禱：聖詠 51篇 (Psalm 51, Miserere)</h3>
+<p><strong>【使用時刻】</strong> 做了虧心事之後、深感罪疚時、告解前的準備 <strong>【說明】</strong> 七篇悔罪聖詠中最著名的一篇，達味王犯罪後的痛悔之歌，中世紀懺悔禮儀的核心經文。（節選）</p>
+<section id="english-version-ps51" class="level4">
+<h4>English Version</h4>
+<p>Have mercy upon me, O God, according to thy lovingkindness: according unto the multitude of thy tender mercies blot out my transgressions. Wash me throughly from mine iniquity, and cleanse me from my sin. For I acknowledge my transgressions: and my sin is ever before me.</p>
+<p>Create in me a clean heart, O God; and renew a right spirit within me. Cast me not away from thy presence; and take not thy holy spirit from me. Restore unto me the joy of thy salvation; and uphold me with thy free spirit.</p>
+</section>
+<section id="繁體中文版-思高聖經-ps51" class="level4">
+<h4>繁體中文版 (思高聖經)</h4>
+<p>天主，求你按照你的仁慈憐憫我，依你豐厚的慈愛，消滅我的罪惡。求你把我的過犯洗盡，求你把我的罪惡除淨，因為我認清了我的過犯，我的罪惡常在我的眼前。</p>
+<p>天主，求你給我再造一顆純潔的心，求你使我心重獲堅固的精神。求你不要從你的面前把我拋棄，不要從我身上將你的聖神收回。求你使我重獲你救恩的喜樂，求你以慷慨的精神來扶持我。</p>
+<hr />
+</section>
+</section>
+</section>
+<section id="第五部分寬恕與和平-forgiveness-peace" class="level2">
+<h2>第五部分：寬恕與和平 (Forgiveness &amp; Peace)</h2>
+<p><strong>用途：</strong> 放下仇恨，為傷害你的人祈禱，並為戰亂中的家園求平安。</p>
+<section id="為仇敵祈禱-prayer-for-enemies" class="level3">
+<h3>14. 為仇敵祈禱 (Prayer for Enemies)</h3>
+<p><strong>【使用時刻】</strong> 想起仇人時、報復的念頭湧上心頭時、與人結怨後 <strong>【說明】</strong> 亨利的故事始於血仇。中世紀信仰對「復仇」的答案，正是這一篇——在動手之前，先唸一遍。</p>
+<section id="english-version-enemies" class="level4">
+<h4>English Version</h4>
+<p>But I say unto you, Love your enemies, bless them that curse you, do good to them that hate you, and pray for them which despitefully use you, and persecute you; that ye may be the children of your Father which is in heaven. <em>(Matthew 5:44–45)</em></p>
+<p>Father, forgive them; for they know not what they do. <em>(Luke 23:34)</em></p>
+<p><strong>Let us pray.</strong> O Lord, who from the cross didst pray for them that crucified Thee, grant me grace to forgive them that have wronged me, that hatred may not devour my heart; and turn their hearts and mine to Thy peace. Amen.</p>
+</section>
+<section id="繁體中文版-enemies" class="level4">
+<h4>繁體中文版 (思高聖經／傳統風格改編)</h4>
+<p>我卻對你們說：你們當愛你們的仇人，當為迫害你們的人祈禱，好使你們成為你們在天之父的子女。<em>（瑪竇福音 5:44–45）</em></p>
+<p>父啊！寬赦他們罷！因為他們不知道他們做的是什麼。<em>（路加福音 23:34）</em></p>
+<p><strong>請大家祈禱。</strong> 主，你曾在十字架上為釘死你的人祈禱；求你賜我恩寵，寬恕那些傷害過我的人，別讓仇恨吞噬我的心；並求你使他們的心和我的心，都歸向你的平安。阿們。</p>
+<hr />
+</section>
+</section>
+<section id="求和平頌-da-pacem-domine" class="level3">
+<h3>15. 求和平頌 (Da Pacem, Domine)</h3>
+<p><strong>【使用時刻】</strong> 戰亂時期、聽聞戰事消息、為家鄉與國家祈禱時 <strong>【說明】</strong> 九世紀的禮儀對經，戰亂年代全歐洲的教堂日日詠唱。1403年，匈牙利王西吉斯蒙德的大軍正蹂躪波西米亞——亨利的家鄉史卡利茲正是毀於這場戰火；這正是當時人唸它的原因。</p>
+<section id="latin-dapacem" class="level4">
+<h4>拉丁文原文 (Latin)</h4>
+<p><strong>Da pacem, Domine, in diebus nostris, quia non est alius qui pugnet pro nobis, nisi tu, Deus noster.</strong></p>
+</section>
+<section id="english-version-dapacem" class="level4">
+<h4>English Version</h4>
+<p>Give peace, O Lord, in our days: for there is none other that fighteth for us, but only Thou, O God.</p>
+</section>
+<section id="繁體中文版-dapacem" class="level4">
+<h4>繁體中文版 (中文意譯)</h4>
+<p>上主，求你在我們的時日賜下和平；因為除了你，我們的天主，再沒有別人為我們作戰。</p>
+<hr />
+</section>
+</section>
+</section>
+<section id="第六部分夜禱-night-prayers" class="level2">
+<h2>第六部分：夜禱 (Night Prayers / Compline)</h2>
+<p><strong>用途：</strong> 一天結束時，將自己託付於上主的守護中，安然入睡。</p>
+<section id="夜間守護聖詠-91篇-psalm-91" class="level3">
+<h3>16. 夜間守護：聖詠 91篇 (Psalm 91)</h3>
+<p><strong>【使用時刻】</strong> 睡前、夜間趕路、野外紮營時 <strong>【說明】</strong> 修道院夜課（Compline）的核心聖詠，自古被視為「士兵的聖詠」——黑夜的恐怖與白日的飛箭，都不能傷害倚靠上主的人。（節選）</p>
+<section id="english-version-ps91" class="level4">
+<h4>English Version</h4>
+<p>He that dwelleth in the secret place of the most High shall abide under the shadow of the Almighty. I will say of the LORD, He is my refuge and my fortress: my God; in him will I trust. Surely he shall deliver thee from the snare of the fowler, and from the noisome pestilence. He shall cover thee with his feathers, and under his wings shalt thou trust: his truth shall be thy shield and buckler. Thou shalt not be afraid for the terror by night; nor for the arrow that flieth by day.</p>
+<p>For he shall give his angels charge over thee, to keep thee in all thy ways. They shall bear thee up in their hands, lest thou dash thy foot against a stone.</p>
+</section>
+<section id="繁體中文版-思高聖經-ps91" class="level4">
+<h4>繁體中文版 (思高聖經)</h4>
+<p>你這在至高者護佑下居住的人，你這在全能者蔭庇下居住的人，請向上主說：「我的避難所，我的碉堡，我的天主，我向你投靠。」他必救你脫離獵戶的縲絏，他必救你脫免害人的瘟疫。他以自己的羽毛掩護你，又叫你往他的翼下逃避：他的忠信是盾牌和鎧衣。你不必怕黑夜驚人的顫慄，也不必怕白天亂飛的箭矢。</p>
+<p>因為他必為你委派自己的天使，在你行走的每條道路上保護你。他們把你托在自己的手掌，不使你的腳在石頭上碰傷。</p>
+<hr />
+</section>
+</section>
+<section id="又聖母經-salve-regina" class="level3">
+<h3>17. 又聖母經 (Hail, Holy Queen / Salve Regina)</h3>
+<p><strong>【使用時刻】</strong> 夜禱結尾、感到憂傷孤苦時 <strong>【說明】</strong> 十一世紀的聖母頌歌，中世紀修院每晚夜課的結束曲，也是當時傳唱最廣的禱文之一。</p>
+<section id="english-version-salve" class="level4">
+<h4>English Version</h4>
+<p>Hail, holy Queen, Mother of mercy, our life, our sweetness and our hope. To thee do we cry, poor banished children of Eve. To thee do we send up our sighs, mourning and weeping in this valley of tears. Turn then, most gracious advocate, thine eyes of mercy toward us, and after this our exile show unto us the blessed fruit of thy womb, Jesus. O clement, O loving, O sweet Virgin Mary.</p>
+<p><strong>V.</strong> Pray for us, O holy Mother of God. <strong>R.</strong> That we may be made worthy of the promises of Christ.</p>
+</section>
+<section id="繁體中文版-天主教譯本-salve" class="level4">
+<h4>繁體中文版 (天主教譯本)</h4>
+<p>母后萬福！仁慈的母親，我們的生命、我們的甘飴、我們的希望。厄娃子孫在此塵世向妳哀呼，在這涕泣之谷向妳嘆息哭求。我們的主保，求妳回顧、憐視我們；一旦流亡期滿，使我們得見妳的聖子，萬民稱頌的耶穌。童貞瑪利亞，妳是寬仁的、慈悲的、甘飴的。</p>
+<p><strong>領：</strong> 天主聖母，請為我們祈求。 <strong>答：</strong> 使我們堪受基督的恩許。</p>
+<hr />
+</section>
+</section>
+<section id="護守天使經-angele-dei" class="level3">
+<h3>18. 護守天使經 (Prayer to the Guardian Angel / Angele Dei)</h3>
+<p><strong>【使用時刻】</strong> 睡前、清晨出門、獨自上路時 <strong>【說明】</strong> 中世紀流傳極廣的短禱，祈求天主派遣的護守天使日夜相隨。</p>
+<section id="english-version-angele" class="level4">
+<h4>English Version</h4>
+<p>Angel of God, my guardian dear, to whom God’s love commits me here, ever this day be at my side, to light and guard, to rule and guide. Amen.</p>
+</section>
+<section id="繁體中文版-angele" class="level4">
+<h4>繁體中文版</h4>
+<p>天主的天使，我的護守天使，天主因他的慈愛，把我託付給你；求你在今天光照我、守護我、治理我、引導我。阿們。</p>
+<hr />
+</section>
+</section>
+<section id="臨終託付頌-in-manus-tuas" class="level3">
+<h3>19. 臨終託付頌 (In Manus Tuas)</h3>
+<p><strong>【使用時刻】</strong> 夜禱的最後一句、重傷垂危時、上陣前將生死交託時 <strong>【說明】</strong> 夜課的答唱詞，取自聖詠31:6，也是耶穌在十字架上的最後一句話（路加福音23:46）。中世紀人臨睡與臨終唸的是同一句話——每晚的睡眠，都是一次小小的交託。</p>
+<section id="latin-inmanustuas" class="level4">
+<h4>拉丁文原文 (Latin)</h4>
+<p><strong>In manus tuas, Domine, commendo spiritum meum. Redemisti me, Domine, Deus veritatis.</strong></p>
+</section>
+<section id="english-version-inmanustuas" class="level4">
+<h4>English Version</h4>
+<p>Into thine hand I commit my spirit: thou hast redeemed me, O LORD God of truth.</p>
+</section>
+<section id="繁體中文版-inmanustuas" class="level4">
+<h4>繁體中文版 (思高聖經)</h4>
+<p>我將我的靈魂託於你的掌握，上主，忠實的天主，你必拯救我。</p>
+<hr />
+</section>
+</section>
+<section id="家宅祝福禱-visita-quaesumus" class="level3">
+<h3>20. 家宅祝福禱 (Visita, Quaesumus, Domine)</h3>
+<p><strong>【使用時刻】</strong> 就寢前、入住新居、借宿陌生人家或野外過夜時 <strong>【說明】</strong> 夜課的結束禱詞（集禱經），千年來歐洲人睡前為屋宇與家人求的就是這一篇。</p>
+<section id="english-version-visita" class="level4">
+<h4>English Version</h4>
+<p>Visit, we beseech Thee, O Lord, this dwelling, and drive far from it all snares of the enemy: let Thy holy Angels dwell herein, to preserve us in peace; and let Thy blessing be upon us evermore. Through Christ our Lord. Amen.</p>
+</section>
+<section id="繁體中文版-visita" class="level4">
+<h4>繁體中文版</h4>
+<p>上主，我們懇求你眷顧這個居所，驅逐仇敵的一切詭計；願你的聖天使住在其中，護守我們平安；願你的降福常在我們身上。因我們的主基督。阿們。</p>
+<hr />
+</section>
+</section>
+</section>
+<section id="第七部分騎士的武裝-the-knights-armour" class="level2">
+<h2>第七部分：騎士的武裝 (The Knight’s Armour)</h2>
+<p><strong>用途：</strong> 面對戰鬥、危險與死亡的威脅時，穿上屬靈的盔甲。</p>
+<section id="基督的靈魂-anima-christi" class="level3">
+<h3>21. 基督的靈魂 (Anima Christi)</h3>
+<p><strong>【使用時刻】</strong> 上陣前、領聖體後、身受重傷時 <strong>【說明】</strong> 十四世紀廣為流傳的禱文，與亨利的時代完全吻合；句句短促有力，是戰士的祈禱。</p>
+<section id="english-version-anima" class="level4">
+<h4>English Version</h4>
+<p>Soul of Christ, sanctify me. Body of Christ, save me. Blood of Christ, inebriate me. Water from the side of Christ, wash me. Passion of Christ, strengthen me. O good Jesus, hear me. Within Thy wounds hide me. Suffer me not to be separated from Thee. From the malicious enemy defend me. In the hour of my death call me, and bid me come unto Thee, that with Thy saints I may praise Thee for ever and ever. Amen.</p>
+</section>
+<section id="繁體中文版-anima" class="level4">
+<h4>繁體中文版</h4>
+<p>基督的靈魂，聖化我；基督的身體，拯救我；基督的寶血，陶醉我；基督肋旁的水，洗淨我；基督的苦難，堅勵我。慈善的耶穌，俯聽我；在你的傷口內，隱藏我；不要讓我離開你；在兇惡的仇敵前，保護我；在我臨終的時候，召叫我到你面前，使我同你的聖者，讚美你，直到永遠。阿們。</p>
+<hr />
+</section>
+</section>
+<section id="仰賴聖母誦-sub-tuum-praesidium" class="level3">
+<h3>22. 仰賴聖母誦 (Sub Tuum Praesidium)</h3>
+<p><strong>【使用時刻】</strong> 危急關頭、戰前默念 <strong>【說明】</strong> 現存最古老的聖母禱文（約公元三世紀），極短，可在數息之間唸完。</p>
+<section id="english-version-subtuum" class="level4">
+<h4>English Version</h4>
+<p>We fly to thy protection, O holy Mother of God. Despise not our petitions in our necessities, but deliver us always from all dangers, O glorious and blessed Virgin. Amen.</p>
+</section>
+<section id="繁體中文版-subtuum" class="level4">
+<h4>繁體中文版</h4>
+<p>天主聖母，我們投奔妳的護佑；我們在急難中的祈求，請妳不要拒絕；光榮而蒙福的童貞女，求妳常救我們脫離一切凶險。阿們。</p>
+<hr />
+</section>
+</section>
+<section id="騎士主保向聖喬治祈禱-prayer-to-st.-george" class="level3">
+<h3>23. 騎士主保：向聖喬治祈禱 (Prayer to St. George)</h3>
+<p><strong>【使用時刻】</strong> 披甲出陣前、參加比武、面對強敵時 <strong>【說明】</strong> 屠龍者聖喬治是騎士與士兵的第一主保，中世紀武人披甲時必呼求的名字。（傳統風格改編）</p>
+<section id="english-version-george" class="level4">
+<h4>English Version</h4>
+<p>O God, who didst grant unto Thy holy martyr George strength and constancy in all his sufferings, grant us through his intercession courage in every trial; that we may fight the good fight with faith, bear ourselves with honour in every danger, and never turn from the path of right. Through Christ our Lord. Amen.</p>
+</section>
+<section id="繁體中文版-george" class="level4">
+<h4>繁體中文版 (傳統風格改編)</h4>
+<p>天主，你曾賜予你的殉道者聖喬治在一切苦難中的力量與堅忍；求你藉他的轉禱，賜我們在每個考驗中的勇氣，使我們能以信德打這場好仗，在一切危險中持守榮譽，永不偏離正道。因我們的主基督。阿們。</p>
+<hr />
+</section>
+</section>
+<section id="善終之禱向聖巴巴拉祈禱-prayer-to-st.-barbara" class="level3">
+<h3>24. 善終之禱：向聖巴巴拉祈禱 (Prayer to St. Barbara)</h3>
+<p><strong>【使用時刻】</strong> 上戰場前、進入礦坑或危險之地時 <strong>【說明】</strong> 聖巴巴拉是抵禦「不及告解而暴死」的主保聖人，也是礦工與砲手的主保——中世紀武人與庫滕堡礦工最敬愛的聖人。（傳統風格改編）</p>
+<section id="english-version-barbara" class="level4">
+<h4>English Version</h4>
+<p>O God, who didst adorn Thy holy virgin and martyr Barbara with singular fortitude in her passion, grant through her intercession that we may be preserved from a sudden and unprovided death; that, fortified by Thy holy sacraments, we may meet our last hour with a clean heart, and depart this life in Thy grace. Through Christ our Lord. Amen.</p>
+</section>
+<section id="繁體中文版-barbara" class="level4">
+<h4>繁體中文版 (傳統風格改編)</h4>
+<p>天主，你曾以非凡的堅忍，裝飾你的貞女殉道者聖巴巴拉；求你藉她的轉禱，保佑我們免於猝然而無準備的死亡，使我們得以領受聖事的堅固，懷著潔淨的心迎接臨終的時刻，在你的恩寵中離開此世。因我們的主基督。阿們。</p>
+<hr />
+</section>
+</section>
+<section id="病中之禱向聖巴斯弟盎祈禱-prayer-to-st.-sebastian" class="level3">
+<h3>25. 病中之禱：向聖巴斯弟盎祈禱 (Prayer to St. Sebastian)</h3>
+<p><strong>【使用時刻】</strong> 患病、受傷、瘟疫流行時 <strong>【說明】</strong> 聖巴斯弟盎是士兵與抵禦瘟疫的主保。他身中亂箭而不死；黑死病之後，全歐洲的病人與傷者都向他呼求——受了刀箭之傷的亨利更該如此。（傳統風格改編）</p>
+<section id="english-version-sebastian" class="level4">
+<h4>English Version</h4>
+<p>O glorious Saint Sebastian, soldier and martyr, who wast pierced with arrows and left for dead, yet wast restored by the grace of God: protect us, we beseech thee, from plague and pestilence and every sickness; obtain for us the healing of our wounds, and strength of body and soul to serve God faithfully unto the end. Amen.</p>
+</section>
+<section id="繁體中文版-sebastian" class="level4">
+<h4>繁體中文版 (傳統風格改編)</h4>
+<p>光榮的聖巴斯弟盎，身中亂箭而不死的軍人殉道者，天主的恩寵曾使你死裡復生；我們懇求你，保護我們免於瘟疫和一切疾病，為我們求得創傷的痊癒，以及身心的力量，好能忠信地事奉天主，直到最後。阿們。</p>
+<hr />
+</section>
+</section>
+<section id="鍛造之禱向聖艾利吉祈禱-prayer-to-st.-eligius" class="level3">
+<h3>26. 鍛造之禱：向聖艾利吉祈禱 (Prayer to St. Eligius)</h3>
+<p><strong>【使用時刻】</strong> 進入鐵匠鋪工作前、鍛造重要器物時 <strong>【說明】</strong> 聖艾利吉（約588–660）是鐵匠與金工的主保聖人。亨利身為鐵匠之子，這是他承繼父業時的祈禱。（傳統風格改編）</p>
+<section id="english-version-eligius" class="level4">
+<h4>English Version</h4>
+<p>O blessed Eligius, master of the forge and faithful servant of God, who didst work honestly in iron and gold, look kindly upon my labour. Obtain for me a steady hand and an honest heart, that the work of my hands may be sound and true, and that in my craft I may give glory to God, the Maker of all things. Amen.</p>
+</section>
+<section id="繁體中文版-eligius" class="level4">
+<h4>繁體中文版 (傳統風格改編)</h4>
+<p>蒙福的聖艾利吉，鍛爐的宗師、天主忠信的僕人，你曾以誠實的雙手鍛造金鐵；求你垂顧我的勞作，為我求得穩健的手與正直的心，使我手中的工作堅實而真確，並使我藉著我的技藝，光榮創造萬物的天主。阿們。</p>
+<hr />
+</section>
+</section>
+</section>
+<section id="第八部分旅途與日常-the-road-daily-life" class="level2">
+<h2>第八部分：旅途與日常 (The Road &amp; Daily Life)</h2>
+<p><strong>用途：</strong> 行路、打獵、尋物——冒險者日常的隨身禱文。</p>
+<section id="旅途之禱托彼特的祝福-the-blessing-of-tobit" class="level3">
+<h3>27. 旅途之禱：托彼特的祝福 (The Blessing of Tobit)</h3>
+<p><strong>【使用時刻】</strong> 出遠門前、與同伴道別時、踏上未知的道路時 <strong>【說明】</strong> 多俾亞遠行前，父親托彼特的臨行祝福（多俾亞傳5:17）——一路護送他的旅伴，正是化了裝的聖辣法爾。中世紀旅人也向聖克里斯多福呼求，相傳當天見過他聖像的人不會猝死。</p>
+<section id="english-version-tobit" class="level4">
+<h4>English Version</h4>
+<p>May God, who is in heaven, prosper your journey, keep you safe there, and bring you back to me in peace; may His angel go with you and deliver you. Amen. <em>(after Tobit 5:17)</em></p>
+</section>
+<section id="繁體中文版-tobit" class="level4">
+<h4>繁體中文版 (思高聖經)</h4>
+<p>願天上的天主使你們一路平安，保護你們在那裏平安，也領你們平安回到我跟前來！願他的天使與你們同行，救助你們！<em>（多俾亞傳 5:17）</em></p>
+<hr />
+</section>
+</section>
+<section id="狩獵之禱向聖胡伯特祈禱-prayer-to-st.-hubert" class="level3">
+<h3>28. 狩獵之禱：向聖胡伯特祈禱 (Prayer to St. Hubert)</h3>
+<p><strong>【使用時刻】</strong> 出獵之前、進入獵場時 <strong>【說明】</strong> 聖胡伯特（約656–727）是獵人的主保。相傳他在獵鹿時，於雄鹿雙角之間看見發光的十字架，從此歸依天主。中世紀獵人出獵前必求他保佑箭無虛發、也不濫殺。（傳統風格改編）</p>
+<section id="english-version-hubert" class="level4">
+<h4>English Version</h4>
+<p>O blessed Hubert, who in the midst of the chase didst behold the holy cross between the antlers of the stag, and didst give thy heart to God: bless my hunting, guide mine arrow true, that I may take only what is needful, waste nothing of God’s creatures, and return home in safety, giving thanks to the Creator of all. Amen.</p>
+</section>
+<section id="繁體中文版-hubert" class="level4">
+<h4>繁體中文版 (傳統風格改編)</h4>
+<p>蒙福的聖胡伯特，你在狩獵之中，於雄鹿的雙角之間望見了聖十字架，從此把心歸向天主；求你祝福我的狩獵，引導我的箭矢正中目標，使我只取所需，不糟蹋天主的受造之物，並平安返家，感謝萬有的創造者。阿們。</p>
+<hr />
+</section>
+</section>
+<section id="尋失物之禱向聖安多尼祈禱-prayer-to-st.-anthony" class="level3">
+<h3>29. 尋失物之禱：向聖安多尼祈禱 (Prayer to St. Anthony of Padua)</h3>
+<p><strong>【使用時刻】</strong> 遺失財物、尋人、迷路時 <strong>【說明】</strong> 帕多瓦的聖安多尼（1195–1231）是尋回失物的主保；到1403年，他的敬禮已流行歐洲近兩百年。丟了劍、錢袋或馬的時候——先冷靜，再誦唸。（傳統風格改編）</p>
+<section id="english-version-anthony" class="level4">
+<h4>English Version</h4>
+<p>O blessed Saint Anthony, gracious wonder-worker, by whose intercession that which is lost is found: help me in my present need. If it be for the good of my soul, obtain that what I have lost may be restored to me; and above all, obtain for me the grace never to lose God, my greatest good. Amen.</p>
+</section>
+<section id="繁體中文版-anthony" class="level4">
+<h4>繁體中文版 (傳統風格改編)</h4>
+<p>蒙福的聖安多尼，仁慈的顯奇蹟者，人們藉你的轉禱尋回所失之物；求你在我眼前的急需中幫助我。若於我的靈魂有益，求你使我尋回所失的東西；更要緊的是，求你為我求得恩寵，使我永不失落我最大的寶藏——天主。阿們。</p>
+<hr />
+</section>
+</section>
+</section>
+<section id="第九部分波西米亞之聲-voices-of-bohemia" class="level2">
+<h2>第九部分：波西米亞之聲 (Voices of Bohemia)</h2>
+<p><strong>用途：</strong> 1403年的波西米亞人（包括亨利）從小唱到大的兩首本土聖歌，教堂內外、出征路上都會響起。</p>
+<section id="上主求你垂憐-hospodine-pomiluj-ny" class="level3">
+<h3>30. 上主，求你垂憐 (Hospodine, pomiluj ny)</h3>
+<p><strong>【使用時刻】</strong> 群眾聚集、隊伍出發、重大場合 <strong>【說明】</strong> 現存最古老的捷克語聖歌（約十一世紀），相當於捷克版的垂憐經，中世紀時兼作戰歌與慶典之歌。結尾的「Krleš」是希臘語「Kyrie eleison（上主，求你垂憐）」的古捷克語轉音。</p>
+<section id="old-czech-hospodine" class="level4">
+<h4>古捷克語原文 (Old Czech)</h4>
+<p><strong>Hospodine, pomiluj ny! Jezukriste, pomiluj ny!</strong> <strong>Ty, spase všeho mira, spasiž ny i uslyšiž, Hospodine, hlasy našě!</strong> <strong>Daj nám všěm, Hospodine, žizň a mír v zemi!</strong> <strong>Krleš! Krleš! Krleš!</strong></p>
+</section>
+<section id="english-version-hospodine" class="level4">
+<h4>English Version</h4>
+<p>Lord, have mercy upon us! Jesus Christ, have mercy upon us! Thou, Saviour of all the world, save us, and hear, O Lord, our voices! Grant to us all, O Lord, plenty and peace in the land! Kyrie eleison! Kyrie eleison! Kyrie eleison!</p>
+</section>
+<section id="繁體中文版-hospodine" class="level4">
+<h4>繁體中文版 (中文意譯)</h4>
+<p>上主，求你垂憐我們！耶穌基督，求你垂憐我們！你是普世的救主，求你拯救我們，俯聽我們的呼聲，上主！上主，求你賜給我們眾人，大地上的豐饒與和平！上主，求你垂憐！（三呼）</p>
+<hr />
+</section>
+</section>
+<section id="聖溫塞斯拉斯讚歌-svaty-vaclave" class="level3">
+<h3>31. 聖溫塞斯拉斯讚歌 (Svatý Václave / Saint Wenceslaus Chorale)</h3>
+<p><strong>【使用時刻】</strong> 出征前、國難當頭、向波西米亞主保求助時 <strong>【說明】</strong> 十二世紀的讚歌，歌頌波西米亞主保聖人溫塞斯拉斯公爵（聖瓦茨拉夫，約907–935）。中世紀捷克軍隊臨陣必唱，是波西米亞的精神象徵。</p>
+<section id="old-czech-vaclave" class="level4">
+<h4>古捷克語原文 (Old Czech)</h4>
+<p><strong>Svatý Václave, vévodo české země, kněže náš, pros za ny Boha, svatého Ducha! Kyrieleison.</strong></p>
+<p><strong>Nebeskéť jest dvorstvo krásné, blazě tomu, ktož tam pójde, v život věčný, oheň jasný svatého Ducha. Kyrieleison.</strong></p>
+<p><strong>Pomoci my tvé žádámy, smiluj sě nad námi, utěš smutné, otžeň vše zlé, svatý Václave! Kyrieleison.</strong></p>
+</section>
+<section id="english-version-vaclave" class="level4">
+<h4>English Version</h4>
+<p>Saint Wenceslaus, Duke of the Bohemian land, our prince, pray for us to God, the Holy Spirit! Kyrie eleison.</p>
+<p>Fair is the heavenly court; blessed is he who enters there, into life everlasting, the bright fire of the Holy Spirit. Kyrie eleison.</p>
+<p>Thy help we implore: have mercy upon us, comfort the sorrowful, drive away all evil, Saint Wenceslaus! Kyrie eleison.</p>
+</section>
+<section id="繁體中文版-vaclave" class="level4">
+<h4>繁體中文版 (中文意譯)</h4>
+<p>聖溫塞斯拉斯，波西米亞大地的公爵，我們的君侯，求你為我們轉求天主與聖神！上主，求你垂憐。</p>
+<p>天上的宮廷何等美麗，得入其中者何等有福——進入永恆的生命，聖神光明的火焰。上主，求你垂憐。</p>
+<p>我們懇求你的助佑：求你憐憫我們，安慰憂苦的人，驅散一切凶惡，聖溫塞斯拉斯！上主，求你垂憐。</p>
+<hr />
+</section>
+</section>
+</section>
+<section id="第十部分凱旋感恩-thanksgiving" class="level2">
+<h2>第十部分：凱旋感恩 (Thanksgiving)</h2>
+<p><strong>用途：</strong> 大功告成、平安歸來、獲得勝利之後，將光榮歸還上主。</p>
+<section id="讚主頌節選-te-deum" class="level3">
+<h3>32. 讚主頌（節選）(Te Deum)</h3>
+<p><strong>【使用時刻】</strong> 任務成功、戰勝歸來、獲得重大恩惠後 <strong>【說明】</strong> 教會最隆重的感恩頌歌（約四至五世紀），中世紀凱旋、加冕、締結和約時都會詠唱。（節選首尾段落）</p>
+<section id="english-version-tedeum" class="level4">
+<h4>English Version</h4>
+<p>We praise thee, O God; we acknowledge thee to be the Lord. All the earth doth worship thee, the Father everlasting. To thee all Angels cry aloud, the Heavens and all the Powers therein. To thee Cherubim and Seraphim continually do cry: Holy, Holy, Holy, Lord God of Sabaoth; Heaven and earth are full of the Majesty of thy glory.</p>
+<p>Vouchsafe, O Lord, to keep us this day without sin. O Lord, have mercy upon us, have mercy upon us. O Lord, in thee have I trusted: let me never be confounded.</p>
+</section>
+<section id="繁體中文版-tedeum" class="level4">
+<h4>繁體中文版 (節譯)</h4>
+<p>天主，我們讚美你；上主，我們頌揚你；永生之父，普世都敬拜你。所有的天使，諸天與其間的萬軍，革魯賓與色拉芬，不停地向你高呼：聖！聖！聖！上主，萬軍的天主，你的榮耀充滿天地。</p>
+<p>上主，求你保佑我們今天不陷於罪惡。上主，求你憐憫我們，憐憫我們。上主，我一心依賴你，使我永遠不至於蒙羞。</p>
+<hr />
+</section>
+</section>
+</section>
+<section id="第十一部分結尾短頌-doxology" class="level2">
+<h2>第十一部分：結尾短頌 (Doxology)</h2>
+<section id="聖三光榮頌-glory-be" class="level3">
+<h3>33. 聖三光榮頌 (Glory Be)</h3>
+<p><strong>【使用時刻】</strong> 任何禱告結束後 <strong>【說明】</strong> 將榮耀歸於聖父、聖子、聖神。</p>
+<section id="english-version-8" class="level4">
+<h4>English Version</h4>
+<p>Glory be to the Father, and to the Son, and to the Holy Spirit. As it was in the beginning, is now, and ever shall be, world without end. Amen.</p>
+</section>
+<section id="繁體中文版" class="level4">
+<h4>繁體中文版</h4>
+<p>願光榮歸於父、及子、及聖神。起初如何，今日亦然，直到永遠。阿們。</p>
+<hr />
+</section>
+</section>
+<section id="亨利的口頭禪-henrys-motto" class="level3">
+<h3>34. 亨利的口頭禪 (Henry’s Motto)</h3>
+<p><strong>【使用時刻】</strong> 遇到朋友、好事發生、或對話結束時 <strong>【說明】</strong> 這是波西米亞當時最通用的問候與感恩語。</p>
+<section id="english-version-9" class="level4">
+<h4>English Version</h4>
+<p><strong>Jesus Christ be praised.</strong></p>
+</section>
+<section id="繁體中文版-1" class="level4">
+<h4>繁體中文版</h4>
+<p><strong>讚美耶穌基督。</strong></p>
+<hr />
+</section>
+</section>
+</section>
+</section>
+<section id="附錄亨利的拉丁文與生活祈禱-appendix-latin-life-prayers" class="level1">
+<h1>附錄：亨利的拉丁文與生活祈禱 (Appendix: Latin &amp; Life Prayers)</h1>
+<p><strong>【說明】</strong> 此部分收錄了正文中未列出，但在《天國降臨》遊戲背景中，亨利身為一名生活在1403年的信徒，在特定場合（用餐、葬禮、聽彌撒）必定會使用到的經文。</p>
+<section id="a.-拉丁文原版天主經-pater-noster-in-latin" class="level3">
+<h3>A. 拉丁文原版天主經 (Pater Noster in Latin)</h3>
+<p><strong>【使用時刻】</strong> 當你在遊戲中聽到神父誦讀，或想感受最原汁原味的中世紀氛圍時。</p>
+<p><strong>Pater noster, qui es in caelis,</strong> (我們的天父，) <strong>sanctificetur nomen tuum.</strong> (願你的名受顯揚。) <strong>Adveniat regnum tuum.</strong> (願你的國來臨。) <strong>Fiat voluntas tua, sicut in caelo et in terra.</strong> (願你的旨意奉行在人間，如同在天上。) <strong>Panem nostrum quotidianum da nobis hodie,</strong> (求你今天賞給我們日用的食糧，) <strong>et dimitte nobis debita nostra,</strong> (求你寬恕我們的罪過，) <strong>sicut et nos dimittimus debitoribus nostris.</strong> (如同我們寬恕別人一樣。) <strong>Et ne nos inducas in tentationem,</strong> (不要讓我們陷於誘惑，) <strong>sed libera nos a malo.</strong> (但救我們免於凶惡。) <strong>Amen.</strong> (阿們。)</p>
+<hr />
+</section>
+<section id="b.-餐前禱告-grace-before-meals" class="level3">
+<h3>B. 餐前禱告 (Grace Before Meals)</h3>
+<p><strong>【使用時刻】</strong> 每日三餐之前，感謝食物得來不易（特別是在遊戲中缺乏食物的艱困時期）。</p>
+<section id="english-version-10" class="level4">
+<h4>English Version</h4>
+<p>Bless us, O Lord, and these thy gifts, which we are about to receive from thy bounty, through Christ our Lord. Amen.</p>
+</section>
+<section id="繁體中文版-2" class="level4">
+<h4>繁體中文版</h4>
+<p>天主，求你降福我們，並降福我們即將享用的這些恩物，因我們的主基督。阿們。</p>
+<hr />
+</section>
+</section>
+<section id="c.-飯後禱告-grace-after-meals" class="level3">
+<h3>C. 飯後禱告 (Grace After Meals)</h3>
+<p><strong>【使用時刻】</strong> 每日三餐之後，與餐前禱告成對使用。</p>
+<section id="english-version-after-meals" class="level4">
+<h4>English Version</h4>
+<p>We give Thee thanks, Almighty God, for all Thy benefits, Who livest and reignest for ever and ever. Amen. And may the souls of the faithful departed, through the mercy of God, rest in peace. Amen.</p>
+</section>
+<section id="繁體中文版-after-meals" class="level4">
+<h4>繁體中文版</h4>
+<p>全能的天主，我們感謝你所賞賜的一切恩惠。你是永生永王的天主。阿們。願亡者信友的靈魂，賴天主的仁慈，安息。阿們。</p>
+<hr />
+</section>
+</section>
+<section id="d.-為亡者祈禱-prayer-for-the-dead-requiem" class="level3">
+<h3>D. 為亡者祈禱 (Prayer for the Dead / Requiem)</h3>
+<p><strong>【使用時刻】</strong> 當亨利在戰場上看到屍體、埋葬親友、或路過墓地時。 <strong>【背景】</strong> 遊戲中充滿了死亡，這句簡短的拉丁禱文是給予死者最後的尊嚴。</p>
+<section id="english-version-mix-with-latin" class="level4">
+<h4>Latin &amp; English Version</h4>
+<p><strong>Requiem aeternam dona eis, Domine.</strong> (Eternal rest grant unto them, O Lord.) <strong>Et lux perpetua luceat eis.</strong> (And let perpetual light shine upon them.) <strong>Requiescant in pace. Amen.</strong> (May they rest in peace. Amen.)</p>
+</section>
+<section id="繁體中文版-3" class="level4">
+<h4>繁體中文版</h4>
+<p><strong>主啊，求你賜給他們永遠的安息，</strong> <strong>並以永恆的光輝照耀他們。</strong> <strong>願他們安息。阿們。</strong></p>
+<hr />
+</section>
+</section>
+<section id="e.-為亡者的聖詠聖詠-130篇-de-profundis" class="level3">
+<h3>E. 為亡者的聖詠：聖詠 130篇 (Psalm 130, De Profundis)</h3>
+<p><strong>【使用時刻】</strong> 與上述安息經同用：埋葬親友、追思亡者、路過墓地時。 <strong>【說明】</strong> 中世紀為亡者誦唸的標準聖詠，喪禮與追思禮儀中必不可少，常與安息經連用。</p>
+<section id="english-version-ps130" class="level4">
+<h4>English Version</h4>
+<p>Out of the depths have I cried unto thee, O LORD. Lord, hear my voice: let thine ears be attentive to the voice of my supplications. If thou, LORD, shouldest mark iniquities, O Lord, who shall stand? But there is forgiveness with thee, that thou mayest be feared.</p>
+<p>I wait for the LORD, my soul doth wait, and in his word do I hope. My soul waiteth for the Lord more than they that watch for the morning: I say, more than they that watch for the morning. Let Israel hope in the LORD: for with the LORD there is mercy, and with him is plenteous redemption. And he shall redeem Israel from all his iniquities.</p>
+</section>
+<section id="繁體中文版-思高聖經-ps130" class="level4">
+<h4>繁體中文版 (思高聖經)</h4>
+<p>上主，我由深淵向你呼號，我主，求你俯聽我的呼號，求你側耳俯聽我的哀禱！上主，你若細察我的罪辜，我主！有誰還能站立得住？可是，你以寬恕為懷，令人對你起敬起愛。</p>
+<p>我仰賴上主，我靈期待他的聖言；我靈等候我主，切於更夫的待旦。請以色列仰賴上主，應切於更夫待旦，因為上主富於仁慈，他必定慷慨救援。他必要拯救以色列人，脫離一切所有的罪根。</p>
+<hr />
+</section>
+</section>
+<section id="f.-玫瑰經誦唸指南-how-to-pray-the-rosary" class="level3">
+<h3>F. 玫瑰經誦唸指南 (How to Pray the Rosary)</h3>
+<p><strong>【使用時刻】</strong> 長途行路、守夜、需要長時間專注祈禱時。 <strong>【歷史說明】</strong> 1403年的亨利不會知道今日形式的「玫瑰經」——當時流行的是「聖母詩篇」（Marian Psalter）：以一串唸珠誦唸五十遍或一百五十遍聖母經，代替修士誦唸的一百五十篇聖詠。默想耶穌生平奧蹟的作法，約於1409年後才由普魯士的道明會士推廣，並在十五世紀末定型為十五端。以下是簡化的誦唸法，所需的元件經文（宗徒信經、天主經、聖母經、聖三光榮頌、又聖母經）本手冊皆已收錄。</p>
+<section id="english-version-rosary" class="level4">
+<h4>English Version</h4>
+<p>1. Make the Sign of the Cross and say the Apostles’ Creed. 2. Say one Our Father. 3. Say three Hail Marys. 4. Say one Glory Be. 5. For each of the five decades: say one Our Father, ten Hail Marys, and one Glory Be. 6. Conclude with the Hail, Holy Queen.</p>
+</section>
+<section id="繁體中文版-rosary" class="level4">
+<h4>繁體中文版 (誦唸順序)</h4>
+<p>1. 劃十字聖號，誦「宗徒信經」一遍。 2. 誦「天主經」一遍。 3. 誦「聖母經」三遍。 4. 誦「聖三光榮頌」一遍。 5. 每一端誦「天主經」一遍、「聖母經」十遍、「聖三光榮頌」一遍，共誦五端。 6. 以「又聖母經」結束。</p>
+</section>
+</section>
+</section>
+<style id="book-css">
+body.book-mode { max-width: none; margin: 0; padding: 0; border: none; outline: none; box-shadow: none; background: transparent; overflow: hidden; }
+#page-store { display: none; }
+.vh { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+main.book-stage { position: fixed; top: 0; right: 0; bottom: 0; left: 0; background: radial-gradient(1200px 700px at 50% 38%, #4d3a26 0%, #33261a 55%, #241a12 100%); display: flex; align-items: center; justify-content: center; z-index: 1; box-sizing: border-box; }
+.book { position: relative; width: min(1440px, 94vw); height: min(90vh, 900px); height: min(90dvh, 900px); display: flex; perspective: 3000px; filter: drop-shadow(0 25px 45px rgba(0,0,0,0.6)); }
+.book.single { width: min(560px, 94vw); }
+.page-slot { position: relative; width: 50%; height: 100%; background: linear-gradient(105deg, #f7efdc 0%, #f2e7cc 60%, #eadbb8 100%); overflow: hidden; }
+.book.single .page-slot { width: 100%; border-radius: 6px; }
+.page-slot.left { border-radius: 8px 0 0 8px; box-shadow: inset -22px 0 30px -22px rgba(80,55,20,0.55); }
+.page-slot.right { border-radius: 0 8px 8px 0; box-shadow: inset 22px 0 30px -22px rgba(80,55,20,0.55); }
+.page-slot.blank { background: linear-gradient(120deg, #5a3a24, #3f2817); }
+.page { height: 100%; display: flex; flex-direction: column; }
+.page-inner { flex: 1 1 auto; overflow-y: auto; padding: 2.1rem 2.3rem 0.6rem; font-size: 0.95em; min-height: 0; }
+.page-inner:focus-visible { outline: 3px solid #8a6d3f; outline-offset: -3px; }
+.page-inner::-webkit-scrollbar { width: 9px; }
+.page-inner::-webkit-scrollbar-thumb { background: #cbb98e; border-radius: 5px; }
+.page-inner::-webkit-scrollbar-track { background: transparent; }
+.page-num { flex: 0 0 auto; text-align: center; color: #6f5730; font-size: 0.78rem; padding: 0.35rem 0 0.9rem; letter-spacing: 0.2em; }
+body.book-mode section.level3 { display: block; margin-bottom: 0; }
+body.book-mode nav#TOC { border: none; background: transparent; padding: 0.2em 0; margin: 0; font-size: 0.92em; }
+body.book-mode nav#TOC > ul { columns: 1; }
+.page.cover { background: radial-gradient(600px 500px at 50% 30%, #7a2a22, #571b15 60%, #3f120e 100%); border: 14px double #a97e2f; box-sizing: border-box; }
+.page.cover .page-inner { display: flex; flex-direction: column; justify-content: center; text-align: center; overflow: hidden; }
+.page.cover h1 { color: #e7c473; text-shadow: 0 2px 6px rgba(0,0,0,0.6); border: none; font-size: 1.7rem; }
+.cover-orn { color: #c99b46; font-size: 2.2rem; margin: 0.6em 0; text-align: center; }
+.cover-sub { color: #d9b787; letter-spacing: 0.35em; margin-top: 1.2em; font-size: 0.95rem; line-height: 2; text-align: center; }
+.page.part-page .page-inner { display: flex; flex-direction: column; justify-content: center; text-align: center; }
+.page.part-page h2 { border-bottom: none; font-size: 1.6rem; }
+.page.part-page h2::before { content: "❧"; display: block; font-size: 2rem; margin-bottom: 0.4em; }
+.page.part-page h1 { font-size: 1.5rem; }
+.page.part-page p { color: #6b5233; }
+.flipper { position: absolute; top: 0; left: 50%; width: 50%; height: 100%; transform-style: preserve-3d; z-index: 40; transition: transform 0.8s cubic-bezier(0.25, 0.08, 0.3, 1); }
+.flipper.fwd { transform-origin: left center; }
+.flipper.bwd { left: 0; transform-origin: right center; }
+.flipper.fwd.go { transform: rotateY(-180deg); }
+.flipper.bwd.go { transform: rotateY(180deg); }
+.flipper.noanim { transition: none !important; }
+.book.single .flipper { left: 0; width: 100%; transform-origin: left center; }
+.flipper .face { position: absolute; top: 0; right: 0; bottom: 0; left: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; background: linear-gradient(105deg, #f7efdc, #eadbb8); overflow: hidden; }
+.flipper .face.back { transform: rotateY(180deg); }
+.flipper .face::after { content: ""; position: absolute; top: 0; right: 0; bottom: 0; left: 0; pointer-events: none; background: linear-gradient(90deg, rgba(80,55,20,0.18), transparent 25%, transparent 75%, rgba(80,55,20,0.18)); }
+.flipper .face .page { height: 100%; }
+.book::after { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: 0; box-shadow: 0 0 26px 8px rgba(60,40,15,0.45); z-index: 5; pointer-events: none; }
+.book.single::after { display: none; }
+.nav-arrow { position: fixed; top: 50%; transform: translateY(-50%); width: 3.2rem; height: 3.2rem; padding: 0; text-align: center; font-size: 2.3rem; line-height: 1; font-family: inherit; color: #e7d3a1; background: rgba(20,12,6,0.45); border: 1px solid rgba(217,201,163,0.35); border-radius: 50%; cursor: pointer; user-select: none; z-index: 60; transition: background 0.2s, opacity 0.2s; }
+.nav-arrow:hover { background: rgba(120,70,30,0.6); }
+.nav-arrow:focus-visible { outline: 3px solid #e7c473; outline-offset: 3px; }
+.nav-arrow.prev { left: 1rem; }
+.nav-arrow.next { right: 1rem; }
+.nav-arrow.disabled { opacity: 0.25; cursor: default; }
+a:focus-visible { outline: 3px solid #8a6d3f; outline-offset: 2px; border-radius: 2px; }
+body.book-mode a.top-link:focus-visible { outline-color: #e7c473; }
+.book-hint { position: fixed; bottom: 1.1rem; left: 50%; transform: translateX(-50%); color: #cbb98e; font-size: 0.85rem; letter-spacing: 0.15em; background: rgba(20,12,6,0.4); padding: 0.35em 1em; border-radius: 2em; z-index: 60; transition: opacity 0.6s; }
+.book-hint.gone { opacity: 0; pointer-events: none; }
+body.book-mode a.top-link { z-index: 70; }
+@media (max-width: 899px) {
+  main.book-stage { padding-bottom: 3.6rem; }
+  .book { height: min(86vh, 760px); height: min(86dvh, 760px); }
+  .page-inner { padding: 1.3rem 1.1rem 0.5rem; font-size: 0.92em; }
+  .nav-arrow { top: auto; bottom: 0.8rem; transform: none; width: 2.9rem; height: 2.9rem; font-size: 1.9rem; }
+  .nav-arrow.prev { left: 1rem; }
+  .nav-arrow.next { right: 1rem; }
+  body.book-mode a.top-link { bottom: 0.95rem; left: 50%; right: auto; transform: translateX(-50%); }
+  .book-hint { bottom: 4rem; font-size: 0.78rem; max-width: 72vw; text-align: center; }
+}
+@media (max-width: 374px) {
+  .page-inner { padding: 1rem 0.85rem 0.4rem; font-size: 0.9em; }
+  .page.cover h1 { font-size: 1.35rem; }
+  .page.cover { border-width: 9px; }
+}
+@media (max-height: 520px) {
+  main.book-stage { padding-bottom: 3.2rem; }
+  .book { height: calc(100vh - 4rem); height: calc(100dvh - 4rem); }
+  .page-inner { padding: 0.9rem 1rem 0.3rem; font-size: 0.88em; }
+  .book-hint { display: none; }
+  .page.cover h1 { font-size: 1.2rem; }
+  .page.cover { border-width: 8px; }
+  .cover-orn { font-size: 1.4rem; margin: 0.2em 0; }
+  .cover-sub { margin-top: 0.5em; font-size: 0.8rem; }
+  .nav-arrow { width: 2.4rem; height: 2.4rem; font-size: 1.6rem; bottom: 0.5rem; }
+  body.book-mode a.top-link { padding: 0.3em 0.7em; bottom: 0.6rem; }
+  .page-num { padding: 0.15rem 0 0.4rem; }
+  .page.part-page h2 { font-size: 1.25rem; }
+  .page.part-page h2::before { font-size: 1.3rem; margin-bottom: 0.1em; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .flipper { transition: none !important; }
+  html { scroll-behavior: auto; }
+  .book-hint { transition: none; }
+}
+@media print {
+  .book-stage, main.book-stage, a.top-link, .nav-arrow, .book-hint { display: none !important; }
+  #page-store { display: block !important; }
+  #page-store .page { page-break-after: always; }
+  #page-store .page-inner { overflow: visible; }
+  body.book-mode { overflow: visible; background: #ffffff; }
+}
+</style>
+<script>
+(function () {
+  'use strict';
+  var body = document.body;
+  var level1s = Array.prototype.slice.call(document.querySelectorAll('body > section.level1'));
+  if (!level1s.length) return;
+  var P = window.matchMedia('(max-width: 899px)').matches ? 1 : 2;
+  var REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var TOUCH = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+
+  Array.prototype.slice.call(document.querySelectorAll('section.level4')).forEach(function (sec) {
+    var h4 = sec.querySelector('h4');
+    if (!h4) return;
+    var t = h4.textContent;
+    if (t.indexOf('English') === 0) sec.setAttribute('lang', 'en');
+    else if (t.indexOf('拉丁文') === 0) sec.setAttribute('lang', 'la');
+    else if (t.indexOf('古捷克語') === 0) sec.setAttribute('lang', 'cs');
+  });
+
+  var pages = [];
+  var anchorMap = {};
+
+  function makePage(nodes, cls) {
+    var pg = document.createElement('div');
+    pg.className = 'page' + (cls ? ' ' + cls : '');
+    var inner = document.createElement('div');
+    inner.className = 'page-inner';
+    inner.setAttribute('tabindex', '0');
+    nodes.forEach(function (n) { if (n) inner.appendChild(n); });
+    pg.appendChild(inner);
+    var num = document.createElement('div');
+    num.className = 'page-num';
+    pg.appendChild(num);
+    return pg;
+  }
+
+  var main = level1s[0];
+  var h1 = main.querySelector('h1');
+  var hr1 = main.querySelector(':scope > hr');
+  if (hr1) hr1.parentNode.removeChild(hr1);
+  var toc = document.getElementById('TOC');
+
+  var cov = document.createElement('div');
+  var covTop = document.createElement('div');
+  covTop.className = 'cover-orn';
+  covTop.setAttribute('aria-hidden', 'true');
+  covTop.textContent = '✠';
+  cov.appendChild(covTop);
+  if (h1) cov.appendChild(h1);
+  var covSub = document.createElement('div');
+  covSub.className = 'cover-sub';
+  covSub.innerHTML = 'Anno Domini MCDIII<br />波西米亞 · Bohemia';
+  cov.appendChild(covSub);
+  var covBot = document.createElement('div');
+  covBot.className = 'cover-orn';
+  covBot.setAttribute('aria-hidden', 'true');
+  covBot.textContent = '❦';
+  cov.appendChild(covBot);
+  pages.push(makePage([cov], 'cover'));
+
+  anchorMap['TOC'] = pages.length;
+  pages.push(makePage([toc], 'toc-page'));
+
+  level1s.forEach(function (lvl1, idx) {
+    if (idx > 0) {
+      var ah1 = lvl1.querySelector(':scope > h1');
+      var intro = lvl1.querySelector(':scope > p');
+      anchorMap[lvl1.id] = pages.length;
+      pages.push(makePage([ah1, intro], 'part-page'));
+    }
+    Array.prototype.slice.call(lvl1.querySelectorAll(':scope > section.level2')).forEach(function (part) {
+      var h2 = part.querySelector(':scope > h2');
+      var use = part.querySelector(':scope > p');
+      anchorMap[part.id] = pages.length;
+      pages.push(makePage([h2, use], 'part-page'));
+      Array.prototype.slice.call(part.querySelectorAll(':scope > section.level3')).forEach(function (pr) {
+        anchorMap[pr.id] = pages.length;
+        pages.push(makePage([pr]));
+      });
+    });
+    Array.prototype.slice.call(lvl1.querySelectorAll(':scope > section.level3')).forEach(function (pr) {
+      anchorMap[pr.id] = pages.length;
+      pages.push(makePage([pr]));
+    });
+  });
+
+  function pageTitle(pg) {
+    if (pg.classList.contains('cover')) return '封面';
+    if (pg.classList.contains('toc-page')) return '目錄';
+    var h = pg.querySelector('h1, h2, h3');
+    return h ? h.textContent.replace(/\s+/g, ' ').trim() : '';
+  }
+
+  pages.forEach(function (pg, i) {
+    pg.querySelector('.page-num').textContent = i === 0 ? '' : '— ' + i + ' —';
+    var tt = pageTitle(pg);
+    if (tt) pg.querySelector('.page-inner').setAttribute('aria-label', tt);
+  });
+
+  var stage = document.createElement('main');
+  stage.className = 'book-stage';
+  stage.setAttribute('aria-label', '亨利的祈禱手冊（翻頁書）');
+  var book = document.createElement('div');
+  book.className = 'book' + (P === 1 ? ' single' : '');
+  var leftSlot = document.createElement('div');
+  leftSlot.className = 'page-slot left';
+  var rightSlot = document.createElement('div');
+  rightSlot.className = 'page-slot right';
+  if (P === 2) book.appendChild(leftSlot);
+  book.appendChild(rightSlot);
+  stage.appendChild(book);
+
+  function makeArrow(cls, label, glyph) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'nav-arrow ' + cls;
+    b.setAttribute('aria-label', label);
+    b.title = label;
+    var s = document.createElement('span');
+    s.setAttribute('aria-hidden', 'true');
+    s.textContent = glyph;
+    b.appendChild(s);
+    return b;
+  }
+  var prev = makeArrow('prev', '上一頁', '‹');
+  var next = makeArrow('next', '下一頁', '›');
+  stage.appendChild(prev);
+  stage.appendChild(next);
+
+  var hint = document.createElement('div');
+  hint.className = 'book-hint';
+  hint.setAttribute('aria-hidden', 'true');
+  hint.textContent = TOUCH ? '左右滑動或點擊箭頭翻頁' : '點擊兩側箭頭或使用 ← → 方向鍵翻頁';
+  stage.appendChild(hint);
+
+  var live = document.createElement('div');
+  live.className = 'vh';
+  live.setAttribute('aria-live', 'polite');
+  stage.appendChild(live);
+
+  var store = document.createElement('div');
+  store.id = 'page-store';
+  pages.forEach(function (p) { store.appendChild(p); });
+
+  var topLink = document.querySelector('a.top-link');
+  if (topLink) {
+    topLink.setAttribute('aria-label', '翻到目錄頁');
+    body.appendChild(topLink);
+  }
+  body.appendChild(stage);
+  body.appendChild(store);
+  body.classList.add('book-mode');
+  level1s.forEach(function (s) { s.parentNode.removeChild(s); });
+
+  var cur = 0, animating = false;
+  var maxV = P === 1 ? pages.length - 1 : Math.ceil((pages.length - 1) / 2);
+  function viewOf(p) { return P === 1 ? p : Math.ceil(p / 2); }
+  function leftIdx(v) { return P === 1 ? -1 : v * 2 - 1; }
+  function rightIdx(v) { return P === 1 ? v : v * 2; }
+
+  try {
+    var savedP = parseInt(window.sessionStorage.getItem('hpj-page'), 10);
+    if (!isNaN(savedP) && savedP > 0 && savedP < pages.length) cur = viewOf(savedP);
+  } catch (err) {}
+
+  function put(slot, pg) {
+    while (slot.firstChild) store.appendChild(slot.firstChild);
+    slot.classList.toggle('blank', !pg);
+    if (pg) slot.appendChild(pg);
+  }
+
+  function announce() {
+    var parts = [];
+    var li = leftIdx(cur), ri = rightIdx(cur);
+    if (li >= 0 && pages[li]) parts.push(pageTitle(pages[li]));
+    if (pages[ri]) parts.push(pageTitle(pages[ri]));
+    live.textContent = parts.join('；');
+  }
+
+  function persist() {
+    try {
+      var pIdx = pages[rightIdx(cur)] ? rightIdx(cur) : leftIdx(cur);
+      window.sessionStorage.setItem('hpj-page', String(Math.max(0, pIdx)));
+    } catch (err) {}
+  }
+
+  function render() {
+    put(leftSlot, (leftIdx(cur) >= 0 && pages[leftIdx(cur)]) || null);
+    put(rightSlot, pages[rightIdx(cur)] || null);
+    var atStart = cur <= 0, atEnd = cur >= maxV;
+    prev.classList.toggle('disabled', atStart);
+    prev.setAttribute('aria-disabled', atStart ? 'true' : 'false');
+    next.classList.toggle('disabled', atEnd);
+    next.setAttribute('aria-disabled', atEnd ? 'true' : 'false');
+    announce();
+    persist();
+  }
+
+  function flip(dir, targetView) {
+    if (animating) return;
+    var target = (targetView == null) ? cur + dir : targetView;
+    if (target < 0 || target > maxV || target === cur) return;
+    hint.classList.add('gone');
+
+    if (REDUCED) {
+      cur = target;
+      render();
+      return;
+    }
+
+    animating = true;
+    var f = document.createElement('div');
+    f.setAttribute('aria-hidden', 'true');
+    var front = document.createElement('div');
+    front.className = 'face front';
+    var back = document.createElement('div');
+    back.className = 'face back';
+    var fp = null, bp = null;
+
+    if (P === 1) {
+      f.className = 'flipper fwd';
+      if (dir > 0) {
+        fp = pages[rightIdx(cur)];
+        if (fp) front.appendChild(fp.cloneNode(true));
+        f.appendChild(front);
+        f.appendChild(back);
+        book.appendChild(f);
+        put(rightSlot, pages[rightIdx(target)] || null);
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () { f.classList.add('go'); });
+        });
+      } else {
+        fp = pages[rightIdx(target)];
+        if (fp) front.appendChild(fp.cloneNode(true));
+        f.appendChild(front);
+        f.appendChild(back);
+        f.classList.add('noanim');
+        f.classList.add('go');
+        book.appendChild(f);
+        void f.offsetWidth;
+        f.classList.remove('noanim');
+        requestAnimationFrame(function () { f.classList.remove('go'); });
+      }
+    } else {
+      f.className = 'flipper ' + (dir > 0 ? 'fwd' : 'bwd');
+      f.setAttribute('aria-hidden', 'true');
+      if (dir > 0) {
+        fp = pages[rightIdx(cur)];
+        bp = pages[leftIdx(target)];
+      } else {
+        fp = pages[leftIdx(cur)];
+        bp = pages[rightIdx(target)];
+      }
+      if (fp) front.appendChild(fp.cloneNode(true));
+      if (bp) back.appendChild(bp.cloneNode(true));
+      f.appendChild(front);
+      f.appendChild(back);
+      book.appendChild(f);
+      if (dir > 0) put(rightSlot, pages[rightIdx(target)] || null);
+      else put(leftSlot, (leftIdx(target) >= 0 && pages[leftIdx(target)]) || null);
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () { f.classList.add('go'); });
+      });
+    }
+
+    window.setTimeout(function () {
+      cur = target;
+      render();
+      if (f.parentNode) f.parentNode.removeChild(f);
+      animating = false;
+    }, 850);
+  }
+
+  prev.addEventListener('click', function () { flip(-1); });
+  next.addEventListener('click', function () { flip(1); });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
+    if (e.key === 'ArrowRight') { e.preventDefault(); flip(1); }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); flip(-1); }
+  });
+
+  document.addEventListener('click', function (e) {
+    var t = e.target;
+    var a = (t && t.closest) ? t.closest('a[href^="#"]') : null;
+    if (!a) return;
+    var id = a.getAttribute('href').slice(1);
+    if (anchorMap[id] == null) return;
+    e.preventDefault();
+    var v = viewOf(anchorMap[id]);
+    if (v !== cur) flip(v > cur ? 1 : -1, v);
+  });
+
+  var tX = null, tY = null;
+  stage.addEventListener('touchstart', function (e) {
+    if (e.touches.length === 1) {
+      tX = e.touches[0].clientX;
+      tY = e.touches[0].clientY;
+    }
+  }, { passive: true });
+  stage.addEventListener('touchend', function (e) {
+    if (tX === null) return;
+    var dx = e.changedTouches[0].clientX - tX;
+    var dy = e.changedTouches[0].clientY - tY;
+    tX = tY = null;
+    if (Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy) * 1.6) flip(dx < 0 ? 1 : -1);
+  }, { passive: true });
+
+  function checkMode() {
+    var newP = window.matchMedia('(max-width: 899px)').matches ? 1 : 2;
+    if (newP !== P) window.location.reload();
+  }
+  window.addEventListener('resize', checkMode);
+  window.addEventListener('orientationchange', checkMode);
+  var mq = window.matchMedia('(max-width: 899px)');
+  if (mq.addEventListener) mq.addEventListener('change', checkMode);
+  else if (mq.addListener) mq.addListener(checkMode);
+  window.setInterval(checkMode, 800);
+
+  render();
+})();
+</script>
+</body>
+</html>
