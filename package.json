@@ -1,0 +1,12 @@
+{
+  "name": "tarot",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "dev": "esbuild src/main.js --bundle --charset=utf8 --sourcemap --outfile=js/app.js --servedir=. --serve=127.0.0.1:8000 --watch=forever"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  }
+}

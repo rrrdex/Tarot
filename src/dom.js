@@ -1,0 +1,11 @@
+export const resultsEl = document.getElementById('results');
+export const readBtn = document.getElementById('readButton');
+export const readBtnText = document.getElementById('readButtonText');
+export const shareBtn = document.getElementById('shareButton');
+export const themeToggle = document.getElementById('themeToggle');
+export const iconSun = document.getElementById('iconSun');
+export const iconMoon = document.getElementById('iconMoon');
+export const spreadTypeEl = document.getElementById('spreadType');
+export const spreadInfoEl = document.getElementById('spreadInfo');
+export const showSpreadInfoCheckbox = document.getElementById('showSpreadInfo');
+export const showShortcutsCheckbox = document.getElementById('showShortcuts');

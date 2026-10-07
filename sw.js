@@ -1,10 +1,10 @@
-const CACHE = 'tarot-v4.15.2';
+const CACHE = 'tarot-v__VERSION__';
 const IMG_CACHE = 'tarot-img-v1';
 const KEEP = [CACHE, IMG_CACHE];
 const ASSETS = [
 './', './index.html', './manifest.json', './icon.svg',
-'./style.css?v=4.15.2',
-'./js/app.js?v=4.15.2'
+'./style.css?v=__VERSION__',
+'./js/app.js?v=__VERSION__'
 ];
 self.addEventListener('install', (e) => {
 e.waitUntil(
