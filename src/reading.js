@@ -30,7 +30,7 @@ import {
   setReadingHistory
 } from './state.js';
 import { readBtn, readBtnText, resultsEl, spreadTypeEl } from './dom.js';
-import { renderCard } from './render.js';
+import { LAYOUT_IMG_SIZES, renderCard } from './render.js';
 import { generateInsight } from './insight.js';
 
 function getDeck(deckType) {
@@ -90,7 +90,7 @@ function renderCardSelection(cfg) {
   resultsEl.innerHTML = `
 <div class="panel fade-in">
 <div class="pick-header">
-<h3 class="results-title">${escapeHTML(t('pick.title'))}</h3>
+<h2 class="results-title">${escapeHTML(t('pick.title'))}</h2>
 <p class="pick-hint">${escapeHTML(t(cfg.spreadName))} · ${t('pick.hint', { n: num })}</p>
 <div class="pick-progress" id="pickProgress">${escapeHTML(t('pick.progress', { n: 0, total: num }))}</div>
 </div>
@@ -203,11 +203,11 @@ export function renderResults(data, revealed = false) {
 ${drawnCards.map((c, i) => {
       const cell = layout.cells[i];
       const gr = cell.rs ? `${cell.r} / span ${cell.rs}` : cell.r;
-      return `<div class="spread-cell${cell.rot ? ' rotated' : ''}" style="--gr: ${gr}; --gc: ${cell.c}; --delay: ${i * 70}ms">${renderCard(c, false, anim, i)}</div>`;
+      return `<div class="spread-cell${cell.rot ? ' rotated' : ''}" style="--gr: ${gr}; --gc: ${cell.c}; --delay: ${i * 70}ms">${renderCard(c, false, anim, i, LAYOUT_IMG_SIZES)}</div>`;
     }).join('')}
 </div>
 <div class="bottom-card-row" style="--delay: ${drawnCards.length * 70}ms">
-${renderCard(bottomCard, true, anim)}
+${renderCard(bottomCard, true, anim, 0, LAYOUT_IMG_SIZES)}
 </div>
 ` : `
 <div class="cards-grid" data-keynav="grid">
@@ -218,10 +218,10 @@ ${renderCard(bottomCard, true, anim, drawnCards.length)}
   const insights = generateInsight(data) || [];
   const insightHTML = insights.length ? `
 <div class="insight-panel">
-<div class="insight-title">${escapeHTML(t('insight.panel.title'))}</div>
+<h3 class="insight-title">${escapeHTML(t('insight.panel.title'))}</h3>
 ${insights.map(item => `
 <div class="insight-item">
-<div class="insight-tag">${escapeHTML(item.tag)}</div>
+<h4 class="insight-tag">${escapeHTML(item.tag)}</h4>
 <p class="insight-text">${escapeHTML(item.text)}</p>
 </div>
 `).join('')}
@@ -230,7 +230,7 @@ ${insights.map(item => `
   resultsEl.innerHTML = `
 <div class="panel fade-in">
 <div class="results-header">
-<h3 class="results-title">${escapeHTML(t('reading.results.title'))}</h3>
+<h2 class="results-title">${escapeHTML(t('reading.results.title'))}</h2>
 <div class="results-meta">
 <span class="badge ${favorite ? 'favorite' : ''}">${escapeHTML(t(spreadName))}</span>
 ${question ? `<span>${escapeHTML(question)}</span>` : ''}
@@ -384,7 +384,7 @@ export function generateShareImage() {
     a.click();
     URL.revokeObjectURL(url);
     showToast(t('toast.shareImageDone'));
-    }, 'image/png');
+  }, 'image/png');
 }
 export function printReading() {
   window.print();

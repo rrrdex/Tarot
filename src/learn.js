@@ -1,8 +1,8 @@
 import { t } from './i18n.js';
-import { cryptoRandom, escapeHTML, openConfirm, showToast, shuffle } from './utils.js';
+import { cryptoRandom, escapeHTML, keywordList, openConfirm, showToast, shuffle } from './utils.js';
 import { fullTarotCards, suitNames } from './data.js';
 import { cardMeaningText, cardMeanings } from './meanings.js';
-import { cardLore } from './lore.js';
+import { loadLore, loadedLore } from './lazy.js';
 import { cardThumb, visualStyle } from './render.js';
 
 export const LEARN_PROGRESS_KEY = 'learnProgress';
@@ -69,9 +69,9 @@ function saveLearnStreak() {
 }
 export let learnProgress = loadLearnProgress();
 export let learnStreak = loadLearnStreak();
-export let learnMode = localStorage.getItem(LEARN_MODE_KEY) || 'flash';
+let learnMode = localStorage.getItem(LEARN_MODE_KEY) || 'flash';
 if (learnMode !== 'flash' && learnMode !== 'quiz') learnMode = 'flash';
-export let learnScope = localStorage.getItem(LEARN_SCOPE_KEY) || 'all';
+let learnScope = localStorage.getItem(LEARN_SCOPE_KEY) || 'all';
 if (!LEARN_SCOPES.includes(learnScope)) learnScope = 'all';
 export function setLearnProgress(v) {
   learnProgress = v;
@@ -280,7 +280,7 @@ function buildLearnQuestion(target, pool, type) {
   const options = [];
   let art = null;
   if (type === 'C') {
-    art = cardThumb(target);
+    art = cardThumb(target, '', 132);
     if (!art) type = 'A';
   }
   if (type === 'A') {
@@ -311,7 +311,7 @@ function buildLearnQuestion(target, pool, type) {
     options.push({ text, correct: false });
   }
   if (type === 'C') {
-    const lore = cardLore[target.nameKey];
+    const lore = loadedLore()?.cardLore[target.nameKey];
     const desc = [
       lore && lore.symbolism ? lore.symbolism : '',
       visualStyle === 'api' ? target.englishName : ''
@@ -387,7 +387,7 @@ function renderLearnQuiz() {
 <div class="quiz-progress">${escapeHTML(t('learn.quiz.progress', { n: learnQuiz.index + 1, total }))}</div>
 <div class="quiz-card">
 <div class="quiz-prompt">${escapeHTML(q.prompt)}</div>
-${q.subject ? `<div class="quiz-subject">${escapeHTML(q.subject)}</div>` : ''}
+${q.subject ? `<div class="quiz-subject">${keywordList(q.subject.split('・'))}</div>` : ''}
 ${q.art || ''}
 <div class="quiz-options" data-keynav="grid">
 ${q.options.map((o, i) => {
@@ -396,7 +396,7 @@ ${q.options.map((o, i) => {
         if (o.correct) cls += ' correct';
         else if (i === q.chosen) cls += ' wrong';
       }
-      return `<button class="${cls}" data-i="${i}" tabindex="${i === 0 ? 0 : -1}" data-keynav-item${q.answered ? ' disabled' : ''}>${escapeHTML(o.text)}</button>`;
+      return `<button class="${cls}" data-i="${i}" tabindex="${i === 0 ? 0 : -1}" data-keynav-item${q.answered ? ' disabled' : ''}>${keywordList(o.text.split('・'))}</button>`;
     }).join('')}
 </div>
 </div>
@@ -487,6 +487,11 @@ export function syncLearnSeg() {
   });
 }
 export function renderLearnStage() {
+  // 看圖題的讀屏說明要用到牌面象徵，先確保資料到位
+  if (!loadedLore()) {
+    loadLore().then(renderLearnStage);
+    return;
+  }
   if (learnMode === 'quiz') renderLearnQuiz();
   else renderLearnFlash();
 }

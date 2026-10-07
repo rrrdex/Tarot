@@ -1,5 +1,4 @@
 import { t } from './i18n.js';
-import { changelog } from './changelog.js';
 import { openConfirm, showToast } from './utils.js';
 import {
   currentTab,
@@ -21,9 +20,7 @@ import {
   LEARN_PROGRESS_KEY,
   LEARN_SCOPES,
   LEARN_STREAK_KEY,
-  learnMode,
   learnProgress,
-  learnScope,
   learnStreak,
   loadLearnProgress,
   loadLearnStreak,
@@ -83,9 +80,11 @@ const savedTheme = localStorage.getItem('theme');
 if (['light', 'dark', 'neon'].includes(savedTheme)) {
   document.documentElement.classList.add(savedTheme);
 }
-updateThemeIcons();
-updateThemeColor();
-syncThemeRadios();
+export function initTheme() {
+  updateThemeIcons();
+  updateThemeColor();
+  syncThemeRadios();
+}
 themeToggle.addEventListener('click', toggleTheme);
 document.querySelectorAll('input[name="themePref"]').forEach(radio => {
   radio.addEventListener('change', (e) => {
@@ -121,9 +120,7 @@ function buildExportData() {
     if (v !== null) prefs[k] = v;
   });
   return {
-    version: changelog[0]
-    ? changelog[0].version
-    : null,
+    version: __APP_VERSION__,
     exportDate: new Date().toISOString(),
     history: readingHistory,
     visualStyle: visualStyle,

@@ -30,10 +30,16 @@ jobs:
         with:
           node-version-file: '.node-version'
           cache: npm
+      - name: Install
+        run: npm ci
+      - name: Lint
+        run: npm run lint
       - name: Build
+        run: npm run build
+      - name: Test
         run: |
-          npm ci
-          npm run build
+          npx playwright install --with-deps chromium
+          npm test
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact

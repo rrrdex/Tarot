@@ -7,8 +7,9 @@ export const suitNames = {
 };
 export const orientationNames = { upright: 'orientation.upright', reversed: 'orientation.reversed' };
 export const tendencyNames = { yes: 'tendency.yes', no: 'tendency.no', unclear: 'tendency.unclear' };
-export function getCardImageUrl(card, ext = 'jpg') {
-  return card && card.nameKey ? `img/cards/${card.nameKey}.${ext}` : null;
+export function getCardImageUrl(card, ext = 'jpg', width = null) {
+  if (!card || !card.nameKey) return null;
+  return width ? `img/cards/${width}/${card.nameKey}.${ext}` : `img/cards/${card.nameKey}.${ext}`;
 }
 export const fullTarotCards = [
   { name: "愚者", suit: "Major Arcana", number: "0", englishName: "The Fool", nameKey: "fool" },

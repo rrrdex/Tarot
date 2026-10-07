@@ -1,5 +1,3 @@
-import { minorRankMeanings } from './meanings.js';
-
 export const cardContexts = {
   fool: {
     love: '對感情保持開放，別急著定義關係。願意冒一點險的心意，往往比周全計畫更動人。',
@@ -465,11 +463,4 @@ export function contextText(card, domain) {
   const rank = contextRankDomains[card.number];
   const suit = contextSuitDomains[card.suit];
   return (((rank && rank[domain]) || '') + ((suit && suit[domain]) || '')) || '';
-}
-export function contextReflection(card) {
-  if (!card) return '';
-  const ctx = cardContexts[card.nameKey];
-  if (ctx && typeof ctx.reflection === 'string') return ctx.reflection;
-  const rank = minorRankMeanings[card.number];
-  return (rank && rank.reflection) || '';
 }

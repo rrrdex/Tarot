@@ -245,11 +245,11 @@ export function renderPatternInsights() {
   const sub = history.length ? `<div class="insight-sub">${escapeHTML(t('pattern.panel.sub', { n: history.length }))}</div>` : '';
   el.innerHTML = `
 <div class="insight-panel">
-<div class="insight-title">${escapeHTML(t('pattern.panel.title'))}</div>
+<h3 class="insight-title">${escapeHTML(t('pattern.panel.title'))}</h3>
 ${sub}
 ${items.map(it => `
 <div class="insight-item">
-<div class="insight-tag">${escapeHTML(it.tag)}</div>
+<h4 class="insight-tag">${escapeHTML(it.tag)}</h4>
 <p class="insight-text">${escapeHTML(it.text)}</p>
 </div>
 `).join('')}

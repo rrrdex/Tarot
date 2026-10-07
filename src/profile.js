@@ -11,9 +11,6 @@ const profilePositionNames = {
   origin: 'profile.pos.origin', inheritance: 'profile.pos.inheritance', self: 'profile.pos.self',
   legacy: 'profile.pos.legacy', return: 'profile.pos.return'
 };
-const profilePositionNamesEn = {
-  origin: 'Origin', inheritance: 'Inheritance', self: 'Self', legacy: 'Legacy', return: 'Return'
-};
 const PROFILE_POS = 5;
 const PROFILE_M = 78n * 77n * 76n * 75n * 74n * 32n;
 const PROFILE_K = 982451653n;
@@ -131,7 +128,7 @@ export function renderProfileCards() {
     return;
   }
   el.innerHTML = entries.map(({ position, card, orientation }, i) => {
-    const art = cardThumb(card, orientation === 'reversed' ? 'reversed' : '');
+    const art = cardThumb(card, orientation === 'reversed' ? 'reversed' : '', 28);
     const ori = t(orientationNames[orientation] || orientation);
     return `
 <button class="profile-chip" data-suit="${escapeHTML(card.suit)}" tabindex="${i === 0 ? 0 : -1}" data-keynav-item data-action="openCardModal" data-card="${card.nameKey}" data-orientation="${orientation}">
@@ -190,4 +187,3 @@ if (profileClearBirthdayBtn) {
     showToast(t('toast.birthdayCleared'));
   });
 }
-renderProfile();

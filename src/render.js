@@ -1,5 +1,5 @@
 import { t } from './i18n.js';
-import { escapeHTML, mulberry32, showToast, shuffle } from './utils.js';
+import { escapeHTML, keywordList, mulberry32, showToast, shuffle } from './utils.js';
 import {
   fullTarotCards,
   getCardImageUrl,
@@ -12,9 +12,8 @@ import { waiteAdditional, waiteTerms } from './waite.js';
 import { mofaTerms } from './mofa.js';
 import { waiteTermZh } from './waite-zh.js';
 import { cardClass, cardSystems, waiteCourtLooks } from './systems.js';
-import { cardMeaningText, cardMeanings } from './meanings.js';
-import { cardContexts, contextReflection, contextText } from './contexts.js';
-import { cardLore, getCardLore } from './lore.js';
+import { cardMeaningText, cardMeanings, minorRankMeanings } from './meanings.js';
+import { loadContexts, loadLore } from './lazy.js';
 import { getCardArt } from './deck.js';
 import { lastReadingData } from './state.js';
 import { renderResults } from './reading.js';
@@ -39,7 +38,20 @@ function refreshCardVisuals() {
   renderCardDatabase();
   renderLearnStage();
 }
-export function cardThumb(card, extraClass = '') {
+const CARD_THUMB_WIDTHS = [160, 320, 400];
+const CARD_FULL_WIDTH = 500;
+// <picture> 依 type 挑來源，不會因檔案 404 退回下一層：每種寬度的 avif、webp 都必須存在（scripts/images.mjs 產生）
+function cardSources(card, sizes) {
+  return ['avif', 'webp'].map(ext => {
+    const srcset = [
+      ...CARD_THUMB_WIDTHS.map(w => `${getCardImageUrl(card, ext, w)} ${w}w`),
+      `${getCardImageUrl(card, ext)} ${CARD_FULL_WIDTH}w`
+    ].join(', ');
+    return `<source srcset="${srcset}" sizes="${sizes}" type="image/${ext}">`;
+  }).join('\n');
+}
+// displayWidth：圖片在版面上的最大 CSS 寬度，瀏覽器據此挑合適的縮圖
+export function cardThumb(card, extraClass = '', displayWidth = 150) {
   if (!card) return null;
   if (visualStyle === 'text') return null;
   if (visualStyle === 'line') {
@@ -49,8 +61,7 @@ export function cardThumb(card, extraClass = '') {
   if (!jpg) return null;
   const { w, h } = cardImageSize(card);
   return `<picture>
-<source srcset="${getCardImageUrl(card, 'avif')}" type="image/avif">
-<source srcset="${getCardImageUrl(card, 'webp')}" type="image/webp">
+${cardSources(card, `${displayWidth}px`)}
 <img class="card-image${extraClass ? ' ' + extraClass : ''}" src="${jpg}" alt=""
 width="${w}" height="${h}" loading="lazy" decoding="async">
 </picture>`;
@@ -78,13 +89,15 @@ document.addEventListener('load', (e) => {
   if (!(img instanceof HTMLImageElement) || !img.hasAttribute('data-card-photo')) return;
   img.style.opacity = '1';
   img.closest('.card-image-container').querySelector('.card-image-loading').style.display = 'none';
-  }, true);
+}, true);
 document.addEventListener('error', (e) => {
   const img = e.target;
   if (!(img instanceof HTMLImageElement) || !img.hasAttribute('data-card-photo')) return;
-  handleImageError(img, img.alt);
-  }, true);
-export function renderCard(card, isBottom = false, anim = 'slide-in', idx = 0) {
+  handleImageError(img, img.dataset.name);
+}, true);
+// 牌陣版面裡的牌面較小（見 style.css 的 .spread-layout .card-image）
+export const LAYOUT_IMG_SIZES = '(min-width: 1024px) 130px, 40vw';
+export function renderCard(card, isBottom = false, anim = 'slide-in', idx = 0, imgSizes = '260px') {
   const meaning = cardMeanings[card.nameKey];
   const photo = visualStyle === 'api' ? getCardImageUrl(card) : null;
   const lineArt = visualStyle === 'line'
@@ -92,7 +105,6 @@ export function renderCard(card, isBottom = false, anim = 'slide-in', idx = 0) {
   : null;
   const visualClass = (photo || lineArt) ? 'visual-api' : '';
   const size = photo ? cardImageSize(card) : null;
-// <picture> 依 type 挑來源，不會因檔案 404 退回下一層：avif、webp、jpg 三種格式必須同時存在
   return `
 <div class="card ${isBottom ? 'bottom' : ''} ${visualClass} ${anim}"
 tabindex="${idx === 0 ? 0 : -1}" data-keynav-item role="button" data-suit="${card.suit}"
@@ -101,11 +113,10 @@ ${photo ? `
 <div class="card-image-container">
 <div class="card-image-loading">${escapeHTML(t('card.loading'))}</div>
 <picture>
-<source srcset="${getCardImageUrl(card, 'avif')}" type="image/avif">
-<source srcset="${getCardImageUrl(card, 'webp')}" type="image/webp">
+${cardSources(card, imgSizes)}
 <img class="card-image${card.orientation === 'reversed' ? ' reversed' : ''}"
 src="${photo}"
-alt="${escapeHTML(card.name)}"
+alt="" data-name="${escapeHTML(card.name)}"
 width="${size.w}" height="${size.h}"
 style="opacity: 0;" data-card-photo/>
 </picture>
@@ -124,7 +135,7 @@ ${lineArt ? `
 ${escapeHTML(t(orientationNames[card.orientation] || card.orientation))}
 </div>
 </div>
-${meaning ? `<div class="card-keywords">${meaning.keywords.map(escapeHTML).join(' · ')}</div>` : ''}
+${meaning ? `<div class="card-keywords">${keywordList(meaning.keywords)}</div>` : ''}
 <div class="card-footer">
 <span>${escapeHTML(card.number)}</span>
 <span>${escapeHTML(card.englishName)}</span>
@@ -133,6 +144,7 @@ ${(photo || lineArt) ? '</div>' : ''}
 </div>
 `;
 }
+let cardModalKey = null;
 export function openCardModal(nameKey, orientation) {
   const card = fullTarotCards.find(c => c.nameKey === nameKey);
   const m = cardMeanings[nameKey];
@@ -145,7 +157,7 @@ export function openCardModal(nameKey, orientation) {
   });
   const modalArt = document.getElementById('cardModalArt');
   if (modalArt) {
-    modalArt.innerHTML = cardThumb(card) || '';
+    modalArt.innerHTML = cardThumb(card, '', 54) || '';
     modalArt.dataset.suit = card.suit;
   }
   document.getElementById('cardModalKeywords').innerHTML = m.keywords.map(k => `<span class="tag">${escapeHTML(k)}</span>`).join('');
@@ -157,12 +169,14 @@ export function openCardModal(nameKey, orientation) {
   document.getElementById('meaningReversed').classList.toggle('active', orientation === 'reversed');
   document.getElementById('imageUpright').classList.toggle('active', orientation === 'upright');
   document.getElementById('imageReversed').classList.toggle('active', orientation === 'reversed');
-  renderCardModalContext(nameKey);
-  renderCardModalLore(card, nameKey);
+  cardModalKey = nameKey;
+// 資料晚到時，若視窗已換成別張牌就不要覆蓋
+  loadContexts().then(m => { if (cardModalKey === nameKey) renderCardModalContext(m, nameKey); });
+  loadLore().then(m => { if (cardModalKey === nameKey) renderCardModalLore(m, card, nameKey); });
   setCardModalSeg('meaning');
   document.getElementById('cardModal').classList.add('show');
 }
-function renderCardModalLore(card, nameKey) {
+function renderCardModalLore({ cardLore, getCardLore }, card, nameKey) {
   const lore = cardLore[nameKey];
   const fillLoreBlock = (blockId, textId, text) => {
     const block = document.getElementById(blockId);
@@ -185,7 +199,7 @@ function renderCardModalLore(card, nameKey) {
     const mrow = (labelKey, list) => (list && list.length) ? `
 <div class="waite-row">
 <span class="waite-ori">${escapeHTML(t(labelKey))}</span>
-<span class="waite-words">${list.map(escapeHTML).join('・')}</span>
+<span class="waite-words">${keywordList(list)}</span>
 </div>` : '';
     const mhtml = mt ? mrow('waite.terms.upright', mt.up) + mrow('waite.terms.reversed', mt.rv) : '';
     mList.innerHTML = mhtml;
@@ -194,7 +208,7 @@ function renderCardModalLore(card, nameKey) {
   const waitePair = (en) => {
     const zh = waiteTermZh(en);
     return zh
-    ? `<span class="waite-pair">${escapeHTML(zh)}<span class="waite-en">${escapeHTML(en)}</span></span>`
+    ? `<span class="waite-pair"><span class="waite-zh">${escapeHTML(zh)}</span><span class="waite-en">${escapeHTML(en)}</span></span>`
     : `<span class="waite-pair"><span class="waite-en waite-en-only">${escapeHTML(en)}</span></span>`;
   };
   const waiteRow = (labelKey, list) => (list && list.length) ? `
@@ -219,7 +233,7 @@ function renderCardModalLore(card, nameKey) {
   fillLoreBlock(
     'cardModalCourtBlock', 'cardModalCourt',
     (cardClass(card) === 'court' && waiteCourtLooks[card.suit])
-    ? t(waiteCourtLooks[card.suit]) + '　—　' + t('court.looks.note')
+    ? t(waiteCourtLooks[card.suit])
     : null
   );
   fillLoreBlock('imageUpright', 'cardModalImageUpright', lore && lore.imageUpright);
@@ -259,7 +273,7 @@ ${g.note ? `<p class="waite-terms-note">${escapeHTML(t(g.note))}</p>` : ''}
   list.innerHTML = blocks.length
   ? blocks.map(b => `
 <div class="lore-entry">
-<div class="lore-title">${escapeHTML(b.title || '')}</div>
+<h3 class="lore-title">${escapeHTML(b.title || '')}</h3>
 <p class="lore-text">${escapeHTML(b.text || '')}</p>
 </div>
 `).join('')
@@ -279,7 +293,13 @@ function setCardModalSeg(name) {
     if (panel) panel.classList.toggle('hidden', key !== name);
   });
 }
-function renderCardModalContext(nameKey) {
+function contextReflection(cardContexts, card) {
+  const ctx = cardContexts[card.nameKey];
+  if (ctx && typeof ctx.reflection === 'string') return ctx.reflection;
+  const rank = minorRankMeanings[card.number];
+  return (rank && rank.reflection) || '';
+}
+function renderCardModalContext({ cardContexts, contextText }, nameKey) {
   const section = document.getElementById('cardModalContextSection');
   if (!section) return;
   const card = fullTarotCards.find(c => c.nameKey === nameKey);
@@ -300,17 +320,17 @@ function renderCardModalContext(nameKey) {
     {
       icon: '⚖️',
       label: t('card.context.yesno'),
-      html: `<span class="yesno-badge ${cls}">${escapeHTML(t(tendencyNames[tendency] || tendency))}</span>${escapeHTML(yesno.note || '')}`
+      html: `<span class="yesno-badge ${cls}">${escapeHTML(t(tendencyNames[tendency] || tendency))}</span><span>${escapeHTML(yesno.note || '')}</span>`
     }
   ];
   document.getElementById('cardModalContextList').innerHTML = rows.map(r => `
 <div class="context-row">
 <span class="context-icon">${r.icon}</span>
 <span class="context-label">${escapeHTML(r.label)}</span>
-<p class="context-text">${r.html || escapeHTML(r.text || '')}</p>
+<p class="context-text${r.html ? ' context-text-yesno' : ''}">${r.html || escapeHTML(r.text || '')}</p>
 </div>
 `).join('');
-  document.getElementById('cardModalReflection').textContent = contextReflection(card);
+  document.getElementById('cardModalReflection').textContent = contextReflection(cardContexts, card);
   const ctxNote = document.getElementById('cardModalContextNote');
   if (ctxNote) ctxNote.classList.toggle('hidden', cardClass(card) === 'major');
 }
@@ -334,13 +354,13 @@ export function renderDailyCard() {
   const card = shuffle(fullTarotCards, rng)[0];
   const orientation = rng() > 0.5 ? 'upright' : 'reversed';
   const m = cardMeanings[card.nameKey];
-  const dailyArt = cardThumb(card);
+  const dailyArt = cardThumb(card, '', 48);
   el.innerHTML = `
 ${dailyArt ? `<div class="daily-card-art" data-suit="${card.suit}">${dailyArt}</div>` : ''}
 <div class="daily-card-info">
 <div class="daily-card-label">${escapeHTML(t('reading.daily.title', { m: now.getMonth() + 1, d: now.getDate() }))}</div>
 <div class="daily-card-name">${escapeHTML(card.name)}<span class="daily-card-ori">${escapeHTML(t(orientationNames[orientation] || orientation))}</span></div>
-${m ? `<div class="daily-card-keywords">${m.keywords.map(escapeHTML).join('・')}</div>` : ''}
+${m ? `<div class="daily-card-keywords">${keywordList(m.keywords)}</div>` : ''}
 </div>
 <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M8.72 4.72a.75.75 0 011.06 0l6.75 6.75a.75.75 0 010 1.06l-6.75 6.75a.75.75 0 11-1.06-1.06L14.94 12 8.72 5.78a.75.75 0 010-1.06z" clip-rule="evenodd"/></svg>
 `;

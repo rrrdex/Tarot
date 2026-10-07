@@ -45,41 +45,41 @@ export function renderStatistics() {
     if (slot) slot.count++;
   });
   const maxMonthly = Math.max(...monthCounts.map(mc => mc.count), 1);
-  // 無障礙：趨勢圖整張當成圖片，各月數字寫進 aria-label，長條本身純裝飾；
-  // 圓餅圖的 canvas 對讀屏是空盒子，同樣資料已由 .pie-legend 以文字列出，所以藏掉
+// 無障礙：趨勢圖整張當成圖片，各月數字寫進 aria-label，長條本身純裝飾；
+// 圓餅圖的 canvas 對讀屏是空盒子，同樣資料已由 .pie-legend 以文字列出，所以藏掉
   content.innerHTML = `
 <div class="stat-card">
-<div class="stat-title">${escapeHTML(t('stats.readings.title'))}</div>
+<h3 class="stat-title">${escapeHTML(t('stats.readings.title'))}</h3>
 <div class="stat-value">${readingHistory.length}</div>
 <div class="stat-label">${escapeHTML(t('stats.readings.unit'))}</div>
 </div>
 <div class="stat-card">
-<div class="stat-title">${escapeHTML(t('stats.cards.title'))}</div>
+<h3 class="stat-title">${escapeHTML(t('stats.cards.title'))}</h3>
 <div class="stat-value">${totalCards}</div>
 <div class="stat-label">${escapeHTML(t('stats.cards.unit'))}</div>
 </div>
 <div class="stat-card">
-<div class="stat-title">${escapeHTML(t('stats.uprightPct.title'))}</div>
+<h3 class="stat-title">${escapeHTML(t('stats.uprightPct.title'))}</h3>
 <div class="stat-value">${((upright / totalCards) * 100).toFixed(0)}%</div>
 <div class="stat-label">${escapeHTML(t('stats.orientation.unit', { n: upright }))}</div>
 </div>
 <div class="stat-card">
-<div class="stat-title">${escapeHTML(t('stats.reversedPct.title'))}</div>
+<h3 class="stat-title">${escapeHTML(t('stats.reversedPct.title'))}</h3>
 <div class="stat-value">${((reversed / totalCards) * 100).toFixed(0)}%</div>
 <div class="stat-label">${escapeHTML(t('stats.orientation.unit', { n: reversed }))}</div>
 </div>
 <div class="stat-card">
-<div class="stat-title">${escapeHTML(t('stats.favorites.title'))}</div>
+<h3 class="stat-title">${escapeHTML(t('stats.favorites.title'))}</h3>
 <div class="stat-value">${favoriteCount}</div>
 <div class="stat-label">${escapeHTML(t('stats.favorites.unit'))}</div>
 </div>
 <div class="stat-card">
-<div class="stat-title">${escapeHTML(t('stats.avg.title'))}</div>
+<h3 class="stat-title">${escapeHTML(t('stats.avg.title'))}</h3>
 <div class="stat-value">${(totalCards / readingHistory.length).toFixed(1)}</div>
 <div class="stat-label">${escapeHTML(t('stats.avg.unit'))}</div>
 </div>
 <div class="stat-card wide">
-<div class="stat-title">${escapeHTML(t('stats.trend.title'))}</div>
+<h3 class="stat-title">${escapeHTML(t('stats.trend.title'))}</h3>
 <div class="trend-chart" role="img" aria-label="${escapeHTML(t('stats.trend.title') + '：' + monthCounts.map(mc => t('stats.trend.bar', { month: mc.key, n: mc.count })).join('、'))}">
 ${monthCounts.map(mc => `<div class="trend-bar" aria-hidden="true" style="height: ${Math.max((mc.count / maxMonthly) * 100, 2)}%"></div>`).join('')}
 </div>
@@ -89,14 +89,14 @@ ${monthCounts.map(mc => `<div class="trend-bar" aria-hidden="true" style="height
 </div>
 </div>
 <div class="stat-card wide">
-<div class="stat-title">${escapeHTML(t('stats.suits.title'))}</div>
+<h3 class="stat-title">${escapeHTML(t('stats.suits.title'))}</h3>
 <div class="pie-chart">
 <canvas id="suitPieChart" class="pie-canvas" aria-hidden="true"></canvas>
 <div class="pie-legend" id="suitLegend"></div>
 </div>
 </div>
 <div class="stat-card wide">
-<div class="stat-title">${escapeHTML(t('stats.topSpreads.title'))}</div>
+<h3 class="stat-title">${escapeHTML(t('stats.topSpreads.title'))}</h3>
 <div class="stat-list">
 ${topSpreads.map(([name, count]) => `
 <div class="stat-item">
@@ -107,7 +107,7 @@ ${topSpreads.map(([name, count]) => `
 </div>
 </div>
 <div class="stat-card wide">
-<div class="stat-title">${escapeHTML(t('stats.topCards.title'))}</div>
+<h3 class="stat-title">${escapeHTML(t('stats.topCards.title'))}</h3>
 <div class="stat-list">
 ${topCards.map(([key, count]) => `
 <div class="stat-item">

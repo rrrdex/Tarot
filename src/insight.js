@@ -1,4 +1,5 @@
-import { t, uiStrings } from './i18n.js';
+import { t } from './i18n.js';
+import { uiStrings } from './strings.js';
 import { fullTarotCards, orientationNames, suitNames } from './data.js';
 import { foliRecurrence, waiteAdditional, waiteRecurrence, waiteTerms } from './waite.js';
 import { mofaTerms } from './mofa.js';

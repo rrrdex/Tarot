@@ -1,5 +1,4 @@
-import { applyStaticStrings, buildLangSwitch, t } from './i18n.js';
-import { changelog } from './changelog.js';
+import { applyLangToDocument, applyStaticStrings, buildLangSwitch, t } from './i18n.js';
 import {
   dismissPendingConfirm,
   escapeHTML,
@@ -43,7 +42,8 @@ import { renderPatternInsights } from './patterns.js';
 import { renderCardDatabase } from './database.js';
 import { renderLearn, syncLearnSeg } from './learn.js';
 import { renderProfile } from './profile.js';
-import { toggleTheme, updateDataStats } from './settings.js';
+import { initTheme, toggleTheme, updateDataStats } from './settings.js';
+import { loadChangelog, prefetchWhenIdle } from './lazy.js';
 
 const KEYNAV_ITEM = '[data-keynav-item]';
 const KEYNAV_ARROWS = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
@@ -102,7 +102,7 @@ function onKeyNavKeydown(e) {
   const mode = group.dataset.keynav;
   const items = keyNavItems(group);
   if (items.indexOf(item) < 0) return;
-  let next = null;
+  let next;
   if (e.key === 'Home') next = items[0];
   else if (e.key === 'End') next = items[items.length - 1];
   else if (KEYNAV_ARROWS.includes(e.key)) {
@@ -124,6 +124,7 @@ document.querySelectorAll('.tab').forEach(tab => {
 });
 export function switchTab(tabName) {
   setCurrentTab(tabName);
+  document.documentElement.dataset.tab = tabName;
   localStorage.setItem('tab', tabName);
   document.querySelectorAll('.tab').forEach(t => {
     const on = t.dataset.tab === tabName;
@@ -362,15 +363,14 @@ shareBtn.addEventListener('click', () => {
   }
 });
 readBtn.addEventListener('click', () => performReading());
-function hasChangelog() {
-  return changelog.length > 0;
-}
-function openAboutModal() {
+async function openAboutModal() {
   const versionEl = document.getElementById('aboutVersion');
-  if (versionEl) versionEl.textContent = hasChangelog() ? `v${changelog[0].version}` : '';
+  if (versionEl) versionEl.textContent = `v${__APP_VERSION__}`;
+  document.getElementById('aboutModal').classList.add('show');
   const listEl = document.getElementById('changelogList');
   if (listEl) {
-    listEl.innerHTML = hasChangelog()
+    const { changelog } = await loadChangelog();
+    listEl.innerHTML = changelog.length
     ? changelog.map(entry => {
       const date = entry.date
       ? `<span class="changelog-date">${escapeHTML(entry.date)}</span>`
@@ -383,13 +383,12 @@ function openAboutModal() {
 <span class="changelog-version">v${escapeHTML(entry.version)}</span>
 ${date}
 </div>
-<div class="changelog-title">${escapeHTML(entry.title)}</div>
+<h3 class="changelog-title">${escapeHTML(entry.title)}</h3>
 <ul class="changelog-changes">${changes}</ul>
 </div>`;
     }).join('')
     : `<div class="lore-empty">${escapeHTML(t('about.changelog.empty'))}</div>`;
   }
-  document.getElementById('aboutModal').classList.add('show');
 }
 function closeAboutModal() {
   document.getElementById('aboutModal').classList.remove('show');
@@ -411,7 +410,7 @@ document.getElementById('linkPrivacy').addEventListener('click', (e) => {
 const footerYear = document.getElementById('footerYear');
 if (footerYear) footerYear.textContent = new Date().getFullYear();
 const footerVersion = document.getElementById('footerVersion');
-if (footerVersion && hasChangelog()) footerVersion.textContent = `v${changelog[0].version}`;
+if (footerVersion) footerVersion.textContent = `v${__APP_VERSION__}`;
 export function rerenderForLang() {
   applyStaticStrings();
   buildLangSwitch();
@@ -422,7 +421,10 @@ export function rerenderForLang() {
   syncLearnSeg();
   switchTab(currentTab);
 }
+// 所有模組都執行完才開始繪製：模組之間有循環引用，載入階段呼叫別的模組可能碰到尚未初始化的常數
 (function init() {
+  applyLangToDocument();
+  initTheme();
   applyStaticStrings();
   buildLangSwitch();
   syncCanonical();
@@ -443,6 +445,7 @@ export function rerenderForLang() {
   if (q) document.getElementById('question').value = q;
   updateSpreadInfo();
   renderDailyCard();
+  renderProfile();
   setVisualStyle(visualStyle);
   switchTab(isValidSeed(seed) ? 'reading' : currentTab);
   if (isValidSeed(seed)) {
@@ -455,6 +458,7 @@ export function rerenderForLang() {
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
     navigator.serviceWorker.register('sw.js').catch(() => {});
   }
+  prefetchWhenIdle();
   document.querySelectorAll('.modal-overlay').forEach(overlay => {
     overlay.addEventListener('click', (e) => {
       if (e.target === overlay) dismissModal(overlay);

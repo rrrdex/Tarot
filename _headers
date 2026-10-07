@@ -1,0 +1,24 @@
+# Cloudflare Pages 回應標頭；__CSP__ 由 build.mjs 帶入（含 inline script 的雜湊）
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()
+  X-Frame-Options: DENY
+
+/
+  Content-Security-Policy: __CSP__
+
+/index.html
+  Content-Security-Policy: __CSP__
+
+/js/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/*.css
+  Cache-Control: public, max-age=31536000, immutable
+
+/img/cards/*
+  Cache-Control: public, max-age=2592000
+
+/sw.js
+  Cache-Control: no-cache

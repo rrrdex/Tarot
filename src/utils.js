@@ -1,5 +1,9 @@
 import { t } from './i18n.js';
 
+// 關鍵詞清單：每個詞包成不換行的單位，換行只會發生在分隔號「・」
+export function keywordList(words) {
+  return `<span class="kw-list">${words.map(w => `<span class="kw">${escapeHTML(w)}</span>`).join('・')}</span>`;
+}
 export function escapeHTML(str) {
   return String(str).replace(/[&<>"']/g, s => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[s]));
 }
@@ -136,7 +140,7 @@ ${icon}
   setTimeout(() => {
     toast.classList.remove('show');
     setTimeout(() => toast.remove(), 500);
-    }, 3000);
+  }, 3000);
 }
 export function readNeonSuitColors(suits) {
   const probe = document.createElement('div');

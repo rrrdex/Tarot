@@ -10,6 +10,7 @@ import {
 } from './state.js';
 import { renderResults } from './reading.js';
 import { switchTab } from './main.js';
+import { icons } from './icons.js';
 
 let currentEditingId = null;
 export function renderHistory() {
@@ -42,23 +43,28 @@ export function renderHistory() {
     list.innerHTML = `<div class="history-empty">${escapeHTML(t('history.empty'))}</div>`;
     return;
   }
-  list.innerHTML = filtered.map(item => `
-<div class="history-item ${item.favorite ? 'favorite' : ''}" data-id="${item.id}">
+  // 整張卡片可點開：牌陣名稱是真正的按鈕，點擊範圍由 CSS 延伸到整張卡（.history-open::after）
+  list.innerHTML = filtered.map(item => {
+    const spread = t(item.spreadName);
+    const time = formatDate(item.timestamp);
+    return `
+<article class="history-item${item.favorite ? ' favorite' : ''}" data-id="${item.id}">
 <div class="history-header">
-<span class="history-spread">${escapeHTML(t(item.spreadName))}</span>
-<span class="history-time">${formatDate(item.timestamp)}</span>
+<h3 class="history-spread"><button type="button" class="history-open" data-action="viewReading" data-id="${item.id}" aria-label="${escapeHTML(t('history.item.open', { spread, time }))}">${escapeHTML(spread)}</button></h3>
+<span class="history-time">${escapeHTML(time)}</span>
 </div>
-${item.question ? `<div class="history-question">${escapeHTML(item.question)}</div>` : ''}
+${item.question ? `<p class="history-question">${escapeHTML(item.question)}</p>` : ''}
 ${item.tags?.length ? `<div class="tags">${item.tags.map(t => `<span class="tag">${escapeHTML(t)}</span>`).join('')}</div>` : ''}
+<button type="button" class="history-fav" data-action="toggleFavorite" data-id="${item.id}" aria-pressed="${!!item.favorite}" aria-label="${escapeHTML(t('history.item.favorite'))}">${icons.star}</button>
+<span class="history-chevron">${icons.chevron}</span>
 <div class="history-actions">
-<button class="btn btn-tertiary btn-sm" data-action="viewReading" data-id="${item.id}">${escapeHTML(t('btn.view'))}</button>
-<button class="btn btn-tertiary btn-sm" data-action="toggleFavorite" data-id="${item.id}">${escapeHTML(t(item.favorite ? 'history.item.unfavorite' : 'history.item.favorite'))}</button>
-<button class="btn btn-tertiary btn-sm" data-action="openNoteModal" data-id="${item.id}">${escapeHTML(t('btn.note'))}</button>
-<button class="btn btn-tertiary btn-sm" data-action="openTagModal" data-id="${item.id}">${escapeHTML(t('btn.tag'))}</button>
-<button class="btn btn-tertiary btn-sm" data-action="deleteReading" data-id="${item.id}">${escapeHTML(t('btn.delete'))}</button>
+<button type="button" class="history-action" data-action="openNoteModal" data-id="${item.id}">${icons.note}${escapeHTML(t('btn.note'))}</button>
+<button type="button" class="history-action" data-action="openTagModal" data-id="${item.id}">${icons.tag}${escapeHTML(t('btn.tag'))}</button>
+<button type="button" class="history-action danger" data-action="deleteReading" data-id="${item.id}">${icons.trash}${escapeHTML(t('btn.delete'))}</button>
 </div>
-</div>
-`).join('');
+</article>
+`;
+  }).join('');
 }
 document.getElementById('filterSpread').addEventListener('change', (e) => {
   historyFilters.spread = e.target.value;
@@ -70,8 +76,7 @@ document.getElementById('filterTag').addEventListener('change', (e) => {
 });
 document.getElementById('filterFavorite').addEventListener('click', () => {
   historyFilters.favorite = !historyFilters.favorite;
-  document.getElementById('filterFavorite').style.background = historyFilters.favorite ? 'var(--accent)' : '';
-  document.getElementById('filterFavorite').style.color = historyFilters.favorite ? 'var(--accent-contrast)' : '';
+  document.getElementById('filterFavorite').setAttribute('aria-pressed', historyFilters.favorite);
   renderHistory();
 });
 export function viewReading(id) {
@@ -88,6 +93,7 @@ export function toggleFavorite(id) {
     reading.favorite = !reading.favorite;
     saveHistory();
     renderHistory();
+    document.querySelector(`.history-fav[data-id="${id}"]`)?.focus();
     showToast(t(reading.favorite ? 'toast.favorited' : 'toast.unfavorited'));
   }
 }
