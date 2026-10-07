@@ -275,6 +275,11 @@
   border-color: color-mix(in srgb, var(--neon-suit) 40%, transparent);
   filter: drop-shadow(0 0 5px color-mix(in srgb, var(--neon-suit) 70%, transparent)) drop-shadow(0 0 16px color-mix(in srgb, var(--neon-suit) 28%, transparent));
 }
+.neon svg.line-art {
+  --deck-paper: #080d1a;
+  --deck-tint: #0c1326;
+  --deck-gold: color-mix(in srgb, var(--neon-suit, #22d3ee) 45%, #fff6dc);
+}
 .neon .pick-card {
   background-color: #0d1322;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='54' r='24' fill='%2322d3ee' opacity='.42'/%3E%3Ccircle cx='59' cy='46' r='21' fill='%230d1322'/%3E%3Ccircle cx='68' cy='34' r='2.6' fill='%2322d3ee' opacity='.8'/%3E%3C/svg%3E");
@@ -353,6 +358,86 @@
 }
 .profile-chip-art :is(svg, img).reversed {
   transform: rotate(180deg);
+}
+/* 線稿牌組（src/deck.js）：象牙底、墨線、金色點綴 */
+:root {
+  --deck-paper: #fbf8f1;
+  --deck-tint: #f4eee2;
+  --deck-ink: #2d2a33;
+  --deck-gold: #a8844c;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+    --deck-paper: #17161c;
+    --deck-tint: #1e1c23;
+    --deck-ink: #e8e1d3;
+    --deck-gold: #c9a66d;
+  }
+}
+.dark {
+  --deck-paper: #17161c;
+  --deck-tint: #1e1c23;
+  --deck-ink: #e8e1d3;
+  --deck-gold: #c9a66d;
+}
+svg.line-art {
+  color: var(--deck-ink);
+  background: var(--deck-paper);
+}
+svg.line-art * {
+  vector-effect: non-scaling-stroke;
+}
+svg.line-art .dk-t {
+  stroke-width: 0.8;
+}
+svg.line-art .dk-b {
+  stroke-width: 2;
+}
+svg.line-art .dk-g {
+  stroke: var(--deck-gold);
+}
+svg.line-art .dk-gf {
+  fill: var(--deck-gold);
+  stroke: none;
+}
+svg.line-art .dk-if {
+  fill: currentColor;
+  stroke: none;
+}
+svg.line-art .dk-tf {
+  fill: var(--deck-tint);
+}
+svg.line-art .dk-pf {
+  fill: var(--deck-paper);
+}
+svg.line-art .dk-dot {
+  stroke-width: 2;
+  stroke-dasharray: 0 6;
+}
+svg.line-art text {
+  fill: currentColor;
+  stroke: none;
+  font-family: "Didot", "Bodoni 72", "Bodoni MT", "Playfair Display", Georgia, "Times New Roman", serif;
+}
+svg.line-art .dk-ptxt {
+  fill: var(--deck-paper);
+}
+/* 大牌場景是固定配色的插畫：場景內的 dk-* 元素一律用淺色牌面的顏色 */
+svg.line-art .dk-scene {
+  --deck-paper: #fbf8f1;
+  --deck-tint: #f6efe0;
+  --deck-gold: #c49a4f;
+  color: #2b2833;
+}
+svg.line-art .dk-lim {
+  vector-effect: none;
+}
+/* 小縮圖放不下細節與文字 */
+:is(.card-modal-art, .daily-card-art, .profile-chip-art) svg.line-art :is(.dk-d, text) {
+  display: none;
+}
+:is(.card-modal-art, .daily-card-art, .profile-chip-art) svg.line-art :not(.dk-lim) {
+  stroke-width: 0.8;
 }
 *,
 *::before,
@@ -1562,10 +1647,8 @@ select,
   transform: rotate(180deg);
 }
 .card.visual-api .card-image.line-art {
-  background: var(--bg-tertiary);
   border: 1px solid var(--divider);
-  box-shadow: none;
-  color: var(--text);
+  box-shadow: 0 6px 18px rgba(60, 45, 20, 0.10);
   height: auto;
 }
 .waite-terms {

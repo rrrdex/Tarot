@@ -1,81 +1,1385 @@
-const deckSuitSymbols = {
-  'Wands': '<path d="M0 -26 L0 26 M0 -12 L-9 -21 M0 -4 L9 -13"/><circle cx="0" cy="-26" r="2.5" fill="currentColor" stroke="none"/>',
-  'Cups': '<path d="M-19 -24 L19 -24 C19 -2 8 6 0 6 C-8 6 -19 -2 -19 -24 M0 6 L0 24 M-14 24 L14 24"/>',
-  'Swords': '<path d="M0 -28 L0 12 M-4 -19 L0 -28 L4 -19 M-13 12 L13 12 M0 12 L0 23"/><circle cx="0" cy="26.5" r="3.5"/>',
-  'Pentacles': '<circle cx="0" cy="0" r="24"/><path d="M0 -17.6 L10.3 14.2 L-16.7 -5.4 L16.7 -5.4 L-10.3 14.2 Z"/>'
-};
-const deckRankIndex = { 'Ace': 1, 'Two': 2, 'Three': 3, 'Four': 4, 'Five': 5, 'Six': 6, 'Seven': 7, 'Eight': 8, 'Nine': 9, 'Ten': 10, 'Page': 11, 'Knight': 12, 'Queen': 13, 'King': 14 };
-const deckPipGrid = {
-  1: { s: 3.0, pts: [[150, 260]] },
-  2: { s: 1.5, pts: [[150, 158], [150, 362]] },
-  3: { s: 1.3, pts: [[150, 120], [150, 260], [150, 400]] },
-  4: { s: 1.25, pts: [[105, 158], [195, 158], [105, 362], [195, 362]] },
-  5: { s: 1.12, pts: [[105, 150], [195, 150], [150, 260], [105, 370], [195, 370]] },
-  6: { s: 1.1, pts: [[105, 130], [195, 130], [105, 260], [195, 260], [105, 390], [195, 390]] },
-  7: { s: 1.0, pts: [[105, 130], [195, 130], [82, 260], [150, 260], [218, 260], [105, 390], [195, 390]] },
-  8: { s: 1.0, pts: [[105, 105], [195, 105], [105, 208], [195, 208], [105, 311], [195, 311], [105, 414], [195, 414]] },
-  9: { s: 0.92, pts: [[82, 130], [150, 130], [218, 130], [82, 260], [150, 260], [218, 260], [82, 390], [150, 390], [218, 390]] },
-  10: { s: 0.85, pts: [[105, 90], [195, 90], [105, 203], [195, 203], [105, 317], [195, 317], [105, 430], [195, 430], [150, 146], [150, 373]] }
-};
-const deckCourtCrowns = {
-  'Page': '<path d="M128 146 L172 146 M166 146 C172 128 182 126 186 132"/>',
-  'Knight': '<path d="M128 158 L172 158 M150 140 C168 112 188 118 190 136"/>',
-  'Queen': '<path d="M126 140 L174 140 M126 140 Q134 112 142 138 Q150 110 158 138 Q166 112 174 140"/>',
-  'King': '<path d="M124 140 L176 140 M124 140 L132 112 L142 136 L150 104 L158 136 L168 112 L176 140"/>'
-};
-function deckSymbolAt(suit, x, y, s) {
-  return `<g transform="translate(${x} ${y}) scale(${s})" stroke-width="${(5 / s).toFixed(2)}">${deckSuitSymbols[suit]}</g>`;
+// 自製線稿牌組：拱窗畫框、細墨線與金色點綴
+// 顏色與線寬由 style.css 的 svg.line-art 規則決定（dk-* class），線寬以 non-scaling-stroke 按螢幕像素計
+const f = (n) => Math.round(n * 10) / 10;
+// 以 (cx, cy) 為圓心，角度 0 朝上、順時針
+function pt(cx, cy, r, deg) {
+  const a = (deg - 90) * Math.PI / 180;
+  return [f(cx + r * Math.cos(a)), f(cy + r * Math.sin(a))];
 }
-function deckPipArt(suit, rank) {
-  const grid = deckPipGrid[rank];
-  if (!grid) return null;
-  const pips = grid.pts.map(([x, y]) => deckSymbolAt(suit, x, y, grid.s)).join('');
-  const rays = rank === 1
-  ? '<path d="M221 189 L239 171 M79 189 L61 171 M79 331 L61 349 M221 331 L239 349"/>'
-  : '';
-  return pips + rays;
+const xy = (p) => p.join(' ');
+const cls = (c) => (c ? ` class="${c}"` : '');
+const P = (d, c = '') => `<path${cls(c)} d="${d}"/>`;
+const C = (cx, cy, r, c = '') => `<circle${cls(c)} cx="${cx}" cy="${cy}" r="${r}"/>`;
+const E = (cx, cy, rx, ry, c = '') => `<ellipse${cls(c)} cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}"/>`;
+const G = (transform, inner, c = '') => `<g${cls(c)} transform="${transform}">${inner}</g>`;
+const T = (x, y, text, size, c = 'dk-txt', spacing = 0) =>
+  `<text${cls(c)} x="${f(x + spacing / 2)}" y="${y}" font-size="${size}"${spacing ? ` letter-spacing="${spacing}"` : ''} text-anchor="middle">${text}</text>`;
+// 只含座標對（M/L/C/Q）的路徑左右鏡射
+const mirror = (d) => d.replace(/(-?\d+(?:\.\d+)?) (-?\d+(?:\.\d+)?)/g, (_, x, y) => `${f(300 - x)} ${y}`);
+
+function raysD(cx, cy, r0, r1, n, start = 0, span = 360) {
+  const step = span === 360 ? 360 / n : span / (n - 1);
+  let d = '';
+  for (let i = 0; i < n; i++) d += `M${xy(pt(cx, cy, r0, start + step * i))}L${xy(pt(cx, cy, r1, start + step * i))}`;
+  return d;
 }
-function deckCourtArt(suit, rankName) {
-  const crown = deckCourtCrowns[rankName];
-  if (!crown) return null;
-  const robe = rankName === 'King'
-  ? '<path d="M106 204 L194 204 L216 336 L84 336 Z"/>'
-  : '<path d="M112 204 L188 204 L208 336 L92 336 Z"/>';
-  return `<g transform="translate(0 36)">${crown}<circle cx="150" cy="164" r="24"/>${robe}${deckSymbolAt(suit, 150, 268, 0.85)}</g>`;
+function starD(cx, cy, rOut, rIn, n, start = 0) {
+  const pts = [];
+  for (let i = 0; i < n * 2; i++) pts.push(xy(pt(cx, cy, i % 2 ? rIn : rOut, start + 180 * i / n)));
+  return `M${pts.join('L')}Z`;
 }
-const deckMajorArt = {
-  fool: '<circle cx="222" cy="96" r="18"/><path d="M248 96 L256 96 M240.4 77.6 L246 72 M222 70 L222 62 M203.6 77.6 L198 72 M196 96 L188 96 M203.6 114.4 L198 120 M222 122 L222 130 M240.4 114.4 L246 120"/><circle cx="150" cy="208" r="16"/><path d="M150 224 L146 286 M148 240 L120 262 M150 238 L190 206"/><circle cx="197" cy="199" r="11"/><path d="M186 209 L192 203"/><path d="M146 286 L166 340 L170 396 M146 286 L128 342 L120 398 M40 400 L200 400 L200 490 M212 486 L250 486 M200 428 L186 442 M200 454 L188 466"/><circle cx="94" cy="386" r="7"/><path d="M88 391 C79 384 68 388 59 399 M59 399 L49 390 M84 395 L86 404"/>',
-  star: '<path d="M150 70 L150 230 M70 150 L230 150 M107 107 L193 193 M193 107 L107 193"/><circle cx="150" cy="150" r="11"/><path d="M62 76 L62 92 M54 84 L70 84 M238 76 L238 92 M230 84 L246 84 M56 208 L56 220 M50 214 L62 214 M244 208 L244 220 M238 214 L250 214"/><g transform="translate(129 347) rotate(-35)"><path d="M-16 -20 L16 -20 C16 -4 8 4 0 4 C-8 4 -16 -4 -16 -20 Z"/></g><path d="M104 340 C94 366 100 388 94 412 M64 436 Q94 424 124 436 T184 436 T236 436 M96 460 Q116 452 136 460"/>',
-  moon: '<path fill="currentColor" stroke="none" fill-rule="evenodd" d="M102 132 a48 48 0 1 0 96 0 a48 48 0 1 0 -96 0 M128 132 a34 34 0 1 0 68 0 a34 34 0 1 0 -68 0"/><path d="M118 212 L118 224 M150 216 L150 228 M182 212 L182 224 M44 296 L94 296 M52 296 L52 402 M86 296 L86 402 M206 296 L256 296 M214 296 L214 402 M248 296 L248 402 M60 448 Q90 436 120 448 T180 448 T240 448"/>',
-  sun: '<circle cx="150" cy="210" r="62"/><path d="M224 210 L254 210 M214.1 173 L227.9 165 M187 145.9 L202 119.9 M150 136 L150 120 M113 145.9 L98 119.9 M85.9 173 L72.1 165 M76 210 L46 210 M85.9 247 L72.1 255 M113 274.1 L98 300.1 M150 284 L150 300 M187 274.1 L202 300.1 M214.1 247 L227.9 255 M50 420 Q80 408 110 420 T170 420 T230 420 M70 450 Q100 440 130 450 T190 450"/>',
-  tower: '<path d="M105 180 L105 420 M195 180 L195 420 M90 420 L210 420 M105 250 L195 250 M105 320 L195 320 M135 420 L135 382 A15 15 0 0 1 165 382 L165 420"/><path d="M116 174 C112 158 122 152 118 138 M150 172 C146 156 156 150 152 136 M184 174 C180 158 190 152 186 138"/><path d="M238 52 L192 118 L216 124 L166 196 M92 224 L76 250 M212 234 L228 260"/>',
-  death: '<path d="M110 110 L186 430 M110 110 C168 72 232 86 258 136 M110 110 C166 88 220 98 244 128 M258 136 L244 128 M132 208 L154 194 M156 302 L178 288"/><g transform="translate(86 450) rotate(-12) scale(1.6)" stroke-width="3.13"><path d="M-20 0 L-13 -14 L-6 0 L0 -16 L6 0 L13 -14 L20 0 Z"/></g><path d="M56 454 L244 454 M188 454 A28 28 0 0 1 244 454 M216 416 L216 406 M196 424 L189 415 M236 424 L243 415"/>',
-  magician: `<path d="M108 80 C108 58 142 58 150 80 C158 102 192 102 192 80 C192 58 158 58 150 80 C142 102 108 102 108 80 Z"/><circle cx="150" cy="126" r="4" fill="currentColor" stroke="none"/><path d="M150 130 L150 230"/><circle cx="150" cy="234" r="4" fill="currentColor" stroke="none"/><path d="M60 320 L240 320 M75 320 L75 400 M225 320 L225 400"/>${deckSymbolAt('Wands', 81, 294, 0.55)}${deckSymbolAt('Cups', 127, 294, 0.55)}${deckSymbolAt('Swords', 173, 294, 0.55)}${deckSymbolAt('Pentacles', 219, 294, 0.55)}`,
-  high_priestess: '<path d="M62 100 L108 100 M70 100 L70 420 M100 100 L100 420 M62 420 L108 420 M192 100 L238 100 M200 100 L200 420 M230 100 L230 420 M192 420 L238 420"/><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M122 140 a28 28 0 1 0 56 0 a28 28 0 1 0 -56 0 M138 140 a19 19 0 1 0 38 0 a19 19 0 1 0 -38 0"/><path d="M118 290 L182 290 L182 324 L118 324 Z M150 290 L150 324"/>',
-  empress: '<circle cx="150" cy="190" r="46"/><path d="M150 236 L150 300 M120 268 L180 268"/><path d="M75 340 L75 470 M75 344 C74 336 79 332 85 335 M75 360 L68 349 M75 360 L82 349 M75 374 L68 363 M75 374 L82 363 M75 388 L68 377 M75 388 L82 377 M75 402 L68 391 M75 402 L82 391"/><path d="M225 340 L225 470 M225 344 C226 336 221 332 215 335 M225 360 L232 349 M225 360 L218 349 M225 374 L232 363 M225 374 L218 363 M225 388 L232 377 M225 388 L218 377 M225 402 L232 391 M225 402 L218 391"/><path d="M55 470 L245 470"/>',
-  emperor: '<path d="M96 190 L110 130 L130 172 L150 118 L170 172 L190 130 L204 190 L96 190"/><path d="M100 240 L200 240 M100 240 L100 320 M200 240 L200 320 M85 320 L215 320 M100 320 L100 382 M200 320 L200 382 M80 382 L220 382"/><circle cx="150" cy="286" r="11"/><path d="M150 275 L150 263 M143 269 L157 269"/>',
-  hierophant: '<path d="M70 200 A80 80 0 0 1 230 200 M70 200 L70 260 M230 200 L230 260"/><path d="M150 160 L150 400 M118 220 L182 220 M110 268 L190 268 M102 316 L198 316"/><path d="M110 420 L190 420 M95 448 L205 448"/>',
-  lovers: '<circle cx="150" cy="100" r="20"/><path d="M178 100 L188 100 M169.8 80.2 L176.9 73.1 M150 72 L150 62 M130.2 80.2 L123.1 73.1 M122 100 L112 100 M130.2 119.8 L123.1 126.9 M150 128 L150 138 M169.8 119.8 L176.9 126.9"/><circle cx="105" cy="240" r="18"/><circle cx="195" cy="240" r="18"/><path d="M105 258 L105 350 M195 258 L195 350 M105 290 L146 312 M195 290 L154 312 M105 350 L88 420 M105 350 L120 420 M195 350 L180 420 M195 350 L212 420"/><path d="M150 322 C144 310 128 312 128 326 C128 340 150 352 150 352 C150 352 172 340 172 326 C172 312 156 310 150 322 Z" fill="currentColor" stroke="none"/>',
-  chariot: '<path d="M90 220 L210 220 L210 330 L90 330 Z M90 220 L90 140 M210 220 L210 140 M80 140 A150 150 0 0 1 220 140"/><path d="M150 255 L163 275 L150 295 L137 275 Z M118 163 L123 170 L118 177 L113 170 Z M150 152 L155 160 L150 168 L145 160 Z M182 163 L187 170 L182 177 L177 170 Z"/><circle cx="105" cy="375" r="32"/><path d="M105 343 L105 407 M73 375 L137 375"/><circle cx="195" cy="375" r="32"/><path d="M195 343 L195 407 M163 375 L227 375"/><path d="M60 430 L240 430"/>',
-  strength: '<path d="M108 110 C108 88 142 88 150 110 C158 132 192 132 192 110 C192 88 158 88 150 110 C142 132 108 132 108 110 Z"/><circle cx="150" cy="300" r="70"/><path d="M220 300 L232 300 M210.6 265 L221 259 M185 239.4 L191 229 M150 230 L150 218 M115 239.4 L109 229 M89.4 265 L79 259 M80 300 L68 300 M89.4 335 L79 341 M115 360.6 L109 371 M150 370 L150 382 M185 360.6 L191 371 M210.6 335 L221 341"/><circle cx="150" cy="300" r="42"/><path d="M124 270 L114 246 L142 259 M176 270 L186 246 L158 259"/><circle cx="135" cy="290" r="3.5" fill="currentColor" stroke="none"/><circle cx="165" cy="290" r="3.5" fill="currentColor" stroke="none"/><path d="M144 301 L156 301 L150 309 Z M150 309 L150 316 M150 316 Q143 323 137 318 M150 316 Q157 323 163 318 M128 305 L106 300 M128 312 L107 315 M172 305 L194 300 M172 312 L193 315"/>',
-  hermit: '<path d="M200 104 L200 400 M200 104 C200 90 214 90 216 102 L216 122"/><path d="M204 126 L228 126 L224 168 L208 168 Z M216 136 L216 158 M206 147 L226 147"/><path d="M35 462 L115 352 L165 428 M135 462 L205 372 L262 442"/>',
-  wheel_of_fortune: '<circle cx="150" cy="240" r="95"/><circle cx="150" cy="240" r="58"/><circle cx="150" cy="240" r="14"/><path d="M150 226 L150 182 M150 254 L150 298 M164 240 L208 240 M136 240 L92 240 M159.9 230.1 L191 199 M140.1 230.1 L109 199 M159.9 249.9 L191 281 M140.1 249.9 L109 281"/><path d="M150 145 L150 131 M245 240 L259 240 M150 335 L150 349 M55 240 L41 240"/>',
-  justice: '<path d="M150 80 L150 300 M144 96 L150 80 L156 96 M122 300 L178 300 M150 300 L150 330"/><circle cx="150" cy="336" r="6"/><path d="M60 180 L240 180 M60 180 L44 240 M60 180 L76 240 M44 240 A16 16 0 0 0 76 240 M240 180 L224 240 M240 180 L256 240 M224 240 A16 16 0 0 0 256 240"/><path d="M80 430 L220 430"/>',
-  hanged_man: '<path d="M70 90 L230 90 M150 90 L150 118"/><path d="M150 118 L150 212 M150 212 L188 196 L164 152 M150 212 L150 300 M150 288 L116 322 M150 288 L184 322"/><circle cx="150" cy="334" r="17"/><path d="M138 362 L132 373 M150 367 L150 378 M162 362 L168 373"/>',
-  temperance: `<g transform="translate(100 160) rotate(35) scale(1.1)" stroke-width="4.55">${deckSuitSymbols['Cups']}</g><g transform="translate(200 310) scale(1.1)" stroke-width="4.55">${deckSuitSymbols['Cups']}</g><path d="M132 150 C160 191 168 243 196 284"/><circle cx="222" cy="100" r="20"/><path d="M222 88 L209 111 L235 111 Z"/><path d="M50 420 L250 420 M60 450 Q90 440 120 450 T180 450 T240 450"/>`,
-  devil: `<g transform="translate(150 170) rotate(180) scale(2.1)" stroke-width="2.38">${deckSuitSymbols['Pentacles']}</g><path d="M108 130 C100 112 104 100 116 94 M192 130 C200 112 196 100 184 94"/><circle cx="150" cy="240" r="12"/><circle cx="150" cy="266" r="12"/><path d="M141 274 L100 384 M159 274 L204 384"/><circle cx="95" cy="400" r="18"/><circle cx="205" cy="400" r="18"/><path d="M95 418 L95 440 M205 418 L205 440 M60 440 L240 440"/>`,
-  judgement: '<path d="M48 118 A22 22 0 0 1 92 106 A26 26 0 0 1 144 110 A18 18 0 0 1 168 124"/><path d="M118 124 L196 178 L240 187 M116 132 L194 186 L216 223 M240 187 A26 26 0 0 1 216 223"/><circle cx="112" cy="120" r="5"/><path d="M240 222 L258 236 M232 244 L246 262 M220 258 L230 278"/><circle cx="150" cy="360" r="15"/><path d="M150 375 L150 420 M150 385 L124 356 M150 385 L176 356 M105 445 L195 445 M105 445 L105 472 M195 445 L195 472"/>',
-  world: `<ellipse cx="150" cy="250" rx="85" ry="140"/><ellipse cx="150" cy="250" rx="70" ry="124"/><circle cx="150" cy="190" r="13"/><path d="M150 203 L150 280 M150 215 L122 192 M150 215 L178 192 M150 280 L130 330 M150 280 L172 326"/>${deckSymbolAt('Wands', 55, 70, 0.6)}${deckSymbolAt('Cups', 245, 70, 0.6)}${deckSymbolAt('Swords', 55, 430, 0.6)}${deckSymbolAt('Pentacles', 245, 430, 0.6)}`
+function pentagramD(cx, cy, r, start = 0) {
+  const p = [0, 2, 4, 1, 3].map(i => xy(pt(cx, cy, r, start + 72 * i)));
+  return `M${p.join('L')}Z`;
+}
+function sparkleD(cx, cy, r) {
+  const k = f(r * 0.18);
+  return `M${cx} ${f(cy - r)}Q${f(cx + k)} ${f(cy - k)} ${f(cx + r)} ${cy}Q${f(cx + k)} ${f(cy + k)} ${cx} ${f(cy + r)}` +
+    `Q${f(cx - k)} ${f(cy + k)} ${f(cx - r)} ${cy}Q${f(cx - k)} ${f(cy - k)} ${cx} ${f(cy - r)}Z`;
+}
+// 葉形：由 (x, y) 朝 deg 方向長出
+function leafD(x, y, len, deg, w = 0.34) {
+  const mid = pt(x, y, len / 2, deg);
+  return `M${x} ${y}Q${xy(pt(mid[0], mid[1], len * w, deg + 90))} ${xy(pt(x, y, len, deg))}` +
+    `Q${xy(pt(mid[0], mid[1], len * w, deg - 90))} ${x} ${y}Z`;
+}
+// 水滴：尖端朝上，圓底在 (x, y)
+function dropD(x, y, r) {
+  return `M${x} ${f(y - r * 2.4)}Q${f(x + r * 1.1)} ${f(y - r * 0.7)} ${f(x + r)} ${y}A${r} ${r} 0 0 1 ${f(x - r)} ${y}` +
+    `Q${f(x - r * 1.1)} ${f(y - r * 0.7)} ${x} ${f(y - r * 2.4)}Z`;
+}
+// 圓瓣花（玫瑰、向日葵）
+function rosetteD(cx, cy, r, n, start = 0) {
+  const inner = r * 0.62;
+  const pts = Array.from({ length: n }, (_, i) => xy(pt(cx, cy, inner, start + 360 * i / n)));
+  const pr = f(inner * Math.sin(Math.PI / n) * 1.05);
+  let d = `M${pts[0]}`;
+  for (let i = 1; i <= n; i++) d += `A${pr} ${pr} 0 1 1 ${pts[i % n]}`;
+  return `${d}Z`;
+}
+// 新月：開口朝 deg 方向
+function crescentD(cx, cy, r, deg = 0) {
+  const a = xy(pt(cx, cy, r, deg - 70));
+  const b = xy(pt(cx, cy, r, deg + 70));
+  const ri = f(r * 0.96);
+  return `M${a}A${r} ${r} 0 1 0 ${b}A${ri} ${ri} 0 0 1 ${a}Z`;
+}
+function lemniscateD(cx, cy, w, h) {
+  const k = w * 0.43;
+  return `M${cx - w} ${cy}C${cx - w} ${cy - h} ${f(cx - k)} ${cy - h} ${cx} ${cy}C${f(cx + k)} ${cy + h} ${cx + w} ${cy + h} ${cx + w} ${cy}` +
+    `C${cx + w} ${cy - h} ${f(cx + k)} ${cy - h} ${cx} ${cy}C${f(cx - k)} ${cy + h} ${cx - w} ${cy + h} ${cx - w} ${cy}Z`;
+}
+function wavesD(x0, x1, y, amp = 3, len = 20) {
+  let d = `M${x0} ${y}`;
+  for (let x = x0; x + len <= x1 + 0.1; x += len) d += `q${len / 4} ${-amp} ${len / 2} 0t${len / 2} 0`;
+  return d;
+}
+function spiralD(cx, cy, r, turns, start, dir) {
+  const steps = Math.ceil(turns * 36);
+  const pts = [];
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+    pts.push(xy(pt(cx, cy, r * (1 - 0.72 * t), start + dir * 360 * turns * t)));
+  }
+  return `M${pts.join('L')}`;
+}
+function towerD(x, y, w, h) {
+  const m = f(w / 5);
+  return `M${x} ${y + h}V${y}h${m}v-5h${m}v5h${m}v-5h${m}v5h${m}V${y + h}Z`;
+}
+function archWindowD(x, y, w, h) {
+  const r = w / 2;
+  return `M${x - r} ${y + h}V${y}A${r} ${r} 0 0 1 ${x + r} ${y}V${y + h}Z`;
+}
+// 沿三次貝茲曲線長葉的枝條，p = [x0, y0, c1x, c1y, c2x, c2y, x1, y1]
+function branch(p, n, len, stemCls = 'dk-t', leafCls = 'dk-gf') {
+  const at = (t) => {
+    const u = 1 - t;
+    return [0, 1].map(k => u * u * u * p[k] + 3 * u * u * t * p[2 + k] + 3 * u * t * t * p[4 + k] + t * t * t * p[6 + k]);
+  };
+  let leaves = '';
+  for (let i = 1; i <= n; i++) {
+    const t = i / (n + 0.6);
+    const [x, y] = at(t);
+    const [x2, y2] = at(t + 0.01);
+    const deg = Math.atan2(x2 - x, -(y2 - y)) * 180 / Math.PI;
+    leaves += leafD(f(x), f(y), len, deg - 42) + leafD(f(x), f(y), len, deg + 42);
+  }
+  const tip = at(1);
+  const [tx, ty] = at(0.99);
+  leaves += leafD(f(tip[0]), f(tip[1]), len, Math.atan2(tip[0] - tx, -(tip[1] - ty)) * 180 / Math.PI);
+  return P(`M${p[0]} ${p[1]}C${p[2]} ${p[3]} ${p[4]} ${p[5]} ${p[6]} ${p[7]}`, stemCls) + P(leaves, leafCls);
+}
+
+const SUIT_ART = {
+  'Wands': P(leafD(0, -12, 13, -48) + leafD(0, -2, 12, 48) + leafD(0, 8, 10, -48), 'dk-gf') +
+    P('M0 30V-25', 'dk-b') + P('M-2.6 19H2.6M-2.6 -19H2.6', 'dk-t') + C(0, -28.5, 3, 'dk-gf'),
+  'Cups': P('M-16 -26H16C16 -8 8 0 0 0C-8 0 -16 -8 -16 -26Z', 'dk-tf') + P('M-16 -26H16M-12 -16H12', 'dk-g') +
+    P('M0 0V21') + E(0, 10, 3.5, 2.5, 'dk-gf') + P('M-12 28C-10 23 -4 21 0 21C4 21 10 23 12 28Z', 'dk-tf'),
+  'Swords': P('M0 -32L4 -24V12H-4V-24Z', 'dk-tf') + P('M0 -23V9', 'dk-t dk-d') +
+    P('M-14 12C-8 16 8 16 14 12', 'dk-g dk-b') + C(-14, 12, 2, 'dk-gf') + C(14, 12, 2, 'dk-gf') +
+    P('M0 15V25', 'dk-b') + C(0, 28.5, 3.2, 'dk-gf'),
+  'Pentacles': C(0, 0, 26, 'dk-tf') + C(0, 0, 21, 'dk-g dk-t') + P(pentagramD(0, 0, 19), 'dk-g')
 };
+const sym = (suit, x, y, s, rot = 0) => G(`translate(${x} ${y}) scale(${s})${rot ? ` rotate(${rot})` : ''}`, SUIT_ART[suit]);
+
+const ARCH = 'M50 448V178A100 100 0 0 1 250 178V448Z';
+const ARCH_INNER = 'M57 441V178A93 93 0 0 1 243 178V441Z';
+const ELEMENT_GLYPH = {
+  'Wands': 'M150 41L159.5 57H140.5Z',
+  'Cups': 'M140.5 41H159.5L150 57Z',
+  'Swords': 'M150 41L159.5 57H140.5ZM144 51H156',
+  'Pentacles': 'M140.5 41H159.5L150 57ZM144 47H156'
+};
+function frame(label, title, suit, scene = false) {
+  const w = label ? label.length * 11 : 18;
+  const fl = `M${150 - w / 2 - 46} 51H${150 - w / 2 - 12}M${150 + w / 2 + 12} 51H${150 + w / 2 + 46}`;
+  return [
+    `<rect class="dk-t" x="12" y="12" width="276" height="495" rx="5"/>`,
+    `<rect class="dk-g dk-t dk-d" x="17" y="17" width="266" height="485" rx="3"/>`,
+    P(sparkleD(31, 31, 6) + sparkleD(269, 31, 6) + sparkleD(31, 488, 6) + sparkleD(269, 488, 6), 'dk-gf dk-d'),
+    scene ? '' : P(ARCH, 'dk-tf'),
+    scene ? '' : P(ARCH_INNER, 'dk-g dk-t dk-d'),
+    P(fl, 'dk-g dk-t dk-d'),
+    C(150 - w / 2 - 50, 51, 1.6, 'dk-gf dk-d') + C(150 + w / 2 + 50, 51, 1.6, 'dk-gf dk-d'),
+    label ? T(150, 57, label, 17, 'dk-txt dk-num', 1.5) : P(ELEMENT_GLYPH[suit]),
+    P('M64 466H138M162 466H236', 'dk-t dk-d'),
+    P('M150 460L156 466L150 472L144 466Z', 'dk-gf dk-d'),
+    title ? T(150, 491, title, 12, 'dk-txt dk-title', 2) : ''
+  ].join('');
+}
+
+// 大牌場景：固定配色的插畫，裁切在拱窗內（不隨深淺主題變色）
+const K = {
+  ink: '#2b2833', cream: '#f6efe0', white: '#fbf8f1', skin: '#efd9bf', skinShade: '#dcbd9c', lip: '#b8695c', blush: '#e9a898',
+  gold: '#c49a4f', goldDeep: '#9c7638', goldLight: '#ecd08a',
+  red: '#a9433a', redDeep: '#7e2f2a', blue: '#3f5f8f', blueDeep: '#2c4469', blueSoft: '#7f9cc0',
+  green: '#6f8250', greenDeep: '#4e5f37', yellow: '#ecd27e', ochre: '#e6c063', purple: '#7a5a8f', purpleDeep: '#5c4270',
+  stone: '#a29d93', stoneDeep: '#7d7870', stoneLight: '#bdb7ad', brown: '#8a6a4b', brownDeep: '#5f4733',
+  hairDark: '#3f2e25', hairBrown: '#7a5232', hairBlond: '#d6a75a', hairRed: '#b5562f', hairWhite: '#ece7de',
+  storm: '#2f3448', cloud: '#444a62', snow: '#eef1f0', snowShade: '#b7c6d0', flame: '#e0783a', flameLight: '#f2b24a'
+};
+const F = (d, fill) => `<path d="${d}" fill="${fill}" stroke="none"/>`;
+const FC = (cx, cy, r, fill) => `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${fill}" stroke="none"/>`;
+const FE = (cx, cy, rx, ry, fill, rot = 0) => `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}"${rot ? ` transform="rotate(${rot} ${cx} ${cy})"` : ''} fill="${fill}" stroke="none"/>`;
+const FS = (d, fill, stroke = K.ink) => `<path d="${d}" fill="${fill}" stroke="${stroke}" stroke-width="0.8"/>`;
+// 肢體與粗線：線寬隨牌面縮放
+const L = (d, color, w) => `<path class="dk-lim" d="${d}" stroke="${color}" stroke-width="${w}" fill="none"/>`;
+// 固定顏色的細線（螢幕像素寬）
+const Ln = (d, color, w = 0.8) => `<path d="${d}" stroke="${color}" stroke-width="${w}" fill="none"/>`;
+// 陰影與受光面
+const SH = (d, o = 0.16) => `<path d="${d}" fill="#1d1622" fill-opacity="${o}" stroke="none"/>`;
+const HL = (d, o = 0.25) => `<path d="${d}" fill="#ffffff" fill-opacity="${o}" stroke="none"/>`;
+const SKY = 'M40 60H260V460H40Z';
+
+// 漸層 id 以牌面的 clipPath id 為前綴，同頁多張牌不會互相干擾
+let sceneUid = '';
+let gradSeq = 0;
+function GF(d, from, to, horizontal = false) {
+  const id = `${sceneUid}-g${++gradSeq}`;
+  const dir = horizontal ? 'x2="1" y2="0"' : 'x2="0" y2="1"';
+  return `<linearGradient id="${id}" x1="0" y1="0" ${dir}><stop offset="0" stop-color="${from}"/><stop offset="1" stop-color="${to}"/></linearGradient>` +
+    `<path d="${d}" fill="url(#${id})" stroke="none"/>`;
+}
+// 光暈：由中心往外淡出到透明
+function glow(cx, cy, rx, ry, color, o) {
+  const id = `${sceneUid}-g${++gradSeq}`;
+  return `<radialGradient id="${id}"><stop offset="0" stop-color="${color}" stop-opacity="${o}"/><stop offset="1" stop-color="${color}" stop-opacity="0"/></radialGradient>` +
+    `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="url(#${id})" stroke="none"/>`;
+}
+// 二次曲線取樣，供 limb 使用
+function bez(p0, c, p1, n = 10) {
+  return Array.from({ length: n + 1 }, (_, i) => {
+    const t = i / n;
+    const u = 1 - t;
+    return [u * u * p0[0] + 2 * u * t * c[0] + t * t * p1[0], u * u * p0[1] + 2 * u * t * c[1] + t * t * p1[1]];
+  });
+}
+// 漸細的肢體：沿折線由寬 w0 變到 w1；caps 決定哪一端畫圓頭（接在身體上的一端不畫，免得露出圓球）
+function limb(pts, w0, w1, fill, caps = 'end') {
+  const n = pts.length;
+  const a = [];
+  const b = [];
+  pts.forEach(([x, y], i) => {
+    const [px, py] = pts[Math.max(0, i - 1)];
+    const [qx, qy] = pts[Math.min(n - 1, i + 1)];
+    const len = Math.hypot(qx - px, qy - py) || 1;
+    const nx = -(qy - py) / len;
+    const ny = (qx - px) / len;
+    const w = (w0 + (w1 - w0) * i / (n - 1)) / 2;
+    a.push(`${f(x + nx * w)} ${f(y + ny * w)}`);
+    b.push(`${f(x - nx * w)} ${f(y - ny * w)}`);
+  });
+  return F(`M${a.join('L')}L${b.reverse().join('L')}Z`, fill) +
+    (caps === 'both' || caps === 'start' ? FC(f(pts[0][0]), f(pts[0][1]), f(w0 / 2), fill) : '') +
+    (caps === 'both' || caps === 'end' ? FC(f(pts[n - 1][0]), f(pts[n - 1][1]), f(w1 / 2), fill) : '');
+}
+const hand = (x, y, deg = 0, r = 4.2, fill = K.skin) => FE(x, y, f(r * 0.78), r, fill, deg);
+// 袖子：外緣一圈較深的色調，與同色長袍分得開；袖口可另上色
+function sleeve(pts, w0, w1, color, edge, cuff) {
+  const n = pts.length;
+  return limb(pts, w0 + 2, w1 + 2, edge) + limb(pts, w0, w1, color) +
+    (cuff ? FC(f(pts[n - 1][0]), f(pts[n - 1][1]), f(w1 / 2 + 0.6), cuff) : '');
+}
+// 頭部：dir 0 正面、1 朝右、-1 朝左；style: short / long / none
+// male / old 不畫腮紅與笑容；rot 讓整顆頭轉動（例如仰望）
+function head(x, y, o = {}) {
+  const r = o.r || 11;
+  const dir = o.dir || 0;
+  const style = o.style || (o.hair ? 'short' : 'none');
+  const tilt = o.tilt ?? (o.up ? -0.14 : o.down ? 0.14 : 0);
+  const ey = f(y + r * (tilt - 0.02));
+  const plain = o.male || o.old;
+  const browC = o.old ? '#d8d2c6' : K.hairDark;
+  const browW = plain ? 1.1 : 0.7;
+  let s = '';
+  if (style === 'long') {
+    const len = o.len || 2.6;
+    s += F(`M${f(x - r * 1.08)} ${f(y - r * 0.1)}C${f(x - r * 1.3)} ${f(y - r * 1.5)} ${f(x + r * 1.3)} ${f(y - r * 1.5)} ${f(x + r * 1.08)} ${f(y - r * 0.1)}` +
+      `L${f(x + r * 1.22)} ${f(y + r * len)}Q${x} ${f(y + r * (len - 0.45))} ${f(x - r * 1.22)} ${f(y + r * len)}Z`, o.hair);
+  }
+  s += FC(x, y, r, K.skin) + SH(`M${f(x + r * 0.35)} ${f(y - r * 0.94)}A${r} ${r} 0 0 1 ${f(x + r * 0.35)} ${f(y + r * 0.94)}A${f(r * 1.1)} ${f(r * 1.1)} 0 0 0 ${f(x + r * 0.35)} ${f(y - r * 0.94)}Z`, 0.07);
+  const mouthY = f(y + r * 0.5 + tilt * r);
+  if (dir === 0) {
+    s += o.closed
+      ? Ln(`M${f(x - r * 0.52)} ${ey}q${f(r * 0.16)} ${f(r * 0.13)} ${f(r * 0.32)} 0M${f(x + r * 0.2)} ${ey}q${f(r * 0.16)} ${f(r * 0.13)} ${f(r * 0.32)} 0`, K.ink, 0.9)
+      : FC(f(x - r * 0.36), ey, f(r * 0.1), K.ink) + FC(f(x + r * 0.36), ey, f(r * 0.1), K.ink);
+    s += Ln(`M${f(x - r * 0.56)} ${f(ey - r * 0.22)}q${f(r * 0.2)} ${f(-r * 0.1)} ${f(r * 0.38)} 0M${f(x + r * 0.18)} ${f(ey - r * 0.22)}q${f(r * 0.2)} ${f(-r * 0.1)} ${f(r * 0.38)} 0`, browC, browW);
+    s += Ln(`M${x} ${f(ey + r * 0.12)}l${f(-r * 0.08)} ${f(r * 0.26)}l${f(r * 0.12)} 0`, K.skinShade, 0.9);
+    s += o.open
+      ? FE(x, f(mouthY + r * 0.05), f(r * 0.14), f(r * 0.12), '#8a4a40')
+      : plain
+        ? Ln(`M${f(x - r * 0.18)} ${mouthY}h${f(r * 0.36)}`, K.lip, 0.9)
+        : Ln(`M${f(x - r * 0.2)} ${mouthY}Q${x} ${f(mouthY + r * 0.1)} ${f(x + r * 0.2)} ${mouthY}`, K.lip, 0.9);
+    if (o.old) s += Ln(`M${f(x - r * 0.62)} ${f(ey + r * 0.2)}q${f(r * 0.06)} ${f(r * 0.12)} 0 ${f(r * 0.24)}M${f(x + r * 0.62)} ${f(ey + r * 0.2)}q${f(-r * 0.06)} ${f(r * 0.12)} 0 ${f(r * 0.24)}`, K.skinShade, 0.7);
+    if (!plain) {
+      s += `<circle cx="${f(x - r * 0.5)}" cy="${f(ey + r * 0.32)}" r="${f(r * 0.16)}" fill="${K.blush}" fill-opacity=".45" stroke="none"/>` +
+        `<circle cx="${f(x + r * 0.5)}" cy="${f(ey + r * 0.32)}" r="${f(r * 0.16)}" fill="${K.blush}" fill-opacity=".45" stroke="none"/>`;
+    }
+  } else {
+    s += F(`M${f(x + dir * r * 0.9)} ${f(ey - r * 0.12)}L${f(x + dir * r * 1.22)} ${f(ey + r * 0.3)}L${f(x + dir * r * 0.88)} ${f(ey + r * 0.4)}Z`, K.skin);
+    s += o.closed
+      ? Ln(`M${f(x + dir * r * 0.28)} ${ey}q${f(dir * r * 0.14)} ${f(r * 0.12)} ${f(dir * r * 0.28)} 0`, K.ink, 0.9)
+      : FC(f(x + dir * r * 0.46), ey, f(r * 0.1), K.ink);
+    s += Ln(`M${f(x + dir * r * 0.3)} ${f(ey - r * 0.24)}l${f(dir * r * 0.32)} ${f(-r * 0.04)}`, browC, browW);
+    s += o.open
+      ? F(`M${f(x + dir * r * 0.6)} ${f(mouthY - r * 0.06)}l${f(dir * r * 0.34)} ${f(-r * 0.04)}l${f(-dir * r * 0.06)} ${f(r * 0.2)}Z`, '#8a4a40')
+      : Ln(`M${f(x + dir * r * 0.55)} ${mouthY}l${f(dir * r * 0.28)} ${f(-r * 0.04)}`, K.lip, 0.9);
+    if (!plain) s += `<circle cx="${f(x + dir * r * 0.4)}" cy="${f(ey + r * 0.34)}" r="${f(r * 0.16)}" fill="${K.blush}" fill-opacity=".45" stroke="none"/>`;
+  }
+  if (style !== 'none') {
+    s += F(dir === 0
+      ? `M${f(x - r * 1.05)} ${f(y + r * 0.1)}C${f(x - r * 1.15)} ${f(y - r * 1.35)} ${f(x + r * 1.15)} ${f(y - r * 1.35)} ${f(x + r * 1.05)} ${f(y + r * 0.1)}C${f(x + r * 0.8)} ${f(y - r * 0.55)} ${f(x - r * 0.8)} ${f(y - r * 0.55)} ${f(x - r * 1.05)} ${f(y + r * 0.1)}Z`
+      : `M${f(x + dir * r * 0.65)} ${f(y - r * 0.85)}C${f(x - dir * r * 0.4)} ${f(y - r * 1.4)} ${f(x - dir * r * 1.4)} ${f(y - r * 0.6)} ${f(x - dir * r * 1.06)} ${f(y + r * 0.6)}` +
+        `C${f(x - dir * r * 0.6)} ${f(y + r * 0.15)} ${f(x - dir * r * 0.05)} ${f(y - r * 0.35)} ${f(x + dir * r * 0.65)} ${f(y - r * 0.85)}Z`, o.hair);
+  }
+  return o.rot ? `<g transform="rotate(${o.rot} ${x} ${y})">${s}</g>` : s;
+}
+// 正面坐姿的長袍：肩→腰→大腿往前形成膝蓋→裙襬垂到 hem
+// o: { cx, sh (肩高), lap (膝高), hem, shW (半肩寬), kneeW (半膝寬), hemW (半襬寬), color, deep }
+function seatedRobe(o) {
+  const { cx, sh, lap, hem, shW, kneeW, hemW, color, deep } = o;
+  const waist = sh + (lap - sh) * 0.55;
+  const d = `M${cx - shW} ${sh}C${cx - shW - 4} ${f(sh + 20)} ${cx - shW + 4} ${f(waist - 10)} ${cx - shW + 6} ${f(waist)}` +
+    `C${cx - kneeW - 2} ${f(lap - 18)} ${cx - kneeW - 6} ${lap - 6} ${cx - kneeW} ${lap + 4}` +
+    `C${cx - hemW + 2} ${f(lap + (hem - lap) * 0.5)} ${cx - hemW - 2} ${hem - 8} ${cx - hemW} ${hem}H${cx + hemW}` +
+    `C${cx + hemW + 2} ${hem - 8} ${cx + hemW - 2} ${f(lap + (hem - lap) * 0.5)} ${cx + kneeW} ${lap + 4}` +
+    `C${cx + kneeW + 6} ${lap - 6} ${cx + kneeW + 2} ${f(lap - 18)} ${cx + shW - 6} ${f(waist)}` +
+    `C${cx + shW - 4} ${f(waist - 10)} ${cx + shW + 4} ${f(sh + 20)} ${cx + shW} ${sh}Q${cx} ${sh - 6} ${cx - shW} ${sh}Z`;
+  const kx = kneeW * 0.52;
+  return GF(d, color, deep) +
+    HL(`M${f(cx - kx - 12)} ${lap}C${f(cx - kx - 10)} ${lap - 9} ${f(cx - kx + 10)} ${lap - 9} ${f(cx - kx + 12)} ${lap}C${f(cx - kx + 6)} ${lap - 4} ${f(cx - kx - 6)} ${lap - 4} ${f(cx - kx - 12)} ${lap}Z` +
+      `M${f(cx + kx - 12)} ${lap}C${f(cx + kx - 10)} ${lap - 9} ${f(cx + kx + 10)} ${lap - 9} ${f(cx + kx + 12)} ${lap}C${f(cx + kx + 6)} ${lap - 4} ${f(cx + kx - 6)} ${lap - 4} ${f(cx + kx - 12)} ${lap}Z`, 0.22) +
+    SH(`M${cx - kneeW} ${lap + 4}Q${cx} ${lap + 16} ${cx + kneeW} ${lap + 4}L${cx + kneeW} ${lap + 12}Q${cx} ${lap + 22} ${cx - kneeW} ${lap + 12}Z`, o.band ?? 0.16) +
+    Ln(`M${cx} ${lap + 6}L${cx} ${hem}M${f(cx - kx)} ${lap + 8}L${f(cx - kx - 4)} ${hem}M${f(cx + kx)} ${lap + 8}L${f(cx + kx + 4)} ${hem}`, deep, 0.9);
+}
+// 袍子的褶線
+const folds = (d, color, w = 0.9) => Ln(d, color, w);
+// 羽毛狀的翅膀：由肩點 (x, y) 往 dir 方向展開
+function wing(x, y, dir, span, color, shade) {
+  const tip = [x + dir * span, y - span * 0.42];
+  let d = `M${x} ${y}C${f(x + dir * span * 0.3)} ${f(y - span * 0.62)} ${f(tip[0] - dir * span * 0.2)} ${f(tip[1] - span * 0.08)} ${f(tip[0])} ${f(tip[1])}`;
+  const steps = 5;
+  for (let i = 1; i <= steps; i++) {
+    const t = i / steps;
+    const px = f(tip[0] - dir * span * 0.78 * t);
+    const py = f(tip[1] + span * 0.62 * t);
+    d += `Q${f(px + dir * span * 0.02)} ${f(py + span * 0.16)} ${px} ${py}`;
+  }
+  d += `L${x} ${f(y + span * 0.12)}Z`;
+  let quills = '';
+  for (let i = 1; i < steps; i++) {
+    const t = i / steps;
+    quills += `M${f(x + dir * 2)} ${f(y + 2)}L${f(tip[0] - dir * span * 0.78 * t)} ${f(tip[1] + span * 0.62 * t)}`;
+  }
+  return F(d, color) + Ln(quills, shade, 0.8);
+}
+// 側面行走的馬，原點在左上、朝右，約 132×118：有鬃毛、耳朵、關節與蹄
+function horse(fill, shade = '#d9d2c5') {
+  const body = 'M16 40C30 30 56 34 74 34C84 34 92 22 98 10L102 3L106 9C116 16 124 26 130 34C132 40 126 44 120 42C114 40 108 36 104 34C104 46 102 56 100 64C96 72 88 74 76 72H40C28 74 18 68 14 56C12 50 13 44 16 40Z';
+  const leg = (thigh, knee, foot, c, w0 = 11) => limb(bez(thigh, [(thigh[0] + knee[0]) / 2, (thigh[1] + knee[1]) / 2], knee, 4), w0, 6.4, c, 'none') +
+    limb([knee, foot], 6.4, 5.4, c, 'none') + F(`M${foot[0] - 3.4} ${foot[1] - 4}h6.8l1 5h-8.8Z`, '#5f574f');
+  return leg([28, 62], [22, 90], [26, 112], shade) + leg([88, 66], [93, 90], [90, 112], shade) +
+    limb(bez([16, 42], [2, 56], [8, 90]), 6, 3, '#d8d0c2') +
+    F(body, fill) + SH('M40 72H76C88 74 96 72 100 64C92 66 80 66 60 64C50 64 44 66 40 72Z', 0.1) +
+    SH('M16 40C19 38 21 37 23.5 36.4C22 48 22 58 30 70C18 64 14 50 16 40Z', 0.08) +
+    leg([40, 64], [46, 90], [42, 112], fill, 12) + leg([98, 62], [110, 80], [114, 96], fill) +
+    F('M100 6C92 16 84 28 74 34C80 34 86 32 90 28C94 22 98 14 104 10Z', '#cfc6b6') + F('M102 3L100 -4L107 4Z', fill) +
+    FC(113, 18, 1.6, K.ink) + FC(127, 34, 1, K.ink) + Ln('M122 41l6 -2', '#a89e8e', 0.8);
+}
+function bookD(x, y) {
+  return `M${x - 11} ${y}Q${x - 5} ${y - 3} ${x} ${y}Q${x + 5} ${y - 3} ${x + 11} ${y}V${y + 7}Q${x + 5} ${y + 4} ${x} ${y + 7}Q${x - 5} ${y + 4} ${x - 11} ${y + 7}Z`;
+}
+function cloudD(x, y, w) {
+  return `M${x - w} ${y}A${f(w * 0.36)} ${f(w * 0.36)} 0 0 1 ${f(x - w * 0.3)} ${f(y - w * 0.3)}A${f(w * 0.4)} ${f(w * 0.4)} 0 0 1 ${f(x + w * 0.42)} ${f(y - w * 0.26)}A${f(w * 0.32)} ${f(w * 0.32)} 0 0 1 ${x + w} ${y}Q${x} ${f(y + w * 0.18)} ${x - w} ${y}Z`;
+}
+const cloud = (x, y, w) => F(cloudD(x, y, w), K.white);
+// 命運之輪與世界四角的天使、鷹、牛、獅（帶翅膀）；books 為命運之輪的讀書形象
+function creatures(books) {
+  const w = (x, y, s = 15) => F(leafD(x, y, s, -62, 0.4) + leafD(x, y, s, 62, 0.4), '#efe1b5') + Ln(`M${x} ${y}l${f(-s * 0.7)} ${f(-s * 0.3)}M${x} ${y}l${f(s * 0.7)} ${f(-s * 0.3)}`, '#cdb98a', 0.7);
+  return [
+    cloud(92, 152, 30), cloud(208, 152, 30), cloud(84, 434, 38), cloud(216, 434, 38),
+    // 天使
+    w(88, 134), head(88, 130, { r: 7, hair: K.hairBlond }),
+    // 鷹：側面白頭、勾嘴、褐色頸羽
+    w(208, 138), F('M204 140C204 130 210 122 218 122C224 122 228 126 228 130L222 132C220 136 218 142 216 144Z', '#7a5a3e'),
+    F('M208 132C208 124 214 120 220 121C226 122 229 126 228 130L220 131C216 132 212 134 208 132Z', '#f4efe4'),
+    F('M227 127C233 127 235 131 232 136C231 133 229 131 226 131Z', '#e2b84a'), FC(222, 126, 1.2, K.ink),
+    // 牛
+    w(84, 406, 20), F('M75 404C75 394 93 394 93 404C93 414 88 420 84 420C80 420 75 414 75 404Z', '#8a6a4b'), F('M79 414C80 420 88 420 89 414Z', '#b89a7c'),
+    L('M76 398C70 394 68 388 72 384M92 398C98 394 100 388 96 384', '#d8ccb0', 3), FC(80, 403, 1.1, K.ink), FC(88, 403, 1.1, K.ink), FC(82, 416, 0.8, '#5a4030'), FC(86, 416, 0.8, '#5a4030'),
+    // 獅：扇貝狀鬃毛、淺色臉、口鼻
+    w(216, 402, 26), F(rosetteD(216, 406, 15, 11), '#a8652a'), FC(216, 407, 8.5, '#e4aa55'),
+    FE(216, 411, 4.4, 3, '#f1cf8c'), FC(213, 404, 1.1, K.ink), FC(219, 404, 1.1, K.ink), F('M214.5 408.5H217.5L216 410.5Z', '#5a3a2a'), Ln('M216 410.5v1.5', '#5a3a2a', 0.7),
+    ...(books ? [[88, 144], [212, 144], [84, 424], [216, 424]].map(([x, y]) => F(bookD(x, y), K.white) + Ln(bookD(x, y) + `M${x} ${y}V${y + 7}`, '#8c877e', 0.6)) : [])
+  ].join('');
+}
+// 花：五瓣玫瑰、三瓣百合、帶冠的石榴
+const rose = (x, y, r, color = K.red) => F(rosetteD(x, y, r, 5), color) + F(rosetteD(x, y, r * 0.55, 5, 36), '#c75a4e') + FC(x, y, f(r * 0.22), K.gold);
+const lily = (x, y, s = 1, deg = 0) => G(`rotate(${deg} ${x} ${y})`, F(leafD(x, y, 16 * s, -28, 0.38) + leafD(x, y, 16 * s, 28, 0.38) + leafD(x, y, 18 * s, 0, 0.32), K.white) + Ln(`M${x} ${y}v${f(-8 * s)}`, K.goldDeep, 0.8));
+const pomegranate = (x, y, r = 6) => FC(x, y, r, K.red) + HL(`M${f(x - r * 0.7)} ${f(y - r * 0.3)}a${f(r * 0.7)} ${f(r * 0.7)} 0 0 1 ${f(r * 0.7)} ${f(-r * 0.7)}v${f(r * 0.35)}a${f(r * 0.35)} ${f(r * 0.35)} 0 0 0 ${f(-r * 0.35)} ${f(r * 0.35)}Z`, 0.4) +
+  F(`M${f(x - r * 0.5)} ${f(y - r * 0.8)}L${f(x - r * 0.35)} ${f(y - r * 1.5)}L${x} ${f(y - r * 1.1)}L${f(x + r * 0.35)} ${f(y - r * 1.5)}L${f(x + r * 0.5)} ${f(y - r * 0.8)}Z`, K.redDeep);
+// 站立的裸身人物（戀人、星星、惡魔腳下的兩人）：脖子、肩、腰臀、手腳；頭由呼叫端另畫
+// o: { top: 肩高, foot: 腳底高, female, armL / armR: bez 三點, s: 縮放 }
+function nude(x, o) {
+  const s = o.top;
+  const k = o.s || 1;
+  const w = (o.female ? 11 : 13) * k;
+  const waistY = s + 31 * k;
+  const hipY = s + 47 * k;
+  const foot = o.foot;
+  const sw = (n) => f(n * k);
+  const torso = o.female
+    ? `M${f(x - w)} ${s}C${f(x - w - k)} ${f(s + 14 * k)} ${f(x - 8 * k)} ${f(s + 22 * k)} ${f(x - 7 * k)} ${f(waistY)}C${f(x - 11 * k)} ${f(s + 38 * k)} ${f(x - 12 * k)} ${f(hipY - 2 * k)} ${f(x - 10 * k)} ${f(hipY + 4 * k)}` +
+      `H${f(x + 10 * k)}C${f(x + 12 * k)} ${f(hipY - 2 * k)} ${f(x + 11 * k)} ${f(s + 38 * k)} ${f(x + 7 * k)} ${f(waistY)}C${f(x + 8 * k)} ${f(s + 22 * k)} ${f(x + w + k)} ${f(s + 14 * k)} ${f(x + w)} ${s}Q${x} ${f(s - 4 * k)} ${f(x - w)} ${s}Z`
+    : `M${f(x - w)} ${s}C${f(x - w)} ${f(s + 14 * k)} ${f(x - 9 * k)} ${f(s + 24 * k)} ${f(x - 8 * k)} ${f(waistY)}C${f(x - 9 * k)} ${f(s + 38 * k)} ${f(x - 9 * k)} ${f(hipY - 2 * k)} ${f(x - 8 * k)} ${f(hipY + 4 * k)}` +
+      `H${f(x + 8 * k)}C${f(x + 9 * k)} ${f(hipY - 2 * k)} ${f(x + 9 * k)} ${f(s + 38 * k)} ${f(x + 8 * k)} ${f(waistY)}C${f(x + 9 * k)} ${f(s + 24 * k)} ${f(x + w)} ${f(s + 14 * k)} ${f(x + w)} ${s}Q${x} ${f(s - 4 * k)} ${f(x - w)} ${s}Z`;
+  const legL = bez([x - 4.5 * k, hipY], [x - 5.5 * k, (hipY + foot) / 2], [x - 5 * k, foot - 2.5 * k]);
+  const legR = bez([x + 4.5 * k, hipY], [x + 5.5 * k, (hipY + foot) / 2], [x + 5 * k, foot - 2.5 * k]);
+  const [aL, aR] = [o.armL, o.armR];
+  return [
+    limb(legL, 10 * k, 5.5 * k, K.skin, 'none'), limb(legR, 10 * k, 5.5 * k, K.skin, 'none'),
+    SH(`M${f(x + 1 * k)} ${f(hipY)}L${f(x + 10 * k)} ${f(hipY)}L${f(x + 8 * k)} ${f(foot - 3 * k)}H${f(x + 3 * k)}Z`, 0.07),
+    FE(f(x - 7 * k), f(foot - 1.5 * k), sw(4.6), sw(2.2), K.skin), FE(f(x + 7 * k), f(foot - 1.5 * k), sw(4.6), sw(2.2), K.skin),
+    F(`M${f(x - 3.6 * k)} ${f(s - 9 * k)}h${sw(7.2)}v${sw(11)}h${sw(-7.2)}Z`, K.skin),
+    limb(bez(...aL), 6 * k, 4.2 * k, K.skin, 'none'), limb(bez(...aR), 6 * k, 4.2 * k, K.skin, 'none'),
+    F(torso, K.skin), SH(`M${x} ${f(s + 2 * k)}C${f(x + 6 * k)} ${f(s + 20 * k)} ${f(x + 5 * k)} ${f(hipY - 8 * k)} ${f(x + 3 * k)} ${f(hipY + 4 * k)}H${f(x + 8 * k)}C${f(x + 9 * k)} ${f(hipY - 2 * k)} ${f(x + 9 * k)} ${f(s + 24 * k)} ${f(x + w - k)} ${f(s + 2 * k)}Z`, 0.06),
+    hand(f(aL[2][0]), f(aL[2][1] + 2 * k), 0, f(3.6 * k)), hand(f(aR[2][0]), f(aR[2][1] + 2 * k), 0, f(3.6 * k))
+  ].join('');
+}
+// 往上燒的火焰（可旋轉），h 為高度
+function flame(x, y, h, deg = 0, outer = K.flame, inner = K.flameLight) {
+  const d = (k) => `M${f(x - h * 0.28 * k)} ${y}C${f(x - h * 0.36 * k)} ${f(y - h * 0.42 * k)} ${f(x - h * 0.06 * k)} ${f(y - h * 0.56 * k)} ${x} ${f(y - h * k)}` +
+    `C${f(x + h * 0.12 * k)} ${f(y - h * 0.6 * k)} ${f(x + h * 0.36 * k)} ${f(y - h * 0.42 * k)} ${f(x + h * 0.28 * k)} ${y}Q${x} ${f(y + h * 0.14 * k)} ${f(x - h * 0.28 * k)} ${y}Z`;
+  const s = F(d(1), outer) + F(d(0.55), inner);
+  return deg ? G(`rotate(${deg} ${x} ${y})`, s) : s;
+}
+// 側面的鞋，dir 1 鞋尖朝右
+const shoe = (x, y, dir, color) => F(`M${f(x - dir * 5)} ${y - 5}H${f(x + dir * 2)}C${f(x + dir * 8)} ${y - 4} ${f(x + dir * 11)} ${y - 1} ${f(x + dir * 11)} ${y + 1}H${f(x - dir * 6)}Z`, color);
+// 鎖鏈：沿二次曲線排列的小鏈環
+function chainLinks(p0, c, p1, n, color = '#9a958c') {
+  let s = '';
+  for (let i = 0; i < n; i++) {
+    const t = (i + 0.5) / n;
+    const u = 1 - t;
+    const x = f(u * u * p0[0] + 2 * u * t * c[0] + t * t * p1[0]);
+    const y = f(u * u * p0[1] + 2 * u * t * c[1] + t * t * p1[1]);
+    const ang = f(Math.atan2(2 * u * (c[1] - p0[1]) + 2 * t * (p1[1] - c[1]), 2 * u * (c[0] - p0[0]) + 2 * t * (p1[0] - c[0])) * 180 / Math.PI);
+    s += i % 2
+      ? L(`M${f(x - 2.8 * Math.cos(ang * Math.PI / 180))} ${f(y - 2.8 * Math.sin(ang * Math.PI / 180))}L${f(x + 2.8 * Math.cos(ang * Math.PI / 180))} ${f(y + 2.8 * Math.sin(ang * Math.PI / 180))}`, color, 1.6)
+      : `<ellipse cx="${x}" cy="${y}" rx="3.6" ry="2.2" transform="rotate(${ang} ${x} ${y})" fill="none" stroke="${color}" stroke-width="1.3" class="dk-lim"/>`;
+  }
+  return s;
+}
+
+const MAJOR_SCENE = {
+  fool: () => {
+    const cliff = 'M260 460V352C224 344 182 346 142 356C110 362 84 366 62 372C68 384 72 396 72 408C70 426 66 444 64 460Z';
+    const tunic = 'M124 218C128 210 150 207 157 213C162 232 164 264 170 298C160 304 128 306 114 300C116 270 118 240 124 218Z';
+    return [
+      GF(SKY, '#f1cf72', '#f8e9b6'),
+      // 白日在畫面上方、他的身後
+      glow(196, 132, 44, 44, '#ffffff', 0.55), Ln(raysD(196, 132, 25, 33, 24), '#d9a843', 0.9), FC(196, 132, 20, '#fffaf0'),
+      // 深淵在最低處：遠方雪山沉入霧中
+      GF('M40 330L64 296L82 314L108 274L128 304L140 290L178 352V430H40Z', '#f4f6f5', '#b9c8d4'),
+      F('M108 274L114 304L128 304ZM64 296L68 318L82 314Z', K.snowShade),
+      GF('M40 364H76V460H40Z', '#9fb4c7', '#3f5068'), glow(56, 370, 30, 9, '#ffffff', 0.55),
+      GF(cliff, '#a07c58', '#5f4532'),
+      HL('M260 352C224 344 182 346 142 356C110 362 84 366 62 372L65 378C86 372 112 368 144 362C182 353 224 351 260 358Z', 0.22),
+      Ln('M242 384C216 378 190 380 160 388M238 408C210 402 180 406 150 414M230 434C202 428 170 432 140 440', '#4f3a29', 0.9),
+      L('M232 352l-3 -8M236 352l1 -9M240 352l4 -7M188 350l-3 -7M192 350l1 -8M196 350l3 -6', '#5f7840', 1.4),
+      // 愚者：面向崖邊、仰臉向天；重心壓在彎曲的前腳；細杖挑著行囊掛在身後
+      sleeve(bez([155, 296], [164, 328], [172, 352]), 9.5, 6.5, '#ece4d2', '#b8a582'), shoe(173, 355, -1, '#a9792e'),
+      L('M118 250L188 186', K.brownDeep, 2.8),
+      F('M178 190C190 184 202 192 200 206C198 216 182 218 176 208C172 200 172 194 178 190Z', '#b07a46'),
+      SH('M176 208C182 218 198 216 200 206C192 212 182 212 176 208Z', 0.2), Ln('M182 192C188 198 190 206 188 214', '#8a5c32', 0.9),
+      F('M184 187L188 182L192 188L188 191Z', '#8a5c32'),
+      sleeve(bez([138, 296], [124, 330], [114, 362]), 10, 7, '#f4eee2', '#c2b08e'), shoe(112, 366, -1, '#c49038'),
+      F(tunic, K.ink), SH('M146 210C154 232 160 264 170 298C164 301 158 302 152 302C152 270 150 238 146 210Z', 0.3),
+      ...[[130, 236], [148, 232], [124, 270], [144, 266], [160, 284], [156, 252], [134, 292]].map(([x, y]) =>
+        F(leafD(x, y, 6, -40) + leafD(x, y, 6, 140), K.green) + F(rosetteD(x, y, 4.2, 6), K.gold) + FC(x, y, 1.5, K.red)),
+      L('M114 300C128 306 160 304 170 298', K.red, 2.4), L('M117 262C134 268 152 268 166 262', K.gold, 2.6), L('M110 257L121 247', K.brownDeep, 2.8), hand(119, 249, -30, 3.8),
+      F('M128 214Q140 222 152 214L148 208H132Z', K.cream),
+      sleeve(bez([150, 224], [164, 246], [174, 238]), 8, 6.5, K.ink, '#151319', K.red), hand(176, 236, 30, 3.8),
+      Ln('M178 232L179 224', K.green, 1.2), F(leafD(178.5, 228, 7, 60), K.green),
+      F(rosetteD(180, 218, 8, 5), K.white), F(rosetteD(180, 218, 4.6, 5, 36), '#efe6d4'), Ln('M178 217a2 2 0 1 1 3 1', '#cbbfa8', 0.8),
+      F('M136 202h9v12h-9Z', K.skin),
+      head(140, 196, { r: 12, dir: -1, rot: 32, up: true, hair: K.hairBrown }),
+      G('rotate(32 140 196)', F(leafD(146, 186, 8, -50) + leafD(140, 184, 8, -10) + leafD(134, 185, 8, 30), K.green) + F(leafD(148, 187, 20, 40, 0.26), K.red)),
+      // 腳邊、最靠近崖邊的白狗：後腳踩在崖緣，前腳搭起，張嘴吠叫
+      G('translate(-14 2)', [
+      sleeve(bez([86, 352], [80, 360], [84, 368]), 6.5, 5, K.white, '#bdb5a8'), sleeve(bez([96, 354], [96, 362], [98, 368]), 6.5, 5, '#ece6dc', '#bdb5a8'),
+      L('M80 352C68 348 66 336 74 332', '#bdb5a8', 4), L('M80 352C68 348 66 336 74 332', K.white, 2.6),
+      sleeve(bez([100, 336], [108, 342], [114, 350]), 4.6, 3.8, '#ece6dc', '#bdb5a8'),
+      FS('M80 364C74 352 78 340 86 334C92 330 98 330 104 326C110 322 114 330 112 338C110 346 102 352 96 356L94 366Z', K.white, '#bdb5a8'),
+      sleeve(bez([104, 330], [112, 334], [118, 342]), 4.6, 3.8, K.white, '#bdb5a8'),
+      FS('M104 322C106 312 116 308 122 312L128 316C128 320 124 322 120 321C118 324 110 326 106 324C103 322 103 324 104 322Z', K.white, '#bdb5a8'),
+      F('M108 314C103 311 100 316 102 322C105 320 108 318 110 316Z', '#d8cfc0'),
+      F('M121 320L128 318L123 324Z', '#8a4a40'), FC(127.5, 316, 1.3, K.ink), FC(115, 314, 1.2, K.ink),
+      Ln('M131 312l4 -2M131 317h5M130 322l4 2', K.ink, 0.9)
+      ].join(''))
+    ];
+  },
+  magician: () => {
+    const cloak = 'M128 174C118 180 112 196 110 222C108 250 108 280 108 300H138L142 182ZM172 174C182 180 188 196 190 222C192 250 192 280 192 300H162L158 182Z';
+    return [
+      GF(SKY, '#ecc65a', '#f6e2a2'),
+      // 身邊的玫瑰與百合花架（只在兩側，最高處留給無限符號）
+      L('M66 146V266M234 146V266', K.greenDeep, 2),
+      ...[[66, 168], [66, 206], [66, 246], [234, 168], [234, 206], [234, 246]].map(([x, y], i) =>
+        F(leafD(x, y + 10, 12, x < 150 ? 60 : -60) + leafD(x, y - 10, 12, x < 150 ? 120 : -120), K.green) +
+        (i % 3 === 1 ? lily(x, y + 4, 0.75) : rose(x, y, 9))),
+      // 無限符號在最上
+      L(lemniscateD(150, 102, 16, 7.5), K.goldDeep, 2.8),
+      F('M139 152C135 138 142 130 150 130C158 130 165 138 161 152C163 158 162 164 160 166H140C138 164 137 158 139 152Z', K.hairDark),
+      F('M145 160h10v14h-10Z', K.skin),
+      F('M140 172H160L166 300H134Z', K.white), folds('M146 190L144 296M154 190L156 296', '#e3dccd'),
+      // 腰間咬著尾巴的蛇
+      L('M130 234C136 240 164 240 170 234', '#5f8a4a', 3.4),
+      GF(cloak, '#b54d42', '#8e392f'),
+      SH('M128 174C118 180 112 196 110 222C108 250 108 280 108 300H118C118 270 120 230 130 182Z', 0.18), HL('M138 182L138 300H142L142 182Z', 0.3),
+      folds('M120 236C118 262 117 284 117 298M180 236C182 262 183 284 183 298', K.redDeep),
+      F('M136 234L147 237L136 240Z', '#3e5f33'), F('M156 236C152 233 146 233 144 237L148 240C151 241 154 240 156 236Z', '#5f8a4a'), FC(149, 236, 0.9, K.ink),
+      // 右手舉杖指天
+      L('M120 110V130', '#fffaf0', 4.5), Ln('M117.6 110V130M122.4 110V130', '#cdbf9e', 0.7), FC(120, 109, 3, K.gold),
+      sleeve(bez([130, 180], [114, 160], [120, 136]), 10.5, 8, K.white, '#cfc6b4', '#efe9dc'), hand(120, 128, 0, 4.8), Ln('M117 126h6M117 129h6', K.skinShade, 0.7),
+      // 左手食指朝下指地
+      sleeve(bez([170, 180], [186, 210], [184, 238]), 10.5, 8, K.white, '#cfc6b4', '#efe9dc'),
+      head(150, 148, { r: 12, male: true, hair: K.hairDark }), L('M138 142Q150 136 162 142', K.white, 2.6),
+      // 真正的桌子：桌面、裙板、桌腳；桌下露出長袍下襬
+      GF('M108 288H192L196 350H104Z', '#9e3f36', '#7a2f28'), F('M134 288H166L167 350H133Z', '#f7f3ea'),
+      GF('M56 262H244V275H56Z', '#b8a074', '#94805c'), HL('M56 262H244V264H56Z', 0.4),
+      GF('M64 274H236V290H64Z', '#a48e66', '#8a7553'), Ln('M70 282H230', '#7d6a4a', 0.8),
+      GF('M66 290H76V350H66ZM224 290H234V350H224Z', '#94805c', '#6f5e42'),
+      // 桌上四樣道具：杖與杯在左、劍與幣在右；指地的手畫在道具之後
+      L('M64 268H102', '#7a5232', 3.4), FC(64, 268, 2.6, K.gold), FC(102, 268, 2.6, K.gold), F(leafD(88, 266, 7, -40) + leafD(78, 266, 7, 40), K.green),
+      sym('Cups', 118, 246, 0.6),
+      sym('Pentacles', 208, 248, 0.58),
+      F('M200 266H232L237 268L232 270H200Z', '#e2e6ea'), Ln('M202 268H230', '#9aa0a8', 0.6), L('M198 263V273', K.gold, 2.2), L('M190 268H198', K.goldDeep, 3), FC(188, 268, 2.2, K.gold),
+      hand(185, 244, -6, 4.8), L('M186 249L187.5 256', K.skin, 2.2),
+      // 身邊開滿紅玫瑰與白百合，在畫面下方成列
+      GF('M40 350C100 342 200 342 260 350V460H40Z', '#6f8a4c', '#4f6838'),
+      ...Array.from({ length: 9 }, (_, i) => {
+        const x = 58 + i * 23;
+        const y = 380 + (i % 2) * 18;
+        return L(`M${x} ${y}V${y + 40}`, K.greenDeep, 1.6) + F(leafD(x, y + 18, 12, -50) + leafD(x, y + 26, 12, 50), K.green) + (i % 2 ? lily(x, y) : rose(x, y, 11));
+      }),
+      ...Array.from({ length: 8 }, (_, i) => {
+        const x = 70 + i * 23;
+        return F(leafD(x, 440, 12, -40) + leafD(x, 440, 12, 40), '#5d7a42') + (i % 2 ? rose(x, 432, 9) : lily(x, 434, 0.8));
+      })
+    ];
+  },
+  high_priestess: () => [
+    GF(SKY, '#8fa3b6', '#b7c4cf'),
+    // 帷幕：上有橫桿，垂褶，石榴與棕櫚葉不貼著人物
+    GF('M86 96H214V430H86Z', '#dcbf78', '#c9a85e'),
+    ...[96, 116, 184, 204].map(x => SH(`M${x} 104h6v326h-6Z`, 0.07)),
+    ...[[100, 146], [200, 146], [100, 200], [200, 200], [100, 254], [200, 254]].map(([x, y]) =>
+      F(leafD(x, y + 18, 20, -24, 0.24) + leafD(x, y + 18, 20, 24, 0.24) + leafD(x, y + 18, 22, 0, 0.2), '#8a9a5e') + pomegranate(x, y, 6)),
+    L('M84 100H216', K.goldDeep, 3.6), FC(84, 100, 3, K.gold), FC(216, 100, 3, K.gold),
+    // 黑白雙柱 B 與 J，柱頭降到拱窗之內
+    GF('M54 156H86V460H54Z', '#1f1c25', '#4a4652', true), F('M54 150H86V160H54Z', K.ink), F('M55 150C57 138 63 134 70 141C77 134 83 138 85 150Z', K.ink),
+    Ln('M58 148C62 140 66 140 70 146C74 140 78 140 82 148', '#4a4652', 0.9),
+    GF('M214 156H246V460H214Z', '#ffffff', '#d4d0c8', true), Ln('M214 156V460M246 156V460', '#8c877e', 0.8),
+    FS('M214 150H246V160H214Z', K.white, '#8c877e'), FS('M215 150C217 138 223 134 230 141C237 134 243 138 245 150Z', K.white, '#8c877e'),
+    T(70, 300, 'B', 18, 'dk-txt dk-ptxt'), T(230, 300, 'J', 18),
+    // 端坐：石座、膝蓋、雙臂把卷軸擱在膝上
+    GF('M40 428H260V460H40Z', '#a5adb7', '#8a939e'),
+    GF('M96 300H204V430H96Z', '#c9c3b9', '#a29d93'), Ln('M96 300H204', '#8c877e', 1),
+    F('M130 196C126 172 136 156 150 156C164 156 174 172 170 196C176 210 178 224 176 230H124C122 224 124 210 130 196Z', K.blueDeep),
+    seatedRobe({ cx: 150, sh: 214, lap: 318, hem: 440, shW: 26, kneeW: 46, hemW: 52, color: '#4a6c9f', deep: '#2d4a78' }),
+    Ln(wavesD(102, 198, 428, 2.5, 16), '#a9c0dc', 0.9),
+    F('M140 214L150 246L160 214Z', K.white), F('M144 214L150 232L156 214Z', '#e9e4da'),
+    Ln('M144 222Q150 236 156 222', '#c9a85e', 0.8), L('M150 248V266M141 257H159', K.white, 3), Ln('M150 248V266M141 257H159', K.goldDeep, 0.6),
+    sleeve(bez([126, 220], [116, 268], [134, 304]), 11, 8, '#3f6194', '#2d4a78'), sleeve(bez([174, 220], [184, 268], [166, 302]), 11, 8, '#3f6194', '#2d4a78'),
+    G('translate(150 308) rotate(-6)', F('M-24 -8H24V8H-24Z', K.white) + FS('M-28 -9H-22V9H-28ZM22 -9H28V9H22Z', K.cream, '#bdb5a3') + T(-6, 3, 'TORA', 7, 'dk-txt', 1)),
+    hand(130, 304, -30, 4.4), hand(170, 302, 30, 4.4),
+    F('M152 296C164 298 176 304 182 314L180 322Q166 318 150 318Z', '#3f6194'), SH('M152 296C164 298 176 304 182 314L180 318C172 310 162 304 152 302Z', 0.2),
+    head(150, 186, { r: 13 }),
+    F('M130 200C127 184 133 168 142 162C138 174 136 186 138 200ZM170 200C173 184 167 168 158 162C162 174 164 186 162 200Z', K.blueDeep),
+    // 帶角的冠冕，中央嵌一顆球
+    F(crescentD(150, 162, 14, 0), K.gold), FC(150, 155, 7.5, K.white), HL('M145.5 152a5 5 0 0 1 6 -1.5v2a3 3 0 0 0 -4.5 1.5Z', 0.6),
+    // 腳邊一彎新月
+    F(crescentD(150, 424, 18, 0), K.gold)
+  ],
+  empress: () => {
+    const cushion = (x, y, w, h, c, d) => GF(`M${x} ${y + 8}C${x} ${y - 2} ${x + w} ${y - 2} ${x + w} ${y + 8}V${y + h - 8}C${x + w} ${y + h + 2} ${x} ${y + h + 2} ${x} ${y + h - 8}Z`, c, d) +
+      FC(x + w / 2, y + h / 2, 1.6, K.gold) + FC(x + w / 4, y + h / 3, 1.2, K.gold) + FC(x + w * 0.75, y + h / 3, 1.2, K.gold);
+    return [
+      GF(SKY, '#f2d98f', '#f8eac0'),
+      // 林間流下的瀑布
+      GF('M40 236C64 222 88 226 104 238V340H40Z', '#5f7446', '#47593a'), GF('M196 238C220 224 244 222 260 234V340H196Z', '#5f7446', '#47593a'),
+      ...[[58, 190, 10], [80, 200, 8], [222, 186, 10], [244, 200, 8]].map(([x, y, w]) =>
+        F(`M${x - w} ${y + 122}C${x - w - 6} ${y + 60} ${x - 4} ${y + 10} ${x} ${y - 10}C${x + 4} ${y + 10} ${x + w + 6} ${y + 60} ${x + w} ${y + 122}Z`, '#455634') +
+        SH(`M${x} ${y - 10}C${x + 4} ${y + 10} ${x + w + 6} ${y + 60} ${x + w} ${y + 122}H${x}Z`, 0.15)),
+      // 從林間岩壁流下
+      GF('M203 318C201 290 206 272 203 258L211 247L220 251L226 243L237 246L244 239L253 249C255 268 250 288 253 318Z', '#7a756b', '#5f5b53'),
+      Ln('M207 272l9 -3M241 282l10 2M209 294l9 2', '#57534b', 0.8),
+      GF('M220 246H236C234 272 232 300 238 332H220C216 300 218 272 220 246Z', '#e3eef4', '#a9c8db'),
+      F('M217 247Q228 242 239 247L236 251H220Z', '#6f6a60'),
+      Ln('M224 258C223 280 222 302 226 326M231 258C230 282 230 304 234 328', '#ffffff', 0.9), FE(230, 334, 14, 4, '#cfe2ed'),
+      // 身後成熟的麥田：一排排麥穗，不畫長莖
+      GF('M40 316C90 306 210 306 260 316V372H40Z', '#e8c86c', '#d0a84c'),
+      ...Array.from({ length: 3 }, (_, r) => Array.from({ length: 14 }, (_, i) => {
+        const x = 44 + i * 16 + (r % 2) * 8;
+        const y = 322 + r * 14;
+        return Ln(`M${x} ${y + 12}V${y + 4}`, '#b98f3a', 0.8) + F(leafD(x, y + 6, 7, -24) + leafD(x, y + 9, 7, 24) + leafD(x, y + 3, 6, 0), '#b98f3a');
+      }).join('')),
+      GF('M40 372C100 364 200 364 260 372V460H40Z', '#9fb26a', '#78904c'),
+      // 鋪著軟墊的寶座
+      cushion(100, 196, 100, 170, '#b54d42', '#8a352e'), cushion(92, 254, 38, 54, '#efe2c6', '#d8c79f'), cushion(170, 260, 34, 48, '#efe2c6', '#d8c79f'),
+      // 往後斜倚：頭與肩靠在軟枕上，裙襬平放
+      cushion(104, 172, 44, 34, '#efe2c6', '#d8c79f'),
+      seatedRobe({ cx: 150, sh: 264, lap: 326, hem: 420, shW: 16, kneeW: 46, hemW: 54, color: '#fbf8f1', deep: '#e6dfd1', band: 0.07 }),
+      ...[[128, 340], [150, 352], [172, 340], [116, 380], [138, 392], [162, 392], [184, 380], [126, 412], [150, 410], [174, 412], [106, 404], [194, 404]]
+        .map(([x, y]) => pomegranate(x, y, 3.4)),
+      G('rotate(-12 150 300)', [
+        F('M135 196C132 182 140 176 150 176C160 176 168 182 165 196C170 210 170 226 166 234H134C130 226 130 210 135 196Z', K.hairBlond),
+        F('M125 222C128 214 172 214 175 222C178 246 174 276 172 306H128C126 276 122 246 125 222Z', '#fbf8f1'),
+        Ln('M134 222Q150 232 166 222', '#d8cdb8', 0.9), ...[-9, -5, -1, 3, 7].map(dx => FC(f(150 + dx), f(226.5 + Math.abs(dx + 1) * 0.12), 1.3, '#d9cbaa')),
+        ...[[140, 252], [160, 250], [150, 276], [138, 286], [162, 286]].map(([x, y]) => pomegranate(x, y, 3.2)),
+        // 腰帶蓋住上身與裙的接縫
+        F('M124 294Q150 302 176 294V304Q150 312 124 304Z', '#dcc68e'), Ln('M124 299Q150 307 176 299', '#b99e5a', 0.8),
+        F('M145 206h10v12h-10Z', K.skin),
+        head(150, 196, { r: 12, hair: K.hairBlond }),
+        // 十二顆星的冠冕：貼著頭髮的細金環，是畫面最高處
+        Ln('M134 190C138 180 162 180 166 190', K.gold, 1.4),
+        F(Array.from({ length: 12 }, (_, i) => starD(...pt(150, 193, 22, -84 + i * 168 / 11), 2.7, 1.15, 6)).join(''), '#f0cc58'),
+        Ln(Array.from({ length: 12 }, (_, i) => starD(...pt(150, 193, 22, -84 + i * 168 / 11), 2.7, 1.15, 6)).join(''), '#8a6a2a', 0.6)
+      ].join('')),
+      sleeve(bez([113, 231], [106, 252], [116, 270]), 9, 7, '#ead9a8', '#c9b27a'), hand(118, 274, 10, 4.4),
+      L('M178 282L184 196', K.goldDeep, 2.6), FC(184, 192, 5.5, K.gold), HL('M181.5 189.5a3.5 3.5 0 0 1 4.5 -1.5v1.6a2 2 0 0 0 -3 1Z', 0.5),
+      sleeve(bez([160, 222], [182, 246], [180, 274]), 9, 7, '#ead9a8', '#c9b27a'), hand(180, 278, -6, 4.4),
+      // 身旁立在地上、倚著軟墊的心形盾，上有金星符號
+      SH('M58 420a22 4 0 1 0 44 0a22 4 0 1 0 -44 0Z', 0.14),
+      GF('M80 422C56 402 52 380 64 372C72 367 80 374 80 380C80 374 88 367 96 372C108 380 104 402 80 422Z', '#d3cec5', '#a8a39a'),
+      Ln('M80 422C56 402 52 380 64 372C72 367 80 374 80 380C80 374 88 367 96 372C108 380 104 402 80 422Z', '#8c877e', 0.8),
+      L('M80 389m-6 0a6 6 0 1 0 12 0a6 6 0 1 0 -12 0M80 395V408M74 401.5H86', K.gold, 1.8)
+    ];
+  },
+  emperor: () => {
+    const ram = (x, y, d) => F(`M${x - 5} ${y - 6}C${x - 6} ${y + 2} ${x - 3} ${y + 8} ${x} ${y + 10}C${x + 3} ${y + 8} ${x + 6} ${y + 2} ${x + 5} ${y - 6}Z`, '#c9c3b8') +
+      L(spiralD(x - 8 * d, y - 3, 6, 1.3, d > 0 ? 90 : 270, -d), '#8c877e', 2.2) + L(spiralD(x + 8 * d, y - 3, 6, 1.3, d > 0 ? 270 : 90, d), '#8c877e', 2.2) +
+      FC(x - 2.2, y - 1, 0.8, '#6f6a62') + FC(x + 2.2, y - 1, 0.8, '#6f6a62');
+    return [
+      GF(SKY, '#f4d2a6', '#f8e2c4'),
+      // 光禿的紅色山脈撐起整個上半部
+      GF('M40 300L58 196L80 232L106 116L132 206L150 168L170 210L196 104L222 186L244 150L260 176V420H40Z', '#b14e2e', '#8f3b22'),
+      F('M106 116L114 168L132 206ZM196 104L206 160L222 186ZM58 196L64 222L80 232ZM244 150L250 168L260 176Z', '#7c3019'),
+      HL('M106 116L96 160L88 200L100 172L104 146Z', 0.14), HL('M196 104L186 150L178 190L190 160Z', 0.12),
+      // 山腳下的一道細水流
+      GF('M40 380C90 374 140 384 200 378C230 375 250 378 260 380V388C240 386 220 384 200 388C140 394 90 384 40 390Z', '#a9cbe0', '#86aecb'),
+      Ln('M48 384C90 380 140 388 200 382C228 380 248 382 258 383', '#e6f2f8', 0.8),
+      GF('M40 392C90 384 210 384 260 392V460H40Z', '#8a4a2e', '#653620'),
+      // 石造王座：椅背、扶手，四處公羊頭浮雕
+      GF('M100 196H200V340H100Z', '#b0aa9f', '#8c867c'), F('M94 188H206V200H94Z', '#9a958b'), HL('M94 188H206V191H94Z', 0.3),
+      Ln('M100 250H200M100 300H200M150 200V250M126 250V300M174 250V300', '#9a958b', 0.8),
+      GF('M84 294H114V344H84ZM186 294H216V344H186Z', '#a39e94', '#837e75'), F('M80 288H118V298H80ZM182 288H220V298H182Z', '#9a958b'),
+      ram(103, 203, 1), ram(197, 203, -1), ram(99, 318, 1), ram(201, 318, -1),
+      GF('M96 344H204V430H96Z', '#9a958b', '#7d7870'),
+      // 正坐：紅袍覆過膝，膝下露出盔甲脛甲
+      sleeve(bez([139, 352], [138, 390], [138, 422]), 12, 10, '#9196a0', '#6f7480'), sleeve(bez([161, 352], [162, 390], [162, 422]), 12, 10, '#8a8f99', '#6f7480'),
+      Ln('M134 372h10M134 392h10M156 372h10M156 392h10', '#6f7480', 0.9),
+      F('M128 422H146L148 432H124ZM154 422H172L176 432H152Z', '#4a4d55'),
+      seatedRobe({ cx: 150, sh: 218, lap: 330, hem: 376, shW: 26, kneeW: 40, hemW: 43, color: '#b54d42', deep: '#8a352e' }),
+      F('M138 218H162L160 258H140Z', '#9196a0'), Ln('M140 230H160M140 244H160', '#6f7480', 0.8),
+      F('M122 222C124 206 140 202 150 202C160 202 176 206 178 222L172 232H128Z', '#9ea3ad'), HL('M128 210C136 205 144 203 150 203V212C142 212 134 214 126 218Z', 0.35),
+      F('M145 196h10v12h-10Z', K.skin),
+      head(150, 186, { r: 12, old: true, hair: K.hairWhite }),
+      F('M138 192C138 220 146 236 150 238C154 236 162 220 162 192C156 199 144 199 138 192Z', '#f4f0e8'), folds('M146 202L148 230M154 202L152 230', '#d8d2c8'),
+      F('M135 178L133 158L141 166L150 150L159 166L167 158L165 178Z', K.gold), HL('M135 178L133 158L141 166L140 174Z', 0.25), FC(150, 170, 2.2, K.red), FC(141, 172, 1.5, K.blue), FC(159, 172, 1.5, K.blue),
+      // 右手握安卡權杖、左手托金球
+      L('M116 218V302M107 216H125', K.gold, 3.4), L('M116 218C109 211 110 200 116 200C122 200 123 211 116 218Z', K.gold, 3.2),
+      sleeve(bez([128, 226], [110, 250], [116, 270]), 10, 8, '#b54d42', '#7a2e27', '#9196a0'), hand(116, 274, 0, 4.8),
+      sleeve(bez([172, 226], [190, 252], [184, 272]), 10, 8, '#b54d42', '#7a2e27', '#9196a0'),
+      FC(184, 262, 8.5, K.gold), HL('M179 258a6 6 0 0 1 6 -4v2a4 4 0 0 0 -4 3Z', 0.45), L('M184 246V253M181 249.5H187', K.gold, 1.6),
+      hand(184, 274, 90, 4.8)
+    ];
+  },
+  hierophant: () => {
+    const key = (c) => L('M-20 0H22', c, 2.6) + L('M-28 0m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0', c, 2.6) + F('M14 1H24V8H20V5H17V8H14Z', c);
+    // 背向觀者、仰頭聽講的跪姿僧侶：整顆頭是頭髮，頭頂剃出一圈，露出耳朵與後頸
+    const monk = (x, robe, flower) => [
+      GF(`M${x - 26} 460C${x - 27} 436 ${x - 24} 420 ${x - 8} 414H${x + 8}C${x + 24} 420 ${x + 27} 436 ${x + 26} 460Z`, robe[0], robe[1]),
+      folds(`M${x - 8} 424L${x - 12} 456M${x + 8} 424L${x + 12} 456M${x} 420V456`, robe[2]),
+      [[x - 12, 434], [x + 10, 440], [x - 4, 450], [x + 16, 428], [x - 18, 446]].map(([px, py]) => flower(px, py)).join(''),
+      F(`M${x - 5} 404h10v11h-10Z`, K.skin), FC(x - 11, 398, 2.6, K.skin), FC(x + 11, 398, 2.6, K.skin),
+      FC(x, 396, 11, K.hairBrown), FE(x, 388, 5.2, 3.4, K.skin)
+    ].join('');
+    return [
+      GF(SKY, '#d8cbb4', '#c2b49c'),
+      GF('M54 146H86V440H54Z', '#b3a994', '#8a8170', true), GF('M214 146H246V440H214Z', '#b3a994', '#8a8170', true),
+      F('M54 140H86V150H54ZM214 140H246V150H214Z', '#7d7464'), Ln('M62 152V436M70 152V436M78 152V436M222 152V436M230 152V436M238 152V436', '#7d7464', 0.8),
+      // 深紅鑲金的椅背，和灰色石柱拉開對比
+      GF('M106 168C106 146 194 146 194 168V384H106Z', '#8e3a30', '#6e2a24'), Ln('M112 172C112 154 188 154 188 172V380H112Z', K.gold, 1),
+      GF('M40 398H260V460H40Z', '#b0a690', '#8f8673'), Ln('M40 420H260M40 442H260M70 398V460M110 398V460M150 398V460M190 398V460M230 398V460', '#8a8170', 0.8),
+      GF('M84 384H216V398H84Z', '#a39a86', '#857c6a'), HL('M84 384H216V386H84Z', 0.3),
+      // 正坐：紅色斗篷覆過膝，中間露出白色長袍與兩側對稱的金邊
+      seatedRobe({ cx: 150, sh: 214, lap: 318, hem: 384, shW: 27, kneeW: 44, hemW: 48, color: '#b54d42', deep: '#8a352e' }),
+      F('M140 214L136 384H164L160 214Z', '#eceef3'), folds('M146 232L145 380M154 232L155 380', '#d5d8e0'),
+      Ln('M140 214L136 384M160 214L164 384', K.gold, 1.4),
+      ...[244, 284, 324, 364].map(y => L(`M${f(138.4 - (y - 214) * 0.02)} ${y - 3}v6M${f(135.4 - (y - 214) * 0.02)} ${y}h6M${f(161.6 + (y - 214) * 0.02)} ${y - 3}v6M${f(158.6 + (y - 214) * 0.02)} ${y}h6`, K.gold, 1.2)),
+      FC(150, 222, 4, K.gold),
+      F('M145 196h10v14h-10Z', K.skin),
+      head(150, 188, { r: 12, male: true }), F('M137 200Q150 208 163 200L160 210H140Z', K.white),
+      // 三重冠：三層疊起、每層有冠緣
+      // 三重冠：一體的蜂巢形冠身，三道冠緣與寶石
+      GF('M135 182C134 160 142 140 150 136C158 140 166 160 165 182Z', '#d9b05e', '#b8903e'), SH('M150 136C158 140 166 160 165 182H156C157 164 155 148 150 136Z', 0.12),
+      ...[[180, 15], [166, 13], [152, 10]].map(([y, w]) => L(`M${150 - w} ${y}Q150 ${y + 3} ${150 + w} ${y}`, K.goldDeep, 1.8) +
+        Ln(`M${150 - w + 2} ${y - 1}L${150 - w + 4} ${y - 4}L${150 - w + 6} ${y - 1}M${150 + w - 6} ${y - 1}L${150 + w - 4} ${y - 4}L${150 + w - 2} ${y - 1}`, K.goldDeep, 0.8) + FC(150, y - 4, 1.6, K.red)),
+      FC(150, 134, 3, K.gold), L('M150 122V131M146.5 126H153.5', K.gold, 1.6),
+      // 右手舉起祝福（兩指），左手扶三重十字權杖
+      sleeve(bez([128, 220], [110, 226], [114, 194]), 10, 8, '#b54d42', '#7a2e27', K.white), hand(114, 188, 0, 4.6),
+      L('M112 184V177M115.6 184V176', K.skin, 2), F('M116 189q3 -3 1 -6l-3 1Z', K.skinShade),
+      L('M184 152V384', K.gold, 2.6), L('M176 166H192M172 178H196M168 190H200', K.gold, 2.6), FC(184, 150, 2.6, K.gold),
+      sleeve(bez([172, 220], [190, 238], [184, 258]), 10, 8, '#b54d42', '#7a2e27', K.white), hand(184, 262, 0, 4.6),
+      // 腳前交叉、平放在地上的兩把鑰匙
+      SH('M120 414a30 5 0 1 0 60 0a30 5 0 1 0 -60 0Z', 0.14),
+      G('translate(150 412) scale(1 0.62) rotate(-24)', key(K.gold)), G('translate(150 412) scale(1 0.62) rotate(24) scale(-1 1)', key('#d8dce2')),
+      monk(98, ['#b54d42', '#8a352e', K.redDeep], (x, y) => F(rosetteD(x, y, 3.4, 5), K.white)),
+      monk(202, ['#efeae0', '#cfc8bb', '#d5cfc3'], (x, y) => F(leafD(x, y + 2, 6, -30, 0.4) + leafD(x, y + 2, 6, 30, 0.4) + leafD(x, y + 2, 7, 0, 0.35), K.blue))
+    ];
+  },
+  lovers: () => [
+    GF(SKY, '#a7c6db', '#dbe8f0'),
+    // 天使頭頂的太陽
+    glow(150, 118, 64, 64, '#ffffff', 0.5), Ln(raysD(150, 118, 40, 60, 3, 75, 30) + raysD(150, 118, 40, 60, 3, 255, 30), K.gold, 1), FC(150, 118, 36, '#f3cb5c'),
+    // 兩人之間的遠山：低、淡、在遠處
+    GF('M110 400L150 326L190 400Z', '#b9b5c4', '#9c97aa'), F('M150 326L158 346L190 400H172Z', '#8f8a9e'), F('M142 342L150 326L158 342L150 338Z', '#f4f4f6'),
+    GF('M40 398C100 390 200 390 260 398V460H40Z', '#86a05e', '#6a8248'),
+    L('M70 424l-2 -6m4 6l1 -7M182 424l-1 -6m3 6l2 -6M240 426l-2 -6m4 6l2 -6', K.greenDeep, 1.2),
+    // 男子身後燃火的樹：十二道向上燒的火焰長在枝端
+    limb(bez([76, 410], [74, 350], [76, 286]), 6, 3.5, K.brownDeep, 'none'),
+    L('M76 336L60 318M76 300L64 290M76 326L58 336M76 312L68 308M76 362L62 350M76 318L56 308M76 294L70 282M76 290L84 280', K.brownDeep, 2.2),
+    ...[[60, 318], [56, 304], [70, 278], [64, 290], [58, 336], [76, 286], [68, 304], [84, 276], [70, 326], [62, 346], [80, 296], [66, 314]]
+      .map(([x, y]) => flame(x, y + 4, 12)),
+    // 女子身後結果的樹與纏繞的蛇（一段在樹幹後、一段在前）
+    L('M230 392C230 384 216 384 216 376M230 360C230 352 216 352 216 344', '#8e8c38', 3.2),
+    limb(bez([222, 410], [224, 350], [222, 300]), 6, 4, K.brownDeep, 'none'),
+    FC(222, 282, 22, K.greenDeep), FC(212, 296, 12, '#566b40'), FC(236, 298, 13, '#566b40'), FC(220, 300, 13, K.greenDeep),
+    ...[[212, 278], [230, 288], [220, 302], [234, 272], [206, 294]].map(([x, y]) => FC(x, y, 2.8, K.red) + FC(x - 0.8, y - 0.8, 0.9, '#e08a7e')),
+    L('M212 406C220 404 228 398 230 392M216 376C216 368 230 368 230 360M216 344C218 334 234 330 236 322', '#a6a443', 3.2),
+    F('M238 322C236 314 228 313 225 318C228 322 234 324 238 322Z', '#a6a443'), FC(230.5, 317.5, 0.9, K.ink), Ln('M225 318l-4 -1.5M225 318l-4 1.5', K.red, 0.8),
+    // 天使在最上方正中，張開雙臂；翅膀收在拱窗內
+    wing(146, 176, -1, 80, '#c0503a', '#8e3a2c'), wing(154, 176, 1, 80, '#c0503a', '#8e3a2c'),
+    GF('M136 152C130 164 128 182 127 198H173C172 182 170 164 164 152Z', '#8a6aa0', '#5c4270'),
+    sleeve(bez([137, 162], [122, 170], [108, 178]), 7, 5, '#7a5a8f', '#5c4270'), sleeve(bez([163, 162], [178, 170], [192, 178]), 7, 5, '#7a5a8f', '#5c4270'),
+    hand(105, 179, -60, 3.6), hand(195, 179, 60, 3.6),
+    F([[-6, 0], [-2, -4], [2, -4], [6, 0]].map(([dx, a]) => leafD(150 + dx, 136, 10, dx * 6 + a, 0.4)).join(''), '#d8643a'),
+    F('M146 146h8v10h-8Z', K.skin), head(150, 142, { r: 9, closed: true, hair: '#c0503a' }),
+    // 雲：一排起伏的雲朵，沒有直線邊
+    F('M50 204Q150 196 250 204V216Q150 224 50 216Z', K.white),
+    ...[[56, 208, 26], [96, 202, 30], [140, 204, 30], [184, 202, 30], [226, 208, 28], [76, 214, 24], [162, 214, 26], [206, 214, 22], [118, 214, 24], [130, 210, 22], [186, 208, 22]].map(([x, y, w]) => cloud(x, y, w)),
+    // 男子看著女子；女子仰望天使
+    nude(100, { top: 304, foot: 418, armL: [[89, 306], [84, 330], [86, 356]], armR: [[111, 306], [118, 330], [118, 354]] }),
+    head(100, 290, { r: 10, dir: 1, male: true, hair: K.hairDark }),
+    F('M193 284C196 270 212 272 210 288C212 302 213 322 211 344C208 348 202 346 201 340C200 318 200 300 198 290Z', K.hairBlond),
+    nude(200, { female: true, top: 304, foot: 418, armL: [[191, 306], [184, 330], [184, 354]], armR: [[209, 306], [215, 330], [214, 354]] }),
+    head(200, 290, { r: 10, dir: -1, rot: 60, hair: K.hairBlond })
+  ],
+  chariot: () => {
+    // 同形異色、朝不同方向的人面獅身：有前爪、側臉、頭巾垂在臉後
+    const sphinx = (c, shade, face) => FS('M-30 0C-32 -10 -26 -18 -14 -18H8C10 -30 14 -40 22 -40C30 -40 34 -32 32 -22C32 -16 30 -12 28 -10L30 -6H40V0Z', c, shade) +
+      F('M28 -6H44C46 -4 46 -1 44 0H28Z', c) + Ln('M36 -6V0M40 -6V0', shade, 0.7) +
+      F('M14 -41C16 -50 30 -50 32 -41L33 -30L18 -14L8 -16C9 -26 10 -34 14 -41Z', K.blue) + Ln('M15 -36H25M14 -30H21M14 -24H19', K.gold, 0.8) +
+      head(25, -30, { r: 5.2, dir: 1, male: true }) + (face ? FC(25, -30, 5.3, face) + FC(28, -31, 0.8, '#f4efe4') : '') +
+      L('M-30 -4C-40 -6 -42 -14 -36 -18', c, 2.4);
+    return [
+      GF(SKY, '#ecd27e', '#f6e7b8'),
+      FC(64, 290, 12, '#7d9455'), FC(236, 288, 12, '#7d9455'), FC(120, 288, 10, '#86a05e'),
+      GF('M40 302H66V272H82V302H218V266H234V302H260V337H40Z', '#c3bdb2', '#a29d93'),
+      F('M66 272L74 260L82 272ZM218 266L226 254L234 266Z', K.red),
+      F('M72 282h4v6h-4ZM224 276h4v6h-4ZM140 312h4v6h-4ZM200 314h4v6h-4Z', '#5f5a54'),
+      GF('M40 334C100 330 200 338 260 334V352C200 356 100 348 40 352Z', '#a9c7da', '#86abc4'), Ln('M50 342h16M90 344h20M200 344h18M150 346h14', K.white, 0.8),
+      GF('M40 350C100 346 200 354 260 350V460H40Z', '#dcc895', '#c4ad74'),
+      // 綴滿星辰的車篷：頂緣呼應拱窗
+      L('M96 128V300M204 128V300', K.goldDeep, 3),
+      GF('M88 132C100 108 200 108 212 132V148H88Z', '#34507e', '#243a5e'),
+      F('M88 146C100 142 110 152 120 146C130 152 140 142 150 148C160 142 170 152 180 146C190 152 200 142 212 146V150H88Z', '#243a5e'),
+      Ln('M88 148C100 144 110 154 120 148C130 154 140 144 150 150C160 144 170 154 180 148C190 154 200 144 212 148', K.gold, 0.9),
+      F([[104, 128], [122, 120], [140, 119], [160, 119], [178, 120], [196, 128], [112, 138], [132, 132], [150, 128], [168, 132], [188, 138], [150, 140], [124, 142], [176, 142]]
+        .map(([x, y]) => sparkleD(x, y, 3)).join(''), '#f7ecc4'),
+      ...[108, 192].map(x => FC(x, 384, 22, '#6f6a62') + FC(x, 384, 18, '#8c877e') + Ln(raysD(x, 384, 4, 18, 10), '#5f5a54', 0.9) + FC(x, 384, 4.2, K.gold)),
+      // 戴冠者立在車上：沒有韁繩，只握一根短杖
+      GF('M130 236H170L174 300H126Z', '#a3afbd', '#7b8796'), Ln('M140 246H160V270H140Z', K.gold, 1.1), L('M150 250V266M143 258H157', K.gold, 1.2),
+      sleeve(bez([170, 244], [184, 256], [178, 278]), 7, 6, '#9aa6b5', '#6f7b8a'), hand(178, 282, 0, 4),
+      L('M114 300L110 246', K.goldDeep, 4.2), L('M114 300L110 246', K.goldLight, 2.6), FC(110, 244, 3.2, K.gold),
+      sleeve(bez([130, 244], [114, 254], [113, 268]), 7, 6, '#9aa6b5', '#6f7b8a'), hand(113, 272, 0, 4.2),
+      // 肩上一左一右兩張新月臉
+      F(crescentD(126, 242, 11, 270) + crescentD(174, 242, 11, 90), '#f4ecd8'),
+      FC(131, 239, 1.3, K.ink), FC(169, 239, 1.3, K.ink), Ln('M131 242l-2 2l2 1M169 242l2 2l-2 1', '#8a7a5a', 0.9), Ln('M129.5 248q2 1 3.5 -0.5M170.5 248q-2 1 -3.5 -0.5', '#a86a5a', 1),
+      F(leafD(142, 211, 8, -80) + leafD(158, 211, 8, 80), K.green),
+      F('M145 225h10v11h-10Z', K.skin),
+      head(150, 217, { r: 11, male: true, hair: K.hairBlond }),
+      F('M139 210L140 202L145 206L150 199L155 206L160 202L161 210Z', K.gold), F(starD(150, 195, 6, 2.4, 8), K.gold),
+      // 車身：角柱、上緣、有翼日輪與盾
+      GF('M88 300H212V372H88Z', '#9c968c', '#7f7a71'), F('M84 294H216V302H84Z', '#9a958b'), HL('M84 294H216V296H84Z', 0.35),
+      F('M88 302H98V372H88ZM202 302H212V372H202Z', '#8c867c'),
+      wing(146, 330, -1, 32, K.gold, K.goldDeep), wing(154, 330, 1, 32, K.gold, K.goldDeep), FC(150, 330, 7, K.red), HL('M146 327a4 4 0 0 1 5 -2v2a2 2 0 0 0 -3 1Z', 0.4),
+      F('M140 346H160V360C160 366 150 370 150 370C150 370 140 366 140 360Z', K.red), L('M150 350V364M146 356H154', K.gold, 1),
+      // 白獸在左朝左、黑獸在右朝右
+      G('translate(104 420) scale(-1 1)', sphinx('#f4efe4', '#bdb5a8')), G('translate(196 420)', sphinx('#2b2833', '#5f5a68'))
+    ];
+  },
+  strength: () => [
+    GF(SKY, '#d7e6ef', '#f0ecd8'),
+    GF('M40 300L84 254L118 286L164 236L210 280L260 250V340H40Z', '#a6b9d0', '#8aa1bd'), HL('M164 236L150 254L138 270L152 260Z', 0.25),
+    // 身後一片淡黃色的開闊原野
+    GF('M40 320C100 310 200 310 260 320V460H40Z', '#efe3a8', '#d9c67c'),
+    ...[[60, 400], [84, 436], [204, 440], [236, 420], [64, 440], [146, 440], [70, 350]].map(([x, y], i) => F(rosetteD(x, y, 4, 5), i % 2 ? K.white : '#d8664c')),
+    // 低頭垂尾的獅子：整隻在拱窗內，尾巴垂在兩條後腿之間
+    GF('M168 316C170 300 184 292 204 294C226 296 240 310 240 334L242 394H222L218 366C206 372 190 372 182 366L178 394H158L162 350C162 336 164 324 168 316Z', '#e2a64f', '#c4843a'),
+    SH('M182 366C190 372 206 372 218 366L222 394H242L240 352C226 366 200 370 182 366Z', 0.12),
+    F('M186 394V368L200 370V394ZM206 394V370L220 368V394Z', '#b87a34'),
+    FE(166, 395, 8, 3.4, '#c4843a'), FE(193, 395, 8, 3.2, '#b87a34'), FE(213, 395, 8, 3.2, '#b87a34'), FE(236, 395, 8, 3.4, '#c4843a'),
+    L('M240 326C246 344 244 366 244 384', '#c4843a', 3), F(leafD(244, 384, 9, 180, 0.5), '#8a5427'),
+    G('rotate(-14 172 332)', F(rosetteD(172, 328, 31, 13), '#a8652a') + F(rosetteD(172, 328, 25, 13, 14), '#c27c36') +
+      FC(172, 330, 17, '#e4aa55') + F('M160 318C158 310 164 308 166 314ZM184 318C186 310 180 308 178 314Z', '#8a5427') +
+      GF('M162 336C162 328 182 328 182 336C182 346 176 350 172 350C168 350 162 346 162 336Z', '#f1cf8c', '#e0ad60') +
+      Ln('M163 326Q167 329 171 327M173 327Q177 329 181 326', K.ink, 1.2) + F('M168 336H176L172 341Z', '#5a3a2a') + Ln('M172 341V344M172 344Q168 347 165 345M172 344Q176 347 179 345', '#5a3a2a', 0.9)),
+    // 俯身的女子：裙襬平貼地面，上身與頭從腰往前傾，雙手一搭鬃毛、一扶獅口
+    L(lemniscateD(158, 198, 15, 6.5), K.goldDeep, 2.6),
+    GF('M104 300C102 330 96 380 92 420H150C146 380 140 330 138 300Z', '#fffdf8', '#e9e2d4'),
+    F('M104 300C103 296 105 292 108.5 291L126 302Z', '#fffdf8'),
+    folds('M108 320C104 360 100 400 98 418M122 320V418M134 320C138 360 142 400 144 418', '#ddd5c6'),
+    G('rotate(32 120 300)', [
+      F('M110 222C106 208 114 200 122 202C128 204 128 218 126 246L110 246Z', K.hairBlond),
+      sleeve(bez([112, 246], [142, 254], [166, 266]), 8, 6.5, '#efe9dd', '#d5ccbb'),
+      GF('M106 246C110 238 130 238 134 246C136 264 138 282 138 300H110C104 298 102 286 102 280C102 264 104 252 106 246Z', '#fffdf8', '#f6f1e7'),
+      F('M115 230h10v14h-10Z', K.skin),
+      head(120, 222, { r: 12, dir: 1, down: true, hair: K.hairBlond }),
+      ...[[110, 212], [117, 208], [124, 209], [130, 213]].map(([x, y]) => rose(x, y, 4.2)), F(leafD(113, 211, 6, -100) + leafD(128, 211, 6, 100), K.green),
+      // 腰間的花環：連成一圈的藤蔓
+      L('M104 276C112 282 128 282 138 276', '#6f8250', 1.6), ...[[106, 278], [116, 281], [126, 281], [136, 277]].map(([x, y]) => rose(x, y, 4.6)),
+      F(leafD(111, 280, 6, 200) + leafD(131, 280, 6, 160), K.green),
+      sleeve(bez([124, 244], [150, 280], [182, 316]), 8, 6.5, '#f7f3ea', '#ddd5c6'), FE(127, 247, 7, 6, '#f7f3ea'),
+      hand(169, 268, 20, 4.4), hand(187, 320, 30, 4.4)
+    ].join('')),
+    // 腰間花環垂下的花藤
+    L('M118 274C114 284 111 292 110 300C113 330 118 360 122 396', '#6f8250', 1.4), F(leafD(122, 396, 6, 170), K.green), ...[[110, 316], [114, 340], [118, 366]].map(([x, y]) => rose(x, y, 4.2) + F(leafD(x, y + 3, 6, 150), K.green))
+  ],
+  hermit: () => [
+    GF(SKY, '#232b44', '#46506e'),
+    `<g fill="#ffffff" fill-opacity=".22" stroke="none">${[[84, 124], [206, 116], [232, 196]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r=".8"/>`).join('')}</g>`,
+    // 遠方較低、較淡的山，都在他腳下的高度以下
+    GF('M40 460V430L64 396L84 418L104 402L124 440V460ZM176 460V440L200 404L222 420L244 396L260 412V460Z', '#c9d4dd', '#9fb0bf'),
+    // 他立在雪峰頂上
+    GF('M40 460L88 426L112 384H190L214 420L260 460Z', '#f4f6f6', '#c4d1da'), F('M190 384L214 420L260 460H196L180 420Z', '#a9bac7'),
+    // 高舉的提燈：唯一的光源
+    glow(108, 172, 46, 46, '#f6dc8a', 0.42),
+    // 腳邊一小圈光
+    glow(150, 389, 34, 8, '#e8b850', 0.7),
+    GF('M146 222C130 230 124 260 120 300C118 330 116 360 116 388H186C186 360 184 330 182 300C178 260 172 230 158 222Z', '#a39e98', '#76716b'),
+    SH('M158 222C172 230 178 260 182 300C184 330 186 360 186 388H170C170 350 168 300 164 260C162 244 160 232 158 222Z', 0.18),
+    folds('M134 270C130 320 128 350 126 380M150 280V380M170 270C174 320 176 350 178 380', '#6f6a64', 1),
+    // 右手把提燈舉到最高處；拳頭握住提環
+    sleeve(bez([134, 230], [112, 214], [108, 152]), 9, 7, '#8f8a85', '#6f6a64'),
+    G('translate(-2 -59)', F('M98 214H110L104 207Z', '#3a3640') +
+      F('M94 214H114L118 222V240L112 248H96L90 240V222Z', '#d9a64a') + Ln('M94 214H114L118 222V240L112 248H96L90 240V222ZM104 214V248M90 231H118', '#3a3640', 0.9) +
+      F(`M${[0, 120, 240].map(a => xy(pt(104, 231, 9, a))).join('L')}ZM${[60, 180, 300].map(a => xy(pt(104, 231, 9, a))).join('L')}Z`, '#fffbea') +
+      F('M98 248H110L104 254Z', '#3a3640')),
+    Ln('M102 148V155', '#3a3640', 1.2), hand(105, 148, 0, 4.4),
+    // 兜帽、低垂的頭與白鬍
+    F('M128 230C126 206 136 190 150 190C164 190 172 206 170 230C164 236 136 236 128 230Z', '#86817b'),
+    F('M136 212C136 199 160 197 162 212V226C154 230 142 230 136 226Z', '#3a3640'),
+    G('rotate(-42 148 214)', head(148, 214, { r: 11, dir: -1, old: true }) +
+      F('M140 218C138 232 144 246 150 252C150 240 154 228 158 220C152 224 144 223 140 218Z', '#f3efe8') + folds('M146 228L148 244M150 226L152 240', '#d8d2c8')),
+    F('M128 228C134 238 164 238 170 228L174 246C164 252 136 252 126 246Z', '#8f8a85'),
+    // 左手扶著抵住雪地的長杖
+    L('M184 388L196 168', '#d6b86e', 3.6),
+    sleeve(bez([166, 236], [182, 250], [191, 256]), 9, 7, '#8f8a85', '#6f6a64'), hand(192, 258, 0, 4.2)
+  ],
+  wheel_of_fortune: () => {
+    const alch = [
+      // 水銀、硫磺、水、鹽
+      (x, y) => Ln(`M${x} ${y}m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0M${x - 3} ${y - 5}q3 3 6 0M${x} ${y + 3}v5M${x - 2.5} ${y + 5.5}h5`, K.brownDeep, 0.9),
+      (x, y) => Ln(`M${x} ${y - 6}l4 6h-8ZM${x} ${y}v7M${x - 3} ${y + 4}h6`, K.brownDeep, 0.9),
+      (x, y) => Ln(`M${x - 4} ${y - 3}h8l-4 7Z`, K.brownDeep, 0.9),
+      (x, y) => Ln(`M${x} ${y}m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0M${x - 4} ${y}h8`, K.brownDeep, 0.9)
+    ];
+    return [
+      GF(SKY, '#7ea2c4', '#bcd1e3'),
+      creatures(true),
+      // 蛇沿左側下行：在輪子後方滑過，只在輪緣外露出
+      L('M78 168C62 196 82 222 66 250C56 274 70 300 70 322', '#8a6f22', 6), L('M78 168C62 196 82 222 66 250C56 274 70 300 70 322', '#d9b84a', 4.4),
+      F('M65 320C63 330 71 336 76 330C78 325 74 320 70 319Z', '#d9b84a'), FC(72, 327, 1, K.ink), Ln('M71.5 331.5V334.5l-1.5 3M71.5 334.5l1.5 3', K.red, 0.8),
+      FC(150, 262, 85, '#c98436'), FC(150, 262, 81, '#e6a955'), FC(150, 262, 70, '#efc47e'), FC(150, 262, 42, '#e3a24e'),
+      HL('M70 262A80 80 0 0 1 230 262A78 78 0 0 0 70 262Z', 0.18), SH('M70 262A80 80 0 0 0 230 262A78 78 0 0 1 70 262Z', 0.12),
+      Ln(raysD(150, 262, 10, 42, 8) + raysD(150, 262, 42, 70, 8, 22.5), K.brownDeep, 1),
+      Ln('M150 262m-70 0a70 70 0 1 0 140 0a70 70 0 1 0 -140 0M150 262m-42 0a42 42 0 1 0 84 0a42 42 0 1 0 -84 0', K.brownDeep, 1),
+      FC(150, 262, 10, K.gold), FC(150, 262, 4, K.goldDeep),
+      ...[22.5, 112.5, 202.5, 292.5].map((a, i) => alch[i](...pt(150, 262, 28, a))),
+      T(150, 192, 'T', 11), T(226, 266, 'A', 11), T(150, 341, 'R', 11), T(74, 266, 'O', 11),
+      // 字母之間夾著希伯來文 YHVH
+      ...[[45, 'י'], [135, 'ה'], [225, 'ו'], [315, 'ה']].map(([a, ch]) => { const [x, y] = pt(150, 262, 76, a); return T(x, f(y + 3.5), ch, 10); }),
+      // 胡狼頭的形體沿右下輪緣往上爬
+      G('translate(12 -8) rotate(-10 214 330)', [
+        sleeve(bez([208, 338], [202, 356], [204, 370]), 6, 5, '#a9433a', '#7e2f2a'), sleeve(bez([219, 337], [224, 356], [222, 370]), 6, 5, '#a9433a', '#7e2f2a'),
+        GF('M204 304C200 318 202 332 206 346H222C226 332 226 318 222 304Z', '#b54d42', '#8a352e'),
+        sleeve(bez([206, 312], [201, 318], [198, 324]), 5.5, 4.5, '#a9433a', '#7e2f2a'), hand(197, 326, 0, 3, '#a9433a'), sleeve(bez([220, 310], [212, 314], [204, 316]), 5.5, 4.5, '#a9433a', '#7e2f2a'),
+        F('M208 304C205 296 207 288 212 286L211 271L216 283L219.5 279L220 288C223 292 223 300 220 304Z', '#a9433a'), F('M209 290L188 295L190 299L209 302Z', '#a9433a'), FC(189, 297, 1.4, '#3a2420'), FC(213, 291, 1, K.ink)
+      ].join('')),
+      // 輪頂靜坐、持劍的人面獅身
+      L('M132 170C122 168 120 158 128 154', '#3f6194', 2.6),
+      GF('M130 181V178C128 166 136 160 146 160H160C166 160 170 166 168 176V181Z', '#4a6c9f', '#2d4a78'),
+      sleeve([[160, 166], [160, 178]], 5, 4.6, '#4a6c9f', '#2d4a78'),
+      F('M154 152C154 140 172 140 172 152L174 166H152Z', '#3f6194'), Ln('M156 147H170M155 152H160M155 157H159', K.gold, 0.7),
+      head(166, 152, { r: 6.2, dir: 1, male: true }),
+      L('M178 170V162', K.goldDeep, 3), L('M172 162.5L184 161.5', K.gold, 2.4), L('M178 161L180.9 125.5', '#e2e6ea', 3), F('M179.4 126L181.6 116.5L182.4 126Z', '#e2e6ea'),
+      sleeve(bez([164, 170], [172, 172], [177, 167]), 5, 4.4, '#4a6c9f', '#2d4a78'), FC(178, 166, 3, '#3f6194')
+    ];
+  },
+  justice: () => [
+    GF(SKY, '#7a5a8f', '#6a4c7e'),
+    // 紫色帷幕填滿兩柱之間的背景，頂上有垂幔
+    GF('M50 80H250V420H50Z', '#86659c', '#6a4c7e'), folds('M96 112V420M116 112V420M136 112V420M164 112V420M184 112V420M204 112V420', '#5c4270', 1),
+    HL('M100 112H106V420H100ZM168 112H174V420H168Z', 0.08),
+    F('M80 96H220V108C208 120 196 120 186 108C176 120 164 120 150 108C136 120 124 120 114 108C104 120 92 120 80 108Z', '#5c4270'), Ln('M80 108C92 120 104 120 114 108C124 120 136 120 150 108C164 120 176 120 186 108C196 120 208 120 220 108', K.gold, 1),
+    GF('M50 166H80V440H50Z', '#aaa49a', '#7d7870', true), GF('M220 166H250V440H220Z', '#aaa49a', '#7d7870', true),
+    F('M46 156H84V168H46ZM216 156H254V168H216Z', '#86817a'), F('M46 412H84V424H46ZM216 412H254V424H216Z', '#86817a'),
+    GF('M40 420H260V460H40Z', '#9a8e7a', '#7d7262'),
+    // 石座與扶手
+    GF('M112 170C112 152 188 152 188 170V330H112Z', '#9a958b', '#77726a'),
+    F('M92 294H122V302H92ZM178 294H208V302H178Z', '#a39e94'),
+    GF('M92 396H208V420H92Z', '#8c877e', '#6f6a62'), GF('M96 300H118V398H96ZM182 300H204V398H182Z', '#8c877e', '#6f6a62'),
+    // 袍下露出一隻鞋尖
+    FS('M160 428C170 425 184 428 190 434C184 438 168 438 160 436Z', '#5a4636', '#3a2c22'),
+    // 端坐：膝蓋與垂下的紅袍
+    seatedRobe({ cx: 150, sh: 212, lap: 318, hem: 430, shW: 26, kneeW: 44, hemW: 50, color: '#b54d42', deep: '#8a352e' }),
+    F('M124 212C116 228 114 248 114 266L134 262L140 216ZM176 212C184 228 186 248 186 266L166 262L160 216Z', '#6f8250'), SH('M176 212C184 228 186 248 186 266L180 264C178 244 174 228 166 216Z', 0.15),
+    F('M140 214Q150 222 160 214L158 222H142Z', K.gold), FC(150, 220, 2.6, K.gold),
+    F('M145 194h10v18h-10Z', K.skin),
+    head(150, 188, { r: 12, hair: K.hairBrown }),
+    F('M136 178V164L143 170L150 158L157 170L164 164V178Z', K.gold), HL('M136 178V164L143 170V176Z', 0.3), F('M147 167h6v6h-6Z', K.red),
+    // 右手垂直舉起雙刃劍
+    GF('M115 232V108L118 98L121 108V232Z', '#eef0f3', '#b9bec6', true), Ln('M118 104V230', '#8f949c', 0.8),
+    L('M105 232H131', K.gold, 4), L('M118 234V246', K.goldDeep, 3.5), FC(118, 248, 3, K.gold),
+    sleeve(bez([128, 220], [114, 232], [118, 240]), 9, 7.5, '#93362e', '#6e2822', K.gold), hand(118, 240, 0, 4.6),
+    // 左手托著天平：掌心在下撐起立柱，兩盤自橫桿垂懸
+    sleeve(bez([172, 220], [192, 246], [184, 258]), 9, 7.5, '#93362e', '#6e2822', K.gold),
+    L('M184 254V228', K.goldDeep, 2), FC(184, 227, 2.4, K.gold),
+    L('M162 230H206', K.gold, 2.4),
+    Ln('M162 230L152 256M162 230L172 256M206 230L196 256M206 230L216 256', K.goldDeep, 1.4),
+    F('M150 256H174A12 7 0 0 1 150 256ZM194 256H218A12 7 0 0 1 194 256Z', K.gold), HL('M150 256H174V258H150ZM194 256H218V258H194Z', 0.35),
+    hand(184, 260, 90, 4.6)
+  ],
+  hanged_man: () => [
+    GF(SKY, '#c6d1d6', '#a7b6bd'),
+    GF('M40 412C100 404 200 404 260 412V460H40Z', '#93a873', '#6f8552'),
+    // T 形的活木架：一根直柱，一條橫木，都還長著葉子
+    limb([[150, 460], [150, 128]], 13, 12, '#6a4f38', 'none'), Ln('M148 440V380M152 360V300M148 280V220', '#4f3a29', 0.9),
+    limb([[90, 124], [210, 124]], 12, 12, '#6a4f38', 'none'), F('M88 118H96V130H88ZM204 118H212V130H204Z', '#5f4733'), Ln('M100 122H136M164 126H200', '#4f3a29', 0.9),
+    F([[98, 122, -40], [110, 121, 20], [124, 122, -15], [178, 121, 30], [192, 122, -25], [204, 121, 40], [150, 120, 0], [156, 150, 60], [144, 406, -70], [151, 420, 60]]
+      .map(([x, y, a]) => leafD(x, y, 14, a)).join(''), '#6f8a4c'),
+    // 頭部四周的光，畫在最低處、人物之下
+    glow(150, 368, 44, 44, '#f3e0a0', 0.9), FC(150, 368, 22, '#f3e0a0'), Ln(raysD(150, 368, 26, 40, 16), K.goldDeep, 1),
+    // 另一條腿彎到後面，在膝上交疊成四字
+    sleeve(bez([150, 278], [176, 260], [186, 248]), 10, 9, '#a9433a', '#7e2f2a'), sleeve(bez([186, 248], [170, 238], [156, 226]), 9, 8, '#a9433a', '#7e2f2a'),
+    shoe(147, 222, -1, '#4a3a30'),
+    // 只綁一隻腳的繩
+    sleeve(bez([150, 182], [150, 230], [150, 282]), 10, 11, '#b54d42', '#7e2f2a'),
+    F('M145 170H155L157 186H143Z', '#4a3a30'), L('M150 130V176', '#c2a575', 2.4), L('M146 117.5V130.5M150 117.5V130.5M154 117.5V130.5', '#c2a575', 1.8), L('M143 178H157M143 182H157', '#8a6f4e', 1.8),
+    // 雙手反綁在背後：只露出兩側的手肘
+    limb(bez([136, 344], [118, 330], [134, 304]), 7, 6, '#3f5f8f', 'none'), limb(bez([164, 344], [182, 330], [166, 304]), 7, 6, '#3f5f8f', 'none'),
+    GF('M136 278H164L170 348H130Z', '#4a6c9f', '#2d4a78'), SH('M156 278H164L170 348H160Z', 0.15),
+    L('M134 290H166', K.gold, 2), ...[302, 314, 326, 338].map(y => FC(150, y, 1.4, K.gold)),
+    F('M145 346h10v10h-10Z', K.skin),
+    G('rotate(180 150 368)', head(150, 368, { r: 12, male: true, hair: K.hairBlond }) + Ln('M141 358l-1 -4M147 357l-0.5 -4M153 357l0.5 -4M159 358l1 -4', '#c9973e', 1.4))
+  ],
+  death: () => [
+    GF(SKY, '#bdb6aa', '#9e978b'),
+    // 遠處兩塔之間、貼著地平線的太陽（先畫光，再畫塔）
+    glow(222, 316, 26, 16, '#e6cf96', 0.6), Ln(raysD(222, 316, 14, 26, 7, -72, 144), '#a8894e', 1), F('M210 316A12 12 0 0 1 234 316Z', '#c9a65a'),
+    F('M196 272H208V316H196ZM236 272H248V316H236Z', '#8c877e'), F('M196 272V266H200V272M204 272V266H208V272M236 272V266H240V272M244 272V266H248V272', '#8c877e'),
+    F('M200 282h4v6h-4ZM240 282h4v6h-4Z', '#4f4a44'),
+    GF('M40 314C100 318 180 312 260 316V332C180 330 100 336 40 332Z', '#9fb2c1', '#7f95a6'),
+    GF('M40 330C100 326 200 326 260 330V460H40Z', '#707a66', '#565f4e'),
+    // 白馬由左往右走在前景
+    G('translate(48 282) scale(0.92)', horse('#dcd8d0', '#c4bfb4')),
+    F('M80 312C88 308 108 308 116 312L114 326H82Z', '#6a3a34'), Ln('M82 324H114', '#a8894e', 1),
+    L('M161 318L140 304L116 296', '#4a2a26', 1.6), FC(116, 296, 2.2, '#efe8d8'),
+    // 黑甲骷髏：肩甲、護頸、胸甲，側臉朝右（與馬的比例相稱）
+    G('translate(108 312) scale(0.72) translate(-108 -312)', [
+    sleeve(bez([100, 300], [112, 334], [104, 366]), 9, 7, '#25222b', '#45414d'), F('M98 364h12l2 6h-14Z', '#25222b'),
+    F('M88 262C86 280 88 296 92 313H114C116 296 116 280 112 262Z', '#25222b'), HL('M90 266C90 280 91 294 94 302H98C96 294 95 280 95 266Z', 0.2),
+    Ln('M90 280H114M91 292H114', '#4a4652', 0.9), F('M84 262C86 254 96 252 100 258L100 266H84ZM116 262C114 254 104 252 100 258V266H116Z', '#35313c'),
+    F('M94 250h12v8h-12Z', '#35313c'),
+    FC(100, 244, 9, '#efe8d8'), F('M108 242L112 246L107 250Z', '#efe8d8'), FC(104, 242, 2.2, '#2b2833'), F('M108 247l-1 2h2Z', '#2b2833'), Ln('M100 249h6M102 248v2M104 248v2', '#2b2833', 0.7),
+    F(leafD(92, 234, 24, -50, 0.3), K.red),
+    F('M89 240C89 226 111 226 111 240L109 236H91Z', '#25222b'),
+    sleeve(bez([110, 268], [118, 276], [122, 278]), 6.5, 5.5, '#25222b', '#45414d'), FC(123, 278, 3, '#efe8d8')
+    ].join('')),
+    // 黑旗舉在最高處，旗面一朵純白的五瓣玫瑰（全畫面最亮）
+    L('M119 292V112', K.brownDeep, 2.6), FC(119, 110, 3, '#a8894e'),
+    F('M119 114C137 108 161 120 183 112V166C161 174 137 162 119 168Z', '#1d1b22'), SH('M145 116C161 120 173 116 183 112V166C173 170 161 168 145 166Z', 0.15),
+    F(rosetteD(151, 140, 17, 5), '#ffffff'), F(rosetteD(151, 140, 9.5, 5, 36), '#f1ede6'), FC(151, 140, 3.2, '#c9a65a'),
+    // 馬前四人：倒地的國王在前蹄下、跪著仰望的孩子、別過頭的女子、張手相迎的主教
+    GF('M108 428C112 418 160 416 196 420C206 422 210 428 206 434C170 440 122 440 108 434Z', '#7e3a33', '#5f2a25'), F('M190 420C198 420 206 424 206 430C200 432 194 430 190 428Z', '#e4ddcf'),
+    F('M190 432h14l2 5h-16Z', '#3a3036'), limb(bez([150, 424], [166, 418], [176, 420]), 5, 4, '#7e3a33', 'none'), hand(178, 421, 80, 3, K.skin),
+    head(102, 428, { r: 7, closed: true, old: true, hair: K.hairWhite }),
+    G('translate(124 438) rotate(-12)', F('M-8 4L-10 -5L-4 0L0 -7L4 0L10 -5L8 4Z', '#b39150')),
+    F('M164 404C164 392 170 386 176 386C182 388 186 394 186 404Z', '#5f7a9a'), F('M164 404H190L192 410H162Z', '#4f6683'),
+    limb(bez([168, 392], [162, 386], [164, 380]), 3.8, 3, '#5f7a9a', 'none'), hand(165, 379, 0, 2.6),
+    head(176, 374, { r: 6.5, dir: -1, up: true, hair: K.hairBlond }),
+    F('M194 404C194 386 200 374 208 370C216 374 220 386 220 404Z', '#cfc8bc'), SH('M208 370C216 374 220 386 220 404H212C212 388 210 378 208 370Z', 0.1),
+    head(210, 362, { r: 7, dir: 1, hair: K.hairBlond, style: 'long', len: 2 }), limb(bez([206, 378], [214, 372], [216, 364]), 3.8, 3, '#cfc8bc', 'none'), hand(217, 362, 30, 2.8),
+    G('translate(-4 0)', [
+    GF('M226 404C226 380 230 360 238 354C246 360 250 380 250 404Z', '#b7a06a', '#957f4e'), L('M238 360V404', '#e4ddcf', 2.4),
+    F('M232 346L238 328L244 346Z', '#b7a06a'), L('M238 332V344M235 338H241', '#7e3a33', 1),
+    head(238, 350, { r: 6.5, dir: -1, old: true }),
+    limb(bez([232, 366], [224, 360], [220, 352]), 4.4, 3.4, '#b7a06a', 'none'), hand(219, 350, -30, 2.8),
+      limb(bez([234, 370], [229, 368], [226, 362]), 4.2, 3.2, '#b7a06a', 'none'), hand(226, 360, -40, 2.8)
+    ].join(''))
+  ],
+  temperance: () => [
+    GF(SKY, '#bcd5e4', '#e4eef4'),
+    // 遠山在左側，光從山後升起
+    glow(86, 292, 30, 30, '#ffffff', 0.7), Ln(raysD(86, 292, 14, 26, 9, -80, 160), K.goldDeep, 1), FC(86, 292, 11, K.gold),
+    GF('M40 344L66 300L86 286L108 312L132 344Z', '#a9bccb', '#8fa6b8'), F('M86 286L94 304L132 344H112Z', '#8197aa'),
+    // 岸與水之間是彎曲的岸線
+    GF('M40 340C80 336 110 340 132 348C126 380 136 420 128 460H40Z', '#7f9658', '#617941'),
+    GF('M132 348C170 340 220 340 260 344V460H128C136 420 126 380 132 348Z', '#93b3cc', '#6f93b2'),
+    Ln(wavesD(150, 250, 372, 2.5, 20) + wavesD(160, 240, 400, 2.5, 20) + wavesD(146, 246, 444, 2.5, 20), K.white, 0.9),
+    // 小徑從岸上的腳邊出發，蜿蜒通往遠山山腳
+    GF('M112 440C104 420 82 410 80 392C78 374 90 358 96 341L99 341C97 358 90 376 92 392C94 408 116 420 122 440Q117 444 112 440Z', '#ece3c8', '#d5c9a6'),
+    ...[[64, 408], [78, 424], [94, 430]].map(([x, y]) => L(`M${x} ${y + 40}V${y}`, K.greenDeep, 2) + F(leafD(x, y + 30, 22, -12, 0.2), K.greenDeep) +
+      F(leafD(x, y, 12, -40, 0.4) + leafD(x, y, 12, 40, 0.4), '#e8c24a') + F(leafD(x, y, 14, 0, 0.35), '#d4a838')),
+    // 翅膀展在上方、光暈在翅膀之下
+    glow(150, 176, 24, 24, '#f2d78a', 0.8),
+    wing(146, 202, -1, 82, '#c0503a', '#8e3a2c'), wing(154, 202, 1, 82, '#c0503a', '#8e3a2c'),
+    GF('M136 196C130 198 126 204 126 212C122 248 118 300 116 360L112 426H188L184 360C182 300 178 248 174 212C174 204 170 198 164 196Z', '#fffdf8', '#e9e2d4'),
+    SH('M164 196C170 198 174 204 174 212C178 248 182 300 184 360L188 426H172C170 360 168 290 162 230Z', 0.08),
+    folds('M128 270C124 330 120 390 118 424M150 290V426M172 270C176 330 180 390 182 424', '#ddd5c6', 1),
+    L('M128 262C140 268 160 268 172 262', '#d9c79a', 2),
+    Ln('M141 218H159V236H141Z', K.goldDeep, 1.1), F('M150 221L157 233H143Z', K.gold),
+    F('M145 184h10v14h-10Z', K.skin),
+    head(150, 176, { r: 12, hair: K.hairBlond, down: true }), FC(150, 168, 1.8, K.gold),
+    // 兩手各握一杯，等長的手臂、有手肘
+    sleeve(bez([134, 206], [114, 228], [116, 252]), 8, 6.5, '#ede6d6', '#cfc5b0'), sleeve(bez([166, 206], [192, 240], [196, 284]), 8, 6.5, '#ede6d6', '#cfc5b0'),
+    G('translate(116 248) rotate(36) scale(0.78)', F('M-16 -26H16C16 -8 8 0 0 0C-8 0 -16 -8 -16 -26Z', K.gold) + HL('M-12 -24H-6C-6 -12 -2 -6 0 -4C-8 -6 -12 -14 -12 -24Z', 0.35) + L('M0 0V20M-10 24H10', K.goldDeep, 3)),
+    G('translate(184 296) scale(0.78)', F('M-16 -26H16C16 -8 8 0 0 0C-8 0 -16 -8 -16 -26Z', K.gold) + HL('M-12 -24H-6C-6 -12 -2 -6 0 -4C-8 -6 -12 -14 -12 -24Z', 0.35) + L('M0 0V20M-10 24H10', K.goldDeep, 3)),
+    hand(118, 254, -20, 4), hand(196, 288, 0, 4),
+    // 從高杯斜斜注入低杯的水
+    F('M128 234C150 246 172 260 181 278L187 278C177 258 156 242 131 229Z', '#5f93c2'), Ln('M130 232C152 244 171 258 183 276', '#d6e8f5', 0.9),
+    // 一腳踩在岸上、一腳踩進水裡
+    F('M110 424q8 -6 16 0v6h-16Z', K.skin),
+    F('M166 426q8 -6 16 0v6h-16Z', K.skin), FE(174, 433, 13, 3.4, '#7a9cba'), Ln('M174 432m-13 0a13 3.4 0 1 0 26 0a13 3.4 0 1 0 -26 0', K.white, 0.9)
+  ],
+  devil: () => {
+    const wingD = 'M146 196C120 164 86 156 58 164C68 176 70 188 68 200C80 192 90 194 96 206C104 198 116 200 120 212C128 206 140 208 146 216Z';
+    const ribs = 'M146 200L60 166M146 200L68 200M146 200L96 206M146 200L120 212';
+    // 頭上長出短角、尾巴一個是火一個是果實的兩人
+    const pair = (d) => [
+      d < 0 ? F('M-9 360C-13 376 -13 394 -10 404H-4C-6 392 -6 378 -2 366Z', K.hairBlond) : '',
+      Ln('M0 384m-12 0a12 4.5 0 0 1 24 0', '#8d8a86', 2),
+      L('M-2 412C-16 416 -20 424 -14 430', d > 0 ? K.flame : K.green, 2),
+      d > 0 ? flame(-14, 430, 14, 200) : F([[-14, 432], [-18, 436], [-11, 437], [-15, 441], [-19, 441]].map(([cx, cy]) => `M${cx - 3.2} ${cy}a3.2 3.2 0 1 0 6.4 0a3.2 3.2 0 1 0 -6.4 0`).join(''), '#7a5a8f'),
+      nude(0, { female: d < 0, top: 380, foot: 438, s: 0.62, armL: [[-6, 382], [-9, 396], [-8, 408]], armR: [[6, 382], [9, 396], [8, 408]] }),
+      head(0, 370, { r: 8, dir: 1, hair: d > 0 ? K.hairDark : K.hairBlond }),
+      L('M-5 363C-8 358 -8 354 -5 351M5 363C8 358 8 354 5 351', '#d8c9a6', 2.2),
+      Ln('M0 384m12 0a12 4.5 0 0 1 -24 0', '#8d8a86', 2)
+    ].join('');
+    return [
+      GF(SKY, '#121016', '#2a2530'),
+      GF(wingD, '#5a4d5a', '#3a3140'), GF(mirror(wingD), '#5a4d5a', '#3a3140'), Ln(ribs + mirror(ribs), '#2a232c', 1),
+      // 方座伸到地面
+      GF('M104 336H196V346H104Z', '#6a6260', '#4f4846'), GF('M112 346H188V420H112Z', '#55504e', '#3e3a39'),
+      GF('M40 420H260V460H40Z', '#3a3438', '#2a2629'), HL('M40 420H260V421H40Z', 0.12),
+      // 蹲踞：大腿向外、膝蓋在軀幹兩側、蹄踩在方座上
+      sleeve(bez([134, 284], [102, 296], [118, 330]), 12, 8, '#7a4c32', '#5a3624'), sleeve(bez([166, 284], [198, 296], [182, 330]), 12, 8, '#7a4c32', '#5a3624'),
+      F('M108 337h20l-2 -9h-16ZM172 337h20l-2 -9h-16Z', '#2a2026'),
+      GF('M128 196C120 216 118 244 122 270L128 292H172L178 270C182 244 180 216 172 196Z', '#9a6440', '#74482e'),
+      SH('M160 196C170 216 176 244 174 270L170 292H172L178 270C182 244 180 216 172 196Z', 0.2),
+      Ln('M134 226C140 232 160 232 166 226M136 248C142 254 158 254 164 248M140 270C144 274 156 274 160 270', '#5a3a28', 1),
+      // 右手舉起：與教皇相同的兩指手勢，卻沒有祝福
+      sleeve(bez([130, 204], [110, 200], [104, 178]), 8, 6.5, '#8a5a3a', '#6a4430'), hand(104, 172, 0, 4.8, '#8a5a3a'),
+      L('M102.5 168V158M106 168V157', '#8a5a3a', 2), F('M106 173q3 -3 1 -6l-3 1Z', '#6a4430'),
+      // 左手倒持火炬，火焰卻往上燒向持炬的手
+      sleeve(bez([170, 208], [188, 228], [192, 248]), 8, 6.5, '#8a5a3a', '#6a4430'),
+      L('M192 250L196 306', K.brownDeep, 4), hand(192, 252, 0, 4.6, '#8a5a3a'), flame(196, 308, 22, -16),
+      // 角根長在頭裡
+      L('M140 168C124 152 122 132 132 116M160 168C176 152 178 132 168 116', '#d8c9a6', 4.4),
+      Ln('M126 151l5 -1M123 137l5 0M174 151l-5 -1M177 137l-5 0', '#a8987a', 0.9),
+      GF('M136 174C136 160 164 160 164 174C164 186 156 196 150 198C144 196 136 186 136 174Z', '#9a6440', '#7a4c32'),
+      F('M134 168C128 162 128 158 132 158L138 164ZM166 168C172 162 172 158 168 158L162 164Z', '#7a4c32'),
+      F('M144 190L150 208L156 190Z', '#5a3a28'),
+      F('M140 170l6 2l-6 2ZM160 170l-6 2l6 2Z', K.gold), F('M148 182h4l-2 3Z', '#3a2418'),
+      Ln(pentagramD(150, 132, 12, 180), K.gold, 1.4),
+      // 鎖鏈從牠腳下的方座垂到兩人頸上，鏈圈明顯大過頭
+      Ln('M150 350m-4.5 0a4.5 4.5 0 1 0 9 0a4.5 4.5 0 1 0 -9 0', '#8d8a86', 1.6),
+      chainLinks([146, 352], [126, 388], [96, 382], 9), chainLinks([154, 352], [174, 388], [204, 382], 9),
+      G('translate(86 0)', pair(1)), G('translate(214 0) scale(-1 1)', pair(-1))
+    ];
+  },
+  tower: () => {
+    const faller = (robe, crowned) => [
+      limb(bez([-4, 28], [-6, 38], [-8, 44]), 4.6, 3.6, K.skin, 'none'), limb(bez([4, 28], [7, 36], [10, 42]), 4.6, 3.6, K.skin, 'none'),
+      FE(-8.5, 46, 2.6, 1.6, K.skin), FE(10.5, 44, 2.6, 1.6, K.skin),
+      limb(bez([-6, 4], [-12, -2], [-18, -10]), 4, 3, K.skin, 'none'), limb(bez([6, 4], [12, -2], [18, -10]), 4, 3, K.skin, 'none'),
+      FC(-18.5, -11, 2, K.skin), FC(18.5, -11, 2, K.skin),
+      F('M-7 0H7L11 30H-11Z', robe), SH('M2 0H7L11 30H4Z', 0.15),
+      F('M-2.5 -4h5v5h-5Z', K.skin),
+      head(0, -10, { r: 6, hair: crowned ? K.hairBrown : K.hairBlond }),
+      crowned ? F('M-7 -15L-7 -24L-2.5 -19L0 -25L2.5 -19L7 -24L7 -15Z', K.gold) : ''
+    ].join('');
+    return [
+      GF(SKY, '#0f1016', '#20222d'),
+      F('M40 128C60 112 86 114 96 124C108 112 132 114 140 128C120 134 70 136 40 134Z', '#2d3142'),
+      F('M170 100C186 88 210 90 220 100C234 92 252 96 260 104V112C236 114 190 112 170 108Z', '#2d3142'),
+      // 塔立在陡峭的岩頂，看不到它站在什麼上面
+      GF('M90 460L102 432L98 414L110 400L116 388H184L190 402L198 416L196 434L210 460Z', '#5a5250', '#3a3434'),
+      Ln('M104 430L112 420M192 418L198 428M120 404L126 396', '#2a2626', 1),
+      F(cloudD(84, 456, 30) + cloudD(150, 460, 40) + cloudD(216, 456, 30) + 'M40 452H260V460H40Z', '#2a2c3a'), HL(cloudD(150, 460, 40), 0.06),
+      GF('M118 390L126 192H174L182 390Z', '#b3aea4', '#8c877e'), F('M160 192H174L182 390H166Z', '#77726a'),
+      Ln('M124 232H176M123 272H177M122 312H178M120 352H180M150 192V232M138 232V272M162 232V272M150 272V312M136 312V352M164 312V352M144 352V390M170 352V390', '#77726a', 0.8),
+      F('M126 192V180H136V192ZM145 192V180H155V192ZM164 192V180H174V192Z', '#b3aea4'),
+      // 窗口冒出的火：火從窗內往外燒
+      flame(150, 238, 18, -20), flame(136, 292, 14, -40), flame(164, 292, 14, 40),
+      F(archWindowD(150, 228, 12, 18) + archWindowD(136, 284, 10, 16) + archWindowD(164, 284, 10, 16) + archWindowD(150, 342, 20, 48), '#1a1820'),
+      flame(150, 242, 10, -20), flame(136, 296, 8, -40), flame(164, 296, 8, 40),
+      flame(134, 190, 22, -18), flame(150, 188, 28), flame(166, 190, 22, 18),
+      // 被打飛的王冠與飛落的磚塊
+      G('translate(92 162) rotate(-30)', F('M-16 8L-18 -8L-8 1L0 -12L8 1L18 -8L16 8Z', K.gold) + HL('M-16 8L-18 -8L-8 1L-8 8Z', 0.25) + FC(0, 4, 2, K.red)),
+      Ln('M112 168C118 170 122 174 124 180M108 176C114 178 118 182 120 188', '#e7c46a', 1),
+      F('M112 206h6v4h-6ZM188 214h6v4h-6ZM226 222h5v4h-5Z', '#8c877e'),
+      // 閃電從上緣斜劈進塔頂
+      F('M222 66L186 140L202 142L170 190L190 150L176 148L206 68Z', '#f8e8b0'), Ln('M222 66L186 140L202 142L170 190', '#e8c46a', 0.8),
+      Ln(raysD(172, 186, 4, 14, 8), '#f8e8b0', 1.2),
+      // 頭下腳上的兩人：一個戴冠、一個沒有，姿勢相同
+      G('translate(84 270) rotate(205) scale(0.86)', faller(K.blue, false)),
+      G('translate(218 296) rotate(150) scale(0.86)', faller(K.red, true)),
+      // 散在黑暗裡的火點
+      ...[[66, 214, 10], [96, 330, -15], [62, 384, 20], [236, 172, -10], [206, 372, 15], [236, 404, -20], [122, 124, 5], [200, 236, 10], [78, 302, -5], [226, 340, 15], [240, 240, 0]]
+        .map(([x, y, a]) => flame(x, y, 9, a))
+    ];
+  },
+  star: () => {
+    const jug = (x, y, deg) => G(`translate(${x} ${y}) rotate(${deg}) scale(0.95)`,
+      F('M-7 -8C-11 0 -10 9 -4 12H4C10 9 11 0 7 -8Z', '#d0703a') + F('M-3 -8V-14H3V-8Z', '#c0622e') + F('M-4.5 -16h9v2.4h-9Z', '#b85e2e') +
+      HL('M-5 -6C-8 0 -7 6 -3 9C-5 3 -5 -2 -3 -6Z', 0.3) + L('M-7 -6C-13 -6 -13 4 -8 4', '#b85e2e', 1.6));
+    return [
+      GF(SKY, '#3f5f8c', '#7d9cc0'),
+      glow(150, 128, 48, 48, '#fff6d8', 0.35), F(starD(150, 126, 42, 12, 8), '#f3d77a'), F(starD(150, 126, 27, 8, 8, 22.5), '#fff8e2'),
+      F([[92, 116], [208, 116], [74, 170], [226, 170], [100, 206], [200, 206], [150, 196]].map(([x, y]) => starD(x, y, 9, 3, 8)).join(''), '#fffaf0'),
+      GF('M40 356L90 280L130 308L190 268L260 356Z', '#9ab0c9', '#7d95b2'),
+      // 岸在左、池在右下，岸線彎曲
+      GF('M134 460C140 400 158 356 186 336C208 334 236 338 260 342V460Z', '#4a7aa5', '#305a80'),
+      GF('M40 332C90 324 140 326 188 340C164 362 148 402 142 460H40Z', '#86a35f', '#647e43'),
+      Ln(wavesD(196, 256, 376, 2.5, 20) + wavesD(196, 256, 420, 2.5, 20) + wavesD(160, 240, 436, 2.5, 20), '#a9c4dc', 0.9),
+      // 遠方的樹，枝頭停著一隻朱鷺
+      limb(bez([74, 334], [72, 300], [74, 270]), 5, 3.4, K.brownDeep, 'none'),
+      GF('M54 268C50 248 64 232 78 236C90 230 102 246 96 262C100 272 88 280 76 276C64 282 52 278 54 268Z', '#5d7a45', '#3f5a30'),
+      HL('M60 254C62 244 72 238 80 240C72 244 66 250 62 260Z', 0.15),
+      L('M76 286L108 276', K.brownDeep, 2.2),
+      // 停在枝上的朱鷺：腳踩著樹枝
+      F('M92 266C90 270 92 272 96 272H104C108 270 108 264 104 262C100 260 94 262 92 266Z', '#b84a36'), F('M92 266L84 262L90 270Z', '#9a3a2a'),
+      L('M104 263C106 257 108 253 110 250', '#b84a36', 1.8), FC(110, 249, 2.2, '#b84a36'), FC(110.6, 248.4, 0.6, K.ink),
+      L('M112 249C117 250 119 255 119 260', '#3a3036', 1.2), Ln('M98 272V279M101 272V278.2', '#3a3036', 0.9),
+      // 一膝跪在岸上、一腳踩進池裡，把兩壺水往下倒
+      F('M146 300C140 312 138 334 140 362H148C148 338 150 320 154 312C158 320 160 338 160 360H166C168 334 166 312 160 302C158 292 148 292 146 300Z', '#e2b85a'),
+      Ln('M96 392L82 398M96 392L88 402M96 392L96 404M96 392L101 401M96 392L101 396', '#cfe2f1', 1.3),
+      limb(bez([146, 360], [138, 378], [132, 394]), 12, 9, K.skin, 'none'), FC(132, 394, 4.6, K.skin),
+      limb([[132, 394], [120, 397], [108, 398]], 8.5, 6, K.skin, 'end'), F('M104 398C106 393.5 110 394 112 398Z', K.skin),
+      SH('M130 392C124 396 116 397 108 398L110 401C120 400 128 399 134 397Z', 0.1),
+      limb(bez([158, 360], [168, 366], [178, 372]), 12, 9.5, K.skin, 'none'), FC(178, 372, 4.8, K.skin),
+      limb(bez([178, 372], [181, 388], [180, 402]), 9, 7, K.skin, 'end'),
+      Ln('M180 404m-12 0a12 3.2 0 1 0 24 0a12 3.2 0 1 0 -24 0', '#cfe0ee', 0.9),
+      F('M146 312C140 328 142 346 140 362C146 372 160 372 166 362C164 346 168 328 162 312C158 308 150 308 146 312Z', K.skin),
+      SH('M156 312C162 328 160 346 164 364C166 360 166 352 166 346C166 334 168 324 162 312Z', 0.07),
+      F('M150 298h8v14h-8Z', K.skin),
+      head(156, 294, { r: 11, dir: 1, down: true, hair: '#e2b85a' }),
+      // 一壺澆在土上（分成五道細流）、一壺倒回池中
+      limb(bez([146, 316], [128, 326], [114, 340]), 6.5, 5, K.skin, 'none'), limb(bez([162, 316], [180, 324], [192, 338]), 6.5, 5, K.skin, 'none'),
+      jug(108, 346, -140), jug(198, 344, 140),
+      hand(113, 342, -40, 3.8), hand(193, 340, 40, 3.8),
+      F('M98 356C96 368 95 380 94 392L98 392C98 380 99 368 101 357Z', '#cfe2f1'), Ln('M99 358C97 370 96 382 96 392', '#ffffff', 0.7),
+      F('M206 354C208 366 210 378 210 392L214 392C214 378 212 366 209 353Z', '#cfe2f1'), Ln('M207 356C209 368 211 380 212 392', '#ffffff', 0.7),
+      Ln('M212 394m-10 0a10 3 0 1 0 20 0a10 3 0 1 0 -20 0M212 394m-5 0a5 1.6 0 1 0 10 0a5 1.6 0 1 0 -10 0', '#e6f0f8', 0.9)
+    ];
+  },
+  moon: () => {
+    // 坐著仰頭嚎叫的狗與狼（朝右；狼另外鏡射）
+    const canine = (body, deep, wolf) => [
+      wolf ? F('M-18 26C-34 28 -38 38 -32 42C-26 38 -22 34 -16 32Z', deep) : L('M-18 24C-30 18 -28 6 -20 8', body, 3.4),
+      FE(-8, 20, 14, 11, body), F('M-16 28C-18 12 -10 0 -2 -10L10 -12C14 -2 14 14 12 30Z', body),
+      SH('M-16 28C-18 18 -14 8 -8 2C-10 12 -10 22 -6 30Z', 0.12),
+      F('M-2 -10C-2 -20 2 -28 6 -34L15 -28C13 -20 12 -14 10 -10Z', body),
+      wolf ? F('M-4 -8C-8 -12 -7 -15 -3 -14C-6 -18 -4 -21 0 -19C-1 -23 2 -25 4 -21Z', deep) : L('M-1 -12L11 -14', K.red, 2),
+      FE(8, -35, 7.5, 6.4, body, -40),
+      F('M9 -40L19 -52L21 -48L14 -36Z', body), F('M13 -34L23 -43L21 -39L15 -31Z', body), F('M14 -36L21 -46L22 -42L15 -34Z', '#7a3a34'),
+      F('M2 -38L-3 -47L6 -42Z', deep), F('M6 -41L5 -50L11 -43Z', deep),
+      FC(9, -37, 1, K.ink), FC(20, -51, 1.1, K.ink),
+      limb(bez([2, -8], [4, 10], [5, 30]), 5.4, 4, body, 'none'), limb(bez([8, -8], [10, 10], [10, 30]), 5.4, 4, deep, 'none'),
+      FE(6, 30, 4, 2, deep), FE(11, 30, 4, 2, deep)
+    ].join('');
+    return [
+      GF(SKY, '#2b3a5c', '#5b6f94'),
+      // 灑下光點的月亮：圓輪廓裡疊著一張側臉
+      glow(150, 146, 62, 62, '#efe6c4', 0.35), Ln(raysD(150, 146, 44, 56, 16) + raysD(150, 146, 44, 50, 16, 11.25), '#e8dcb4', 0.9),
+      FC(150, 146, 38, '#efe6c4'),
+      F('M150 108A38 38 0 0 0 150 184C148 178 145 172 145 166C146 162 147 160 145 158C142 157 141 155 143 153C141 152 141 150 143 149C141 148 140 146 141 144L136 141C135 139 137 136 141 134C143 130 144 126 145 122C146 116 148 112 150 108Z', '#cdbb84'),
+      Ln('M150 108C148 112 146 116 145 122C144 126 143 130 141 134C137 136 135 139 136 141L141 144C140 146 141 148 143 149C141 150 141 152 143 153C141 155 142 157 145 158C147 160 146 162 145 166C145 172 148 178 150 184', '#a8935a', 1),
+      Ln('M148 130q4 2 7 0', '#8a7a50', 1),
+      F([[118, 206, 3.2], [146, 214, 2.8], [178, 204, 3.4], [132, 232, 3], [168, 236, 2.6], [150, 252, 3.4], [106, 238, 2.6], [194, 228, 3]].map(([x, y, r]) => dropD(x, y, r)).join(''), '#efe6c4'),
+      // 遠方的丘陵接到地面，沒有空隙
+      GF('M40 330C62 306 84 296 104 304C124 312 136 292 152 290C170 288 182 306 200 300C220 292 240 300 260 318V346H40Z', '#6d7f9c', '#55677f'),
+      // 一左一右的兩座塔，朝月的一面受光
+      GF('M72 252H100L102 400H70Z', '#a39e94', '#7d7870'), F('M72 252L70 400H78L80 252Z', '#6f6a62'), F(towerD(70, 244, 32, 10), '#a39e94'),
+      GF('M200 252H228L230 400H198Z', '#a39e94', '#7d7870'), F('M228 252L230 400H222L220 252Z', '#6f6a62'), F(towerD(198, 244, 32, 10), '#a39e94'),
+      Ln('M72 300H100M72 350H100M200 300H228M200 350H228', '#8c877e', 0.8), F(archWindowD(88, 272, 9, 16) + archWindowD(212, 272, 9, 16), '#1a1820'),
+      GF('M40 344C100 338 200 338 260 344V460H40Z', '#4f6a48', '#3d553a'),
+      // 由池邊出發、穿過兩塔往遠方退去的小路：近寬遠窄，越過丘陵
+      F('M148.6 336C145 326 154 318 151 308C150 302 153 298 155.6 294H156.4C154 298 152 302 153 308C156 318 148 326 151.4 336Z', '#c9bf9f'),
+      GF('M117 436Q138 380 148.6 336H151.4Q162 380 183 436Z', '#d8cdaa', '#b9ad8a'),
+      Ln('M117 436Q138 380 148.6 336M183 436Q162 380 151.4 336', '#a99d7c', 0.8),
+      // 池子與正在爬上岸的螯蝦
+      GF('M80 460C88 438 114 426 150 424C186 426 212 438 220 460Z', '#3f6f9a', '#2a4f74'), Ln(wavesD(104, 196, 440, 2.5, 18), '#8fb0cc', 0.9),
+      G('translate(150 428)', F('M-5 -2C-7 -6 -5 -18 0 -22C5 -18 7 -6 5 -2Z', '#a8432f') + Ln('M-5 -9h10M-4 -14h8', '#7a2f22', 0.8) +
+        F('M-4 -20C-10 -24 -14 -30 -12 -34C-8 -32 -6 -28 -3 -24ZM4 -20C10 -24 14 -30 12 -34C8 -32 6 -28 3 -24Z', '#a8432f') +
+        F(leafD(-12, -34, 8, -20, 0.5) + leafD(12, -34, 8, 20, 0.5), '#b94f38') + Ln('M-2 -22l-4 -8M2 -22l4 -8M-5 -8l-6 2M5 -8l6 2M-5 -14l-6 0M5 -14l6 0', '#7a2f22', 0.8)),
+      Ln('M150 426m-14 0a14 3.2 0 1 0 28 0a14 3.2 0 1 0 -28 0', '#8fb0cc', 0.9),
+      G('translate(98 398)', canine('#dcbb8a', '#b8955f', false)), G('translate(202 398) scale(-1 1)', canine('#7f7a74', '#5a5652', true))
+    ];
+  },
+  sun: () => [
+    GF(SKY, '#7fadd2', '#b6d3e8'),
+    // 光線筆直往下灑，鋪滿整個畫面
+    Ln(raysD(150, 144, 60, 320, 14, 110, 140), '#fbe8a6', 0.9),
+    glow(150, 144, 62, 62, '#ffffff', 0.4),
+    Ln(raysD(150, 144, 48, 86, 12), '#f3c84f', 2.2), Ln(raysD(150, 144, 48, 72, 12, 15), '#f7dc8a', 1.4),
+    FC(150, 144, 44, '#f5cb52'),
+    FC(137, 139, 2.8, K.brownDeep), FC(163, 139, 2.8, K.brownDeep), FC(138, 138, 0.8, '#fff'), FC(164, 138, 0.8, '#fff'),
+    Ln('M130 130Q137 126 144 130M156 130Q163 126 170 130M150 142V154L146 156M140 164Q150 170 160 164', K.brownDeep, 1.1),
+    `<circle cx="132" cy="152" r="5" fill="${K.flame}" fill-opacity=".25" stroke="none"/><circle cx="168" cy="152" r="5" fill="${K.flame}" fill-opacity=".25" stroke="none"/>`,
+    // 牆內的四朵向日葵都朝著太陽
+    ...[[70, 282], [86, 272], [200, 272], [230, 282]].map(([x, y]) => {
+      const a = f(Math.atan2(144 - y, 150 - x) * 180 / Math.PI);
+      return L(`M${x} ${y + 8}V300`, K.green, 2.5) + F(leafD(x, y + 18, 10, x < 150 ? -60 : 60), K.green) +
+        G(`translate(${x} ${y}) rotate(${a}) scale(0.62 1)`, F(starD(0, 0, 14, 6, 14), '#f2c040') + F(starD(0, 0, 10, 5, 14, 12), '#e0a92e') + FC(0, 0, 5.5, '#6a4628'));
+    }),
+    // 完整的磚牆是唯一的水平線，地面直接接在牆腳
+    GF('M40 296H260V360H40Z', '#d1cbbd', '#b3ac9d'),
+    Ln('M40 317H260M40 338H260M70 296V317M110 296V317M150 296V317M190 296V317M230 296V317M90 317V338M130 317V338M170 317V338M210 317V338M70 338V360M110 338V360M190 338V360M230 338V360', '#9a9385', 0.8),
+    HL('M40 296H260V299H40Z', 0.4),
+    GF('M40 358H260V460H40Z', '#93ac67', '#6c844a'),
+    G('translate(56 300) scale(1.12)', horse('#fbf8f1', '#e6e0d4')),
+    // 張開雙臂、沒有抓韁繩的孩子，頭戴花環，舉著大紅旗
+    GF('M94 198C116 188 142 206 170 196V230C142 242 116 224 98.3 232Z', '#c4473c', '#952f28'),
+    SH('M110 205C130 212 150 210 170 196V204C150 216 128 214 110 205Z', 0.12), SH('M112 226C130 232 150 230 170 222V230C152 236 132 234 112 226Z', 0.1),
+    L('M106 296L94 196', K.brownDeep, 2.6),
+    limb(bez([122, 338], [134, 348], [131, 360]), 7, 5, K.skin, 'end'), FE(131, 362, 4, 2.2, K.skin, 80),
+    F('M120 298C118 312 118 326 120 341H134C136 326 136 312 134 298C130 294 124 294 120 298Z', K.skin), SH('M130 306C134 312 136 326 134 341H130Z', 0.07),
+    limb(bez([122, 302], [112, 298], [106, 292]), 5, 4, K.skin, 'none'), hand(106, 292, -30, 3.4),
+    limb(bez([130, 301], [146, 296], [158, 288]), 5, 4, K.skin, 'none'), FC(131, 302, 2.6, K.skin), hand(159, 287, 60, 3),
+    F('M124 284h8v12h-8Z', K.skin),
+    head(128, 278, { r: 10, hair: K.hairBlond }),
+    F([[120, 270], [126, 266], [133, 266], [139, 270]].map(([x, y]) => rosetteD(x, y, 3.8, 6)).join(''), '#f0c040'), F(leafD(123, 268, 6, -60) + leafD(136, 268, 6, 60), K.green)
+  ],
+  judgement: () => {
+    // 從開啟的石棺中自己站起來的人：仰頭、張開雙臂
+    const risen = (x, y, s, hairC, female) => [
+      female ? F(`M${f(x - 8 * s)} ${f(y - 38 * s)}C${f(x - 12 * s)} ${f(y - 30 * s)} ${f(x - 11 * s)} ${f(y - 18 * s)} ${f(x - 7 * s)} ${f(y - 12 * s)}H${f(x + 7 * s)}C${f(x + 11 * s)} ${f(y - 18 * s)} ${f(x + 12 * s)} ${f(y - 30 * s)} ${f(x + 8 * s)} ${f(y - 38 * s)}C${f(x + 4 * s)} ${f(y - 46 * s)} ${f(x - 4 * s)} ${f(y - 46 * s)} ${f(x - 8 * s)} ${f(y - 38 * s)}Z`, hairC) : '',
+      limb(bez([x - 5 * s, y - 22 * s], [x - 11 * s, y - 32 * s], [x - 15 * s, y - 44 * s]), 4.4 * s, 3.2 * s, '#ddd3c6', 'none'),
+      limb(bez([x + 5 * s, y - 22 * s], [x + 11 * s, y - 32 * s], [x + 15 * s, y - 44 * s]), 4.4 * s, 3.2 * s, '#ddd3c6', 'none'),
+      hand(f(x - 15.5 * s), f(y - 46 * s), -20, f(2.6 * s)), hand(f(x + 15.5 * s), f(y - 46 * s), 20, f(2.6 * s)),
+      F(`M${f(x - 7 * s)} ${y}C${f(x - 8 * s)} ${f(y - 12 * s)} ${f(x - 7 * s)} ${f(y - 22 * s)} ${f(x - 6 * s)} ${f(y - 26 * s)}H${f(x + 6 * s)}C${f(x + 7 * s)} ${f(y - 22 * s)} ${f(x + 8 * s)} ${f(y - 12 * s)} ${f(x + 7 * s)} ${y}Z`, '#ddd3c6'),
+      SH(`M${x} ${f(y - 26 * s)}H${f(x + 6 * s)}C${f(x + 7 * s)} ${f(y - 22 * s)} ${f(x + 8 * s)} ${f(y - 12 * s)} ${f(x + 7 * s)} ${y}H${x}Z`, 0.1),
+      F(`M${f(x - 2.6 * s)} ${f(y - 30 * s)}h${f(5.2 * s)}v${f(5 * s)}h${f(-5.2 * s)}Z`, K.skin),
+      SH(`M${f(x - 2.6 * s)} ${f(y - 28.6 * s)}Q${x} ${f(y - 26.6 * s)} ${f(x + 2.6 * s)} ${f(y - 28.6 * s)}V${f(y - 27 * s)}H${f(x - 2.6 * s)}Z`, 0.18),
+      // 仰起頭望向天使
+      head(x, f(y - 33 * s), { r: f(6 * s), tilt: -0.4, rot: x < 150 ? 8 : x > 150 ? -8 : 0, male: !female, hair: hairC })
+    ].join('');
+    const coffin = (x, y, w, figure) => [
+      F(`M${x - w / 2} ${y}L${x - w / 2 + 6} ${y - 10}H${x + w / 2 - 6}L${x + w / 2} ${y}Z`, '#8f8b83'),
+      F(`M${x - w / 2 + 4} ${y - 1}L${x - w / 2 + 8} ${y - 8}H${x + w / 2 - 8}L${x + w / 2 - 4} ${y - 1}Z`, '#3b3a40'),
+      figure,
+      GF(`M${x - w / 2} ${y}H${x + w / 2}V${y + 24}H${x - w / 2}Z`, '#a29e95', '#77736b'), HL(`M${x - w / 2} ${y}H${x + w / 2}V${y + 2}H${x - w / 2}Z`, 0.3),
+      Ln(`M${x - w / 2 + 4} ${y + 10}H${x + w / 2 - 4}`, '#6a665f', 0.8)
+    ].join('');
+    return [
+      GF(SKY, '#8fb2cf', '#c3d7e7'),
+      // 遠方連綿的雪山與海
+      GF('M40 362L76 300L104 330L160 284L200 330L228 302L260 340V372H40Z', '#f4f6f6', '#cdd8e0'),
+      F('M160 284L172 340L200 336ZM76 300L84 344L104 336ZM228 302L238 336L260 340Z', K.snowShade),
+      GF('M40 366H260V460H40Z', '#5f84ad', '#3d6189'), Ln(wavesD(50, 250, 438, 2.5, 20) + wavesD(60, 240, 452, 2.5, 20), '#a9c4dc', 0.9),
+      // 從雲中探出、吹響長號的天使
+      wing(146, 150, -1, 74, '#c0503a', '#8e3a2c'), wing(154, 150, 1, 74, '#c0503a', '#8e3a2c'),
+      GF('M134 148C128 162 126 186 125 222H175C174 186 172 162 166 148Z', '#8fa9cf', '#6f8cb8'),
+      F('M145 132h10v16h-10Z', K.skin),
+      head(150, 126, { r: 12, hair: K.hairBlond, closed: true }),
+      ...[[56, 226, 26], [94, 220, 30], [138, 222, 32], [184, 220, 30], [226, 226, 28], [74, 234, 24], [116, 236, 26], [162, 236, 26], [206, 234, 24], [244, 238, 20]].map(([x, y, w]) => cloud(x, y, w)),
+      // 長號：吹口在唇邊、喇叭口外翻
+      G('translate(152 134) rotate(40)', L('M0 0H88', K.gold, 4) + L('M30 0H32M60 0H62', K.goldDeep, 4.6) +
+        F('M86 -3C96 -5 104 -12 108 -18C110 -6 110 6 108 18C104 12 96 5 86 3Z', K.gold) + F('M106 -16C110 -6 110 6 106 16C108 6 108 -6 106 -16Z', K.goldDeep) + FC(-1, 0, 2.6, K.goldDeep)),
+      // 兩手握著號管
+      sleeve(bez([164, 154], [174, 152], [180, 157]), 6, 5, '#8fa9cf', '#6f8cb8'), hand(180, 158, 40, 3.4),
+      sleeve(bez([136, 154], [152, 162], [166, 148]), 6, 5, '#7f9cc4', '#6f8cb8'), hand(166, 147, 40, 3.4),
+      // 掛在號上、襯著藍天的旗：紅十字與旗邊平行
+      F('M184 160.7L200 174.4V204.4L184 190.7Z', '#f7f2e6'), Ln('M184 160.7L200 174.4V204.4L184 190.7Z', '#c9bfa8', 0.8), L('M192 169.5V195.5M185.6 177.1L198.4 188', K.red, 2.4),
+      // 號聲往下傳向棺中的人
+      Ln('M228 212q7 5 14 2M224 220q11 7 22 2M222 228q12 8 24 2', K.goldDeep, 1.1),
+      // 掀開的棺蓋立在棺尾後方、往外斜
+      G('rotate(-18 64 400)', GF('M56 384H72V414H56Z', '#b0aca3', '#8f8b83')), G('rotate(18 236 400)', GF('M228 384H244V414H228Z', '#b0aca3', '#8f8b83')),
+      // 男、女與孩子並排、動作相同
+      coffin(86, 402, 58, risen(86, 404, 1.6, K.hairBrown, true)),
+      coffin(150, 414, 52, risen(150, 416, 1.25, K.hairBlond, false)),
+      coffin(214, 402, 58, risen(214, 404, 1.6, K.hairDark, false))
+    ];
+  },
+  world: () => {
+    // 杏仁形的桂冠：沿兩條曲線、內外成對的葉子
+    const half = (side) => {
+      const p = [[150, 150], [150 + side * 56, 196], [150 + side * 56, 336], [150, 382]];
+      let leaves = '';
+      for (let i = 1; i < 30; i++) {
+        const t = i / 30;
+        const at = (tt) => {
+          const v = 1 - tt;
+          return [0, 1].map(k => v * v * v * p[0][k] + 3 * v * v * tt * p[1][k] + 3 * v * tt * tt * p[2][k] + tt * tt * tt * p[3][k]);
+        };
+        const [x, y] = at(t);
+        const [x2, y2] = at(Math.min(1, t + 0.01));
+        const deg = Math.atan2(x2 - x, -(y2 - y)) * 180 / Math.PI;
+        leaves += leafD(f(x), f(y), 13, deg - 38, 0.38) + leafD(f(x), f(y), 13, deg + 38, 0.38);
+      }
+      return L(`M150 150C${150 + side * 56} 196 ${150 + side * 56} 336 150 382`, K.greenDeep, 2.6) + F(leaves, '#6f8a4c');
+    };
+    return [
+      GF(SKY, '#86afd4', '#bcd5e9'),
+      creatures(false),
+      half(-1), half(1),
+      L(lemniscateD(150, 150, 14, 6) + lemniscateD(150, 382, 14, 6), K.red, 3.2),
+      // 懸空、還在動的舞者：一腿伸直、一腿在後交疊成四字；兩手各握一根等長的短杖
+      limb(bez([156, 282], [170, 300], [168, 318]), 9, 7, K.skin, 'none'), FC(168, 318, 3.8, K.skin), limb(bez([168, 318], [160, 326], [150, 330]), 7, 5, K.skin, 'end'),
+      limb(bez([146, 282], [146, 318], [144, 350]), 9.5, 6, K.skin, 'end'), FE(144, 353, 2.4, 4.4, K.skin, 10),
+      limb(bez([140, 236], [126, 244], [118, 246]), 5.5, 4.2, K.skin, 'none'), limb(bez([160, 236], [174, 244], [182, 246]), 5.5, 4.2, K.skin, 'none'),
+      F('M140 230C136 244 138 262 140 282H160C162 262 164 244 160 230C156 226 144 226 140 230Z', K.skin), SH('M152 230C158 244 160 262 160 282H154Z', 0.07),
+      // 一條紫色長巾：繞過肩、橫過腰臀，尾端往外揚起
+      GF('M158 228C168 240 166 262 158 280C150 292 136 294 128 300C120 306 114 304 112 306C114 300 118 294 128 288C138 282 146 276 150 266C154 254 154 240 158 228Z', '#8a6aa0', '#5c4270'),
+      GF('M138 276C148 282 160 280 164 274L166 290C156 296 144 296 136 290Z', '#8a6aa0', '#5c4270'),
+      F('M146 216h8v14h-8Z', K.skin),
+      F('M141 214C140 202 160 202 159 214C162 222 160 232 156 236L152 222Z', K.hairBlond), head(150, 216, { r: 10, dir: -1, hair: K.hairBlond }),
+      L('M118 228V266M182 228V266', '#fffaf0', 3), FC(118, 228, 2, K.gold), FC(118, 266, 2, K.gold), FC(182, 228, 2, K.gold), FC(182, 266, 2, K.gold),
+      hand(118, 246, 0, 3.6), hand(182, 246, 0, 3.6)
+    ];
+  }
+};
+
+let clipSeq = 0;
+
+const RANK = { 'Ace': 1, 'Two': 2, 'Three': 3, 'Four': 4, 'Five': 5, 'Six': 6, 'Seven': 7, 'Eight': 8, 'Nine': 9, 'Ten': 10, 'Page': 11, 'Knight': 12, 'Queen': 13, 'King': 14 };
+const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
+const PIP_GRID = {
+  2: { s: 1.8, pts: [[150, 190], [150, 350]] },
+  3: { s: 1.45, pts: [[150, 150], [150, 270], [150, 390]] },
+  4: { s: 1.55, pts: [[106, 190], [194, 190], [106, 350], [194, 350]] },
+  5: { s: 1.4, pts: [[104, 170], [196, 170], [150, 270], [104, 370], [196, 370]] },
+  6: { s: 1.35, pts: [[104, 150], [196, 150], [104, 270], [196, 270], [104, 390], [196, 390]] },
+  7: { s: 1.2, pts: [[98, 150], [202, 150], [150, 210], [98, 270], [202, 270], [98, 390], [202, 390]] },
+  8: { s: 1.15, pts: [[98, 150], [202, 150], [150, 210], [98, 270], [202, 270], [150, 330], [98, 390], [202, 390]] },
+  9: { s: 1.05, pts: [[98, 150], [202, 150], [98, 236], [202, 236], [150, 279], [98, 322], [202, 322], [98, 408], [202, 408]] },
+  10: { s: 1, pts: [[98, 150], [202, 150], [150, 193], [98, 236], [202, 236], [98, 322], [202, 322], [150, 365], [98, 408], [202, 408]] }
+};
+function pipArt(suit, rank) {
+  if (rank === 1) {
+    return [
+      C(150, 262, 78, 'dk-g dk-t'),
+      P(raysD(150, 262, 84, 90, 48, 3.75), 'dk-g dk-t dk-d'),
+      P(raysD(150, 262, 84, 98, 8), 'dk-g dk-t'),
+      P([45, 135, 225, 315].map(a => sparkleD(...pt(150, 262, 64, a), 5)).join(''), 'dk-gf dk-d'),
+      sym(suit, 150, 262, 2.1)
+    ].join('');
+  }
+  const grid = PIP_GRID[rank];
+  return grid.pts.map(([x, y]) => sym(suit, x, y, grid.s)).join('');
+}
+const CROWN = {
+  'Page': P(leafD(150, 154, 22, -28) + leafD(150, 154, 22, 28) + leafD(150, 154, 18, 0), 'dk-gf') +
+    P('M122 160C122 152 178 152 178 160V172C178 180 122 180 122 172Z', 'dk-tf') + P('M122 160C122 168 178 168 178 160', 'dk-t') +
+    C(150, 172, 3, 'dk-gf') + C(134, 170, 1.6, 'dk-gf') + C(166, 170, 1.6, 'dk-gf'),
+  'Knight': P('M126 188H172', 'dk-b') +
+    P('M166 184H132C132 168 140 160 148 152C140 154 132 156 126 151C121 147 123 140 129 136C137 130 141 121 145 111L150 100L157 109C171 114 179 131 177 151C176 164 170 174 166 184Z', 'dk-tf') +
+    P('M160 112C168 120 172 132 172 148M156 118C162 126 166 136 166 148', 'dk-g dk-t') + C(144, 126, 2, 'dk-if') + C(128, 144, 1.3, 'dk-if dk-d'),
+  'Queen': P('M120 176V166C122 146 132 140 136 156C140 136 146 128 150 124C154 128 160 136 164 156C168 140 178 146 180 166V176Z', 'dk-tf') +
+    P('M120 166H180', 'dk-t') + C(136, 152, 3, 'dk-gf') + C(150, 119, 3.5, 'dk-gf') + C(164, 152, 3, 'dk-gf') +
+    C(132, 171, 1.6, 'dk-gf') + C(150, 171, 1.6, 'dk-gf') + C(168, 171, 1.6, 'dk-gf'),
+  'King': P('M150 126V106M143 113H157', 'dk-g') + P('M118 178L114 138L134 156L150 126L166 156L186 138L182 178Z', 'dk-tf') +
+    P('M116 166H184', 'dk-t') + C(114, 135, 3, 'dk-gf') + C(186, 135, 3, 'dk-gf') +
+    P('M150 166L154 172L150 178L146 172ZM132 172L135 175L132 178L129 175ZM168 172L171 175L168 178L165 175Z', 'dk-gf')
+};
+function courtArt(suit, rankName, rank) {
+  const stars = rank - 10;
+  const pips = Array.from({ length: stars }, (_, i) => sparkleD(f(150 + (i - (stars - 1) / 2) * 20), 414, 6)).join('');
+  const laurel = [124, 384, 92, 372, 68, 330, 76, 262];
+  const laurelR = [176, 384, 208, 372, 232, 330, 224, 262];
+  return [
+    CROWN[rankName],
+    branch(laurel, 6, 12), branch(laurelR, 6, 12),
+    C(150, 276, 56, 'dk-tf'), C(150, 276, 50, 'dk-g dk-t'),
+    sym(suit, 150, 276, 1.35),
+    P(pips, 'dk-gf')
+  ].join('');
+}
+
 export function getCardArt(card, extraClass = '') {
   if (!card || !card.suit) return null;
+  const title = (card.englishName || '').toUpperCase();
+  let label = '';
   let inner = null;
   if (card.suit === 'Major Arcana') {
-    inner = deckMajorArt[card.nameKey] || null;
-  } else if (deckSuitSymbols[card.suit] && deckRankIndex[card.number]) {
-    const rank = deckRankIndex[card.number];
-    inner = rank <= 10 ? deckPipArt(card.suit, rank) : deckCourtArt(card.suit, card.number);
+    const scene = MAJOR_SCENE[card.nameKey];
+    if (!scene) return null;
+    const id = `dk-arch-${++clipSeq}`;
+    sceneUid = id;
+    gradSeq = 0;
+    label = card.number;
+    inner = `<clipPath id="${id}"><path d="${ARCH}"/></clipPath><g class="dk-scene" clip-path="url(#${id})">${scene().join('')}</g>${P(ARCH)}`;
+  } else if (SUIT_ART[card.suit] && RANK[card.number]) {
+    const rank = RANK[card.number];
+    label = rank <= 10 ? ROMAN[rank] : '';
+    inner = rank <= 10 ? pipArt(card.suit, rank) : courtArt(card.suit, card.number, rank);
   }
   if (!inner) return null;
-  return `<svg class="card-image line-art${extraClass ? ' ' + extraClass : ''}" viewBox="0 0 300 519" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${inner}</svg>`;
+  return `<svg class="card-image line-art${extraClass ? ' ' + extraClass : ''}" viewBox="0 0 300 519" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${frame(label, title, card.suit, card.suit === 'Major Arcana')}${inner}</svg>`;
 }
