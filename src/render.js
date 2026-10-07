@@ -137,7 +137,7 @@ ${escapeHTML(t(orientationNames[card.orientation] || card.orientation))}
 </div>
 ${meaning ? `<div class="card-keywords">${keywordList(meaning.keywords)}</div>` : ''}
 <div class="card-footer">
-<span>${escapeHTML(card.number)}</span>
+<span>${escapeHTML(card.suit === 'Major Arcana' ? card.number : t(suitNames[card.suit]))}</span>
 <span>${escapeHTML(card.englishName)}</span>
 </div>
 ${(photo || lineArt) ? '</div>' : ''}

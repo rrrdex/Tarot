@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { cpSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { VERSION, jsOptions } from './scripts/bundle.mjs';
 import { uiStrings } from './src/strings.js';
+import { keepNumberWithUnit } from './src/text.js';
 
 const I18N_DEFAULT = 'zh';
 
@@ -68,7 +69,7 @@ function prerenderStrings(file) {
   const table = uiStrings[I18N_DEFAULT];
   const text = (key) => {
     if (!(key in table)) throw new Error(`index.html 用到不存在的字串 ${key}`);
-    return table[key].replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    return keepNumberWithUnit(table[key]).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   };
   let html = readFileSync(file, 'utf8')
     .replace(/(<(\w+)\b[^>]*\sdata-i18n="([^"]+)"[^>]*>)(<\/\2>)/g, (_, open, tag, key, close) => open + text(key) + close);

@@ -52,11 +52,10 @@ function renderCardDatabaseFiltered(filter = '') {
     return `
 <div class="card-db-item" role="button" tabindex="${i === 0 ? 0 : -1}" data-keynav-item data-suit="${c.suit}" data-action="openCardModal" data-card="${c.nameKey}">
 ${art ? `<div class="card-db-art">${art}</div>` : ''}
-<div class="card-db-number">${escapeHTML(c.number)}</div>
+<div class="card-db-number">${escapeHTML(c.suit === 'Major Arcana' ? c.number : t(suitNames[c.suit]))}</div>
 <div class="card-db-name">${escapeHTML(c.name)}</div>
 <div class="card-db-english">${escapeHTML(c.englishName)}</div>
 ${m ? `<div class="card-db-keywords">${m.keywords.map(escapeHTML).join('・')}</div>` : ''}
-<span class="card-db-suit">${escapeHTML(t(suitNames[c.suit] || c.suit))}</span>
 </div>
 `;
   }).join('');

@@ -240,9 +240,9 @@ ${note ? `<div class="card-notes">${escapeHTML(note)}</div>` : ''}
 ${cardsHTML}
 ${insightHTML}
 <div class="btn-group">
-<button class="btn btn-tertiary" data-action="copyResults">${escapeHTML(t('btn.copyResults'))}</button>
-<button class="btn btn-tertiary" data-action="generateShareImage">${escapeHTML(t('btn.shareImage'))}</button>
-<button class="btn btn-tertiary" data-action="printReading">${escapeHTML(t('btn.print'))}</button>
+<button class="btn btn-tertiary btn-sm" data-action="copyResults">${escapeHTML(t('btn.copyResults'))}</button>
+<button class="btn btn-tertiary btn-sm" data-action="generateShareImage">${escapeHTML(t('btn.shareImage'))}</button>
+<button class="btn btn-tertiary btn-sm" data-action="printReading">${escapeHTML(t('btn.print'))}</button>
 </div>
 </div>
 `;

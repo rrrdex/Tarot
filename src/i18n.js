@@ -1,4 +1,5 @@
 import { uiStrings } from './strings.js';
+import { keepNumberWithUnit } from './text.js';
 import { syncCanonical } from './utils.js';
 import { rerenderForLang } from './main.js';
 
@@ -61,7 +62,7 @@ export function t(key, vars) {
       s = s.split('{' + k + '}').join(String(vars[k]));
     });
   }
-  return s;
+  return keepNumberWithUnit(s);
 }
 export function applyStaticStrings(root = document) {
   root.querySelectorAll('[data-i18n]').forEach(el => {
