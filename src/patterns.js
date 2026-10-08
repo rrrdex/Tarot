@@ -1,10 +1,10 @@
 import { t } from './i18n.js';
 import { escapeHTML } from './utils.js';
 import { suitNames } from './data.js';
-import { SYSTEMS_ELEMENT_KEY, deckComposition, suitSystem } from './systems.js';
+import { deckComposition, suitSystem } from './systems.js';
 import { cardMeanings } from './meanings.js';
 import { readingHistory } from './state.js';
-import { insightChoose, insightProb } from './insight.js';
+import { insightChoose, insightProb, insightSuitHint } from './insight.js';
 
 const patternMinorSuits = ['Wands', 'Cups', 'Swords', 'Pentacles'];
 // 機率分布以陣列表示：dist[j] = 計數恰為 j 的機率。每次占卜各自的牌組不同，
@@ -116,6 +116,8 @@ export function generatePatterns(history) {
     if (c.orientation === 'reversed') revCount++;
   });
   const top = patternTopMinorSuit(suitCounts);
+  // 已經說明過領域的花色，後面的標籤項目不再重複同一句
+  const explained = new Set();
   if (top.suit && total) {
     // 每種牌組裡四個花色張數相同，所以「最多的花色」也就是機率最小的那個；×4 校正挑最多
     const dist = patternClassDist(entries, d => d.suits[top.suit]);
@@ -129,11 +131,10 @@ export function generatePatterns(history) {
           k: top.count, total,
           exp: patternMean(dist).toFixed(1),
           pct: Math.round((top.count / total) * 100),
-          prob: insightProb(p, true),
-          element: t(SYSTEMS_ELEMENT_KEY[sys.element]),
-          faculty: t(sys.faculty)
-        })
+          prob: insightProb(p, true)
+        }) + insightSuitHint(top.suit)
       });
+      explained.add(top.suit);
     }
   }
   const tagStats = new Map();
@@ -170,7 +171,6 @@ export function generatePatterns(history) {
   });
   tagFindings.sort((a, b) => a.p - b.p);
   tagFindings.slice(0, 2).forEach(f => {
-    const sys = suitSystem[f.suit];
     out.push({
       tag: t('pattern.tag.tag', { name: f.name }),
       text: t('pattern.tag.text', {
@@ -180,10 +180,10 @@ export function generatePatterns(history) {
         k: f.count,
         suit: patternSuitLabel(f.suit),
         pct: Math.round((f.count / f.cards) * 100),
-        prob: insightProb(f.p, true),
-        faculty: sys ? t(sys.faculty) : ''
-      })
+        prob: insightProb(f.p, true)
+      }) + (explained.has(f.suit) ? '' : insightSuitHint(f.suit))
     });
+    explained.add(f.suit);
   });
   if (total) {
     // 正逆位各半、彼此獨立：精確的二項分布
@@ -194,12 +194,12 @@ export function generatePatterns(history) {
     if (revCount * 2 > total && pHigh < PATTERN_ALPHA) {
       out.push({
         tag: t('pattern.reversed.high.tag'),
-        text: t('pattern.reversed.high.text', { k: revCount, total, pct, prob: insightProb(pHigh) })
+        text: t('pattern.reversed.high.text', { k: revCount, total, pct, prob: insightProb(pHigh) }) + t('insight.hint.reversed')
       });
     } else if (revCount * 2 < total && pLow < PATTERN_ALPHA) {
       out.push({
         tag: t('pattern.reversed.low.tag'),
-        text: t('pattern.reversed.low.text', { k: revCount, total, pct, prob: insightProb(pLow) })
+        text: t('pattern.reversed.low.text', { k: revCount, total, pct, prob: insightProb(pLow) }) + t('insight.hint.upright')
       });
     }
   }
@@ -259,7 +259,7 @@ export function generatePatterns(history) {
     if (majorCount > mean && pHigh < PATTERN_ALPHA) {
       out.push({
         tag: t('pattern.major.high.tag'),
-        text: t('pattern.major.high.text', { k: majorCount, total, exp, pct, prob: insightProb(pHigh) })
+        text: t('pattern.major.high.text', { k: majorCount, total, exp, pct, prob: insightProb(pHigh) }) + t('insight.hint.major')
       });
     } else if (majorCount < mean && pLow < PATTERN_ALPHA) {
       out.push({
@@ -304,10 +304,13 @@ export function renderPatternInsights() {
     return;
   }
   const sub = history.length ? `<div class="insight-sub">${escapeHTML(t('pattern.panel.sub', { n: history.length }))}</div>` : '';
+  // 滿 5 次才開始檢定，說明也從那時才有意義
+  const note = history.length >= 5 ? `<div class="insight-sub">${escapeHTML(t('pattern.panel.note'))}</div>` : '';
   el.innerHTML = `
 <div class="insight-panel">
 <h3 class="insight-title">${escapeHTML(t('pattern.panel.title'))}</h3>
 ${sub}
+${note}
 ${items.map(it => `
 <div class="insight-item">
 <h4 class="insight-tag">${escapeHTML(it.tag)}</h4>

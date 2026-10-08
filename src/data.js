@@ -140,10 +140,11 @@ export const spreadLayouts = {
     { r: 2, c: 1 },
     { r: 1, c: 2 },
     { r: 2, c: 3 },
-    { r: 1, c: 4 },
-    { r: 2, c: 4 },
+    // 右側一列（第 7–10 張）由下往上排，與 Waite 1911 及現代通行的擺法相同
+    { r: 4, c: 4 },
     { r: 3, c: 4 },
-    { r: 4, c: 4 }
+    { r: 2, c: 4 },
+    { r: 1, c: 4 }
   ] },
   horseshoe: { cols: 7, cells: [
     { r: 3, c: 1 },

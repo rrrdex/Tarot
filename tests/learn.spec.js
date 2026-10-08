@@ -109,7 +109,7 @@ test.describe('學習：測驗', () => {
     await page.locator('input[name="visualStyle"][value="text"]').check();
     await openTab(page, 'learn');
     await expect(page.locator('#learnStage .quiz-art')).toHaveCount(0);
-    await expect(page.locator('#learnStage .quiz-prompt')).toHaveText(/^「.+」的關鍵字是？$/);
+    await expect(page.locator('#learnStage .quiz-prompt')).toHaveText(/^「.+」的關鍵詞是？$/);
   });
 });
 

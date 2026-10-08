@@ -30,9 +30,9 @@ async function renderDeckHistory() {
   const block = document.getElementById('deckHistoryBlock');
   if (!block || deckHistoryState === 'loading' || deckHistoryState === 'done') return;
   deckHistoryState = 'loading';
-  let items;
+  let groups;
   try {
-    ({ deckHistory: items } = await loadLore());
+    ({ loreLibrary: groups } = await loadLore());
   } catch {
     deckHistoryState = 'failed';
     block.classList.remove('hidden');
@@ -40,17 +40,22 @@ async function renderDeckHistory() {
     return;
   }
   deckHistoryState = 'done';
-  if (!items.length) {
+  if (!groups.length) {
     block.classList.add('hidden');
     block.innerHTML = '';
     return;
   }
   block.classList.remove('hidden');
-  block.innerHTML = items.map(h => `
-<div class="deck-history-item">
-<h3 class="deck-history-title">${escapeHTML(h.title || '')}</h3>
+  // 共用知識分成幾組，每段預設收合：資料庫分頁打開時先看到標題，想讀哪段再展開
+  block.innerHTML = groups.map(g => `
+<section class="deck-history-group">
+<h3 class="deck-history-heading">${escapeHTML(g.title)}</h3>
+${g.items.map(h => `
+<details class="deck-history-item">
+<summary class="deck-history-title">${escapeHTML(h.title || '')}</summary>
 <p class="deck-history-text">${escapeHTML(h.text || '')}</p>
-</div>
+</details>`).join('')}
+</section>
 `).join('');
 }
 // 搜尋時不分大小寫、忽略空白：「權杖 一」「MAJOR」都找得到

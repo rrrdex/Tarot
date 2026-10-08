@@ -320,6 +320,7 @@ ${renderCard(bottomCard, true, anim, drawnCards.length)}
   const insightHTML = insights.length ? `
 <div class="insight-panel">
 <h3 class="insight-title">${escapeHTML(t('insight.panel.title'))}</h3>
+${insights.some(item => item.stat) ? `<div class="insight-sub">${escapeHTML(t('insight.panel.note'))}</div>` : ''}
 ${insights.map(item => `
 <div class="insight-item">
 <h4 class="insight-tag">${escapeHTML(item.tag)}</h4>

@@ -233,12 +233,15 @@ export function updateSpreadInfo() {
   }
   spreadInfoEl.classList.remove('hidden');
   document.getElementById('spreadInfoContent').textContent = t(spread.description);
-  document.getElementById('spreadPositionsList').innerHTML = spread.positions.map((pos, idx) =>
-    `<div class="spread-position-item">
+  // 牌位的讀法（pos.N.desc）有寫才顯示；週、月這類逐日逐週的牌位由牌陣說明統一交代
+  document.getElementById('spreadPositionsList').innerHTML = spread.positions.map((pos, idx) => {
+    const descKey = `${pos}.desc`;
+    const desc = t(descKey);
+    return `<div class="spread-position-item">
 <span class="spread-position-num">${idx + 1}</span>
-<span>${escapeHTML(t(pos))}</span>
-</div>`
-  ).join('');
+<span><span class="spread-position-name">${escapeHTML(t(pos))}</span>${desc !== descKey ? `<span class="spread-position-desc">${escapeHTML(desc)}</span>` : ''}</span>
+</div>`;
+  }).join('');
 }
 showSpreadInfoCheckbox.checked = storage.get('showSpreadInfo') !== 'false';
 spreadTypeEl.addEventListener('change', updateSpreadInfo);

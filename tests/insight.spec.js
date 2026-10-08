@@ -50,7 +50,7 @@ test('模式洞察依各次的牌組計算，不把底牌算進去', async ({ pa
   await openTab(page, 'statistics');
   const panel = page.locator('#patternInsights');
   await expect(panel).toContainText('逆位偏多');
-  await expect(panel).not.toContainText('大牌偏多');
+  await expect(panel).not.toContainText('大阿卡納偏多');
   const text = await panel.innerText();
   expect(text).toMatch(/長期\s18\s張牌裡有\s18\s張逆位/);
   expect(text).toContain('機率低於 0.1%');

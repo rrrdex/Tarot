@@ -1,5 +1,4 @@
 import { t } from './i18n.js';
-import { uiStrings } from './strings.js';
 import { orientationNames, suitNames } from './data.js';
 import { foliRecurrence, waiteAdditional, waiteRecurrence, waiteTerms } from './waite.js';
 import { mofaTerms } from './mofa.js';
@@ -95,17 +94,21 @@ function insightMention(card) {
   ? t('insight.card.pos', { name: card.name, ori, pos })
   : t('insight.echo.card', { name: card.name, ori });
 }
-const INSIGHT_ROLE_BY_NAME = {
-  '過去': 'past', '現在': 'present', '未來': 'future',
-  '目標': 'aim', '結果': 'outcome',
-  '阻礙': 'obstacle', '挑戰': 'obstacle', '希望與恐懼': 'hope'
+// 牌位在軸線檢查裡的角色：依牌位的鍵對應，改牌位名稱不會影響判斷
+const INSIGHT_ROLE_BY_POS = {
+  'spread.three.pos.0': 'past', 'spread.three.pos.1': 'present', 'spread.three.pos.2': 'future',
+  'spread.horseshoe.pos.0': 'past', 'spread.horseshoe.pos.1': 'present', 'spread.horseshoe.pos.6': 'outcome',
+  'spread.celtic.pos.0': 'present', 'spread.celtic.pos.1': 'obstacle', 'spread.celtic.pos.3': 'past',
+  'spread.celtic.pos.4': 'aim', 'spread.celtic.pos.5': 'future', 'spread.celtic.pos.8': 'hope',
+  'spread.celtic.pos.9': 'outcome',
+  'spread.path.pos.1': 'obstacle', 'spread.path.pos.3': 'outcome',
+  'spread.goal.pos.1': 'obstacle', 'spread.goal.pos.4': 'outcome',
+  'spread.relationship.pos.3': 'obstacle'
 };
 function insightRoles(cards) {
   const byRole = {};
   cards.forEach(c => {
-    if (!c.position || c.position.indexOf('.') < 0) return;
-    const zh = uiStrings.zh[c.position];
-    const role = zh && INSIGHT_ROLE_BY_NAME[zh];
+    const role = c.position && INSIGHT_ROLE_BY_POS[c.position];
     if (role && !byRole[role]) byRole[role] = c;
   });
   return byRole;
@@ -262,6 +265,16 @@ function insightTopCount(list, keyOf) {
   });
   return { key: topKey, count: topCount };
 }
+// 花色對應的元素與領域：綜合觀察與模式洞察共用同一句
+export function insightSuitHint(suit) {
+  const sys = suitSystem[suit];
+  if (!sys) return '';
+  return t('insight.hint.suit', {
+    suit: t(suitNames[suit] || suit),
+    element: t(SYSTEMS_ELEMENT_KEY[sys.element]),
+    faculty: t(sys.faculty)
+  });
+}
 export function generateInsight(reading) {
   const out = [];
   if (!reading || typeof reading !== 'object') return out;
@@ -300,12 +313,13 @@ export function generateInsight(reading) {
       if (p < INSIGHT_ALPHA) {
         found++;
         out.push({
+          stat: true,
           tag: t('insight.major.tag', { p: insightPct(p) }),
           text: t('insight.major.text', {
             n, k, N, K: deck.major, prob: insightProb(p),
             exp: (n * deck.major / N).toFixed(1),
             cards: cards.filter(c => c.suit === 'Major Arcana').map(insightMention).join('、')
-          })
+          }) + t('insight.hint.major')
         });
       }
     }
@@ -321,13 +335,12 @@ export function generateInsight(reading) {
         found++;
         const suitLabel = t(suitNames[domSuit.key] || domSuit.key);
         const item = {
+          stat: true,
           tag: t('insight.suit.tag', { suit: suitLabel, p: insightPct(p) }),
           text: t('insight.suit.text', {
             suit: suitLabel, k: domSuit.count, n, prob: insightProb(p, true),
-            element: t(SYSTEMS_ELEMENT_KEY[domSys.element]),
-            faculty: t(domSys.faculty),
             cards: minors.filter(c => c.suit === domSuit.key).map(insightMention).join('、')
-          })
+          }) + insightSuitHint(domSuit.key)
         };
         out.push(item);
         suitFound = { suit: domSuit.key, count: domSuit.count, item };
@@ -340,14 +353,16 @@ export function generateInsight(reading) {
       if (rev > n - rev && pRev < INSIGHT_ALPHA) {
         found++;
         out.push({
+          stat: true,
           tag: t('insight.reversed.tag', { p: insightPct(pRev) }),
-          text: t('insight.reversed.text', { k: rev, n, prob: insightProb(pRev) })
+          text: t('insight.reversed.text', { k: rev, n, prob: insightProb(pRev) }) + t('insight.hint.reversed')
         });
       } else if (rev < n - rev && pUp < INSIGHT_ALPHA) {
         found++;
         out.push({
+          stat: true,
           tag: t('insight.upright.tag', { p: insightPct(pUp) }),
-          text: t('insight.upright.text', { k: n - rev, n, prob: insightProb(pUp) })
+          text: t('insight.upright.text', { k: n - rev, n, prob: insightProb(pUp) }) + t('insight.hint.upright')
         });
       }
     }
@@ -375,12 +390,13 @@ export function generateInsight(reading) {
       if (p < INSIGHT_ALPHA) {
         found++;
         out.push({
+          stat: true,
           tag: t('insight.class.' + cls + '.tag', { p: insightPct(p) }),
           text: t('insight.class.' + cls + '.text', {
             n, k: k2, N, K, prob: insightProb(p),
             exp: (n * K / N).toFixed(1),
             cards: cls === 'court' ? clsCards.map(insightMention).join('、') : ''
-          })
+          }) + t('insight.hint.' + cls)
         });
       }
     });
@@ -394,8 +410,12 @@ export function generateInsight(reading) {
         if (p < INSIGHT_ALPHA) {
           found++;
           out.push({
+            stat: true,
             tag: t('insight.quality.tag', { quality: t('quality.' + q.key), p: insightPct(p) }),
-            text: t('insight.quality.text', { k: signs.length, quality: t('quality.' + q.key), prob: insightProb(p) })
+            text: t('insight.quality.text', {
+              k: signs.length, quality: t('quality.' + q.key), prob: insightProb(p),
+              qdesc: t('quality.' + q.key + '.desc')
+            })
           });
         }
       }
@@ -494,6 +514,7 @@ export function generateInsight(reading) {
     }
     if (!found && n >= 3) {
       out.push({
+        stat: true,
         tag: t('insight.balanced.tag'),
         text: t('insight.balanced.text') + (n <= 4 ? t('insight.balanced.small', { n }) : '')
       });

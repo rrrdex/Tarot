@@ -12,7 +12,7 @@ import { waiteAdditional, waiteTerms } from './waite.js';
 import { mofaTerms } from './mofa.js';
 import { waiteTermZh } from './waite-zh.js';
 import { cardClass, cardSystems, waiteCourtLooks } from './systems.js';
-import { cardMeaningText, cardMeanings, minorRankMeanings } from './meanings.js';
+import { cardMeaningText, cardMeanings } from './meanings.js';
 import { loadContexts, loadDeck, loadLore, loadedDeck } from './lazy.js';
 import { currentTab, lastReadingData } from './state.js';
 import { renderResults, shownReading } from './reading.js';
@@ -247,8 +247,6 @@ export function openCardModal(nameKey, orientation, { fromReading = false } = {}
   document.getElementById('cardModalKeywords').innerHTML = m.keywords.map(k => `<span class="tag">${escapeHTML(k)}</span>`).join('');
   document.getElementById('cardModalUpright').textContent = cardMeaningText(card, 'upright');
   document.getElementById('cardModalReversed').textContent = cardMeaningText(card, 'reversed');
-  const meaningNote = document.getElementById('cardModalMeaningNote');
-  if (meaningNote) meaningNote.classList.toggle('hidden', cardClass(card) === 'major');
   markDrawnBlock('meaningUpright', orientation === 'upright');
   markDrawnBlock('meaningReversed', orientation === 'reversed');
   markDrawnBlock('imageUpright', orientation === 'upright');
@@ -289,6 +287,7 @@ function renderCardModalLore({ cardLore, getCardLore }, card, nameKey) {
     }
   };
   fillLoreBlock('cardModalSymbolismBlock', 'cardModalSymbolism', lore && lore.symbolism);
+  fillLoreBlock('cardModalOriginBlock', 'cardModalOrigin', lore && lore.origin);
   fillLoreBlock('cardModalDepthBlock', 'cardModalDepth', lore && lore.depth);
   const mt = mofaTerms[nameKey];
   const mBlock = document.getElementById('cardModalMofaBlock');
@@ -304,7 +303,7 @@ function renderCardModalLore({ cardLore, getCardLore }, card, nameKey) {
     mBlock.classList.toggle('hidden', !mhtml);
   }
   const waitePair = (en) => {
-    const zh = waiteTermZh(en);
+    const zh = waiteTermZh(en, nameKey);
     return zh
     ? `<span class="waite-pair"><span class="waite-zh">${escapeHTML(zh)}</span><span class="waite-en" lang="en">${escapeHTML(en)}</span></span>`
     : `<span class="waite-pair"><span class="waite-en waite-en-only" lang="en">${escapeHTML(en)}</span></span>`;
@@ -348,6 +347,13 @@ function renderCardModalLore({ cardLore, getCardLore }, card, nameKey) {
 `).join('');
     iconBlock.classList.toggle('hidden', !icons.length);
   }
+  // 對應系統的一列：vars 原樣代入，tvars 的值是字串鍵，先翻譯再代入（例如「{planet}在{sign}」）
+  const systemsRowVars = r => {
+    if (!r.tvars) return r.vars;
+    const vars = { ...(r.vars || {}) };
+    Object.keys(r.tvars).forEach(k => { vars[k] = t(r.tvars[k]); });
+    return vars;
+  };
   const sysBlock = document.getElementById('cardModalSystemsBlock');
   const sysList = document.getElementById('cardModalSystemsList');
   if (sysBlock && sysList) {
@@ -358,7 +364,7 @@ function renderCardModalLore({ cardLore, getCardLore }, card, nameKey) {
 ${g.rows.map(r => `
 <div class="icon-row">
 <span class="icon-element">${escapeHTML(t(r.label))}</span>
-<p class="icon-meaning">${escapeHTML(t(r.value, r.vars))}</p>
+<p class="icon-meaning">${escapeHTML(t(r.value, systemsRowVars(r)))}</p>
 </div>`).join('')}
 ${g.note ? `<p class="waite-terms-note">${escapeHTML(t(g.note))}</p>` : ''}
 </div>
@@ -367,15 +373,21 @@ ${g.note ? `<p class="waite-terms-note">${escapeHTML(t(g.note))}</p>` : ''}
   }
   const list = document.getElementById('cardModalLoreList');
   if (!list) return;
+  // 花色、數字、位階與大阿卡納的共通背景每張牌都一樣，收合成「延伸閱讀」，想看再展開，不必每張牌重讀一次
   const blocks = getCardLore(card) || [];
   list.innerHTML = blocks.length
-  ? blocks.map(b => `
-<div class="lore-entry">
-<h3 class="lore-title">${escapeHTML(b.title || '')}</h3>
+  ? `
+<div class="lore-entry lore-more">
+<h3 class="lore-title">${escapeHTML(t('card.lore.more'))}</h3>
+<p class="lore-more-note">${escapeHTML(t('card.lore.more.note'))}</p>
+${blocks.map(b => `
+<details class="lore-more-item">
+<summary class="lore-more-title">${escapeHTML(b.title || '')}</summary>
 <p class="lore-text">${escapeHTML(b.text || '')}</p>
+</details>`).join('')}
 </div>
-`).join('')
-  : `<div class="lore-empty">${escapeHTML(t('card.lore.empty'))}</div>`;
+`
+  : (lore && lore.origin ? '' : `<div class="lore-empty">${escapeHTML(t('card.lore.empty'))}</div>`);
 }
 const cardModalSegPanels = { meaning: 'cardSegMeaning', icon: 'cardSegIcon', context: 'cardSegContext', lore: 'cardSegLore' };
 function setCardModalSeg(name) {
@@ -393,9 +405,7 @@ function setCardModalSeg(name) {
 }
 function contextReflection(cardContexts, card) {
   const ctx = cardContexts[card.nameKey];
-  if (ctx && typeof ctx.reflection === 'string') return ctx.reflection;
-  const rank = minorRankMeanings[card.number];
-  return (rank && rank.reflection) || '';
+  return (ctx && typeof ctx.reflection === 'string') ? ctx.reflection : '';
 }
 function renderCardModalContextFailed() {
   const section = document.getElementById('cardModalContextSection');
@@ -403,7 +413,6 @@ function renderCardModalContextFailed() {
   section.classList.remove('hidden');
   document.getElementById('cardModalContextList').innerHTML = chunkFailedHTML();
   section.querySelector('.reflection-block')?.classList.add('hidden');
-  document.getElementById('cardModalContextNote')?.classList.add('hidden');
 }
 function renderCardModalContext({ cardContexts, contextText }, nameKey) {
   const section = document.getElementById('cardModalContextSection');
@@ -438,8 +447,6 @@ function renderCardModalContext({ cardContexts, contextText }, nameKey) {
 </div>
 `).join('');
   document.getElementById('cardModalReflection').textContent = contextReflection(cardContexts, card);
-  const ctxNote = document.getElementById('cardModalContextNote');
-  if (ctxNote) ctxNote.classList.toggle('hidden', cardClass(card) === 'major');
 }
 const cardModalSegEl = document.getElementById('cardModalSeg');
 if (cardModalSegEl) {
