@@ -80,8 +80,9 @@ function prerenderStrings(file) {
 }
 
 // CSP 只放行 index.html 裡實際存在的 inline script（JSON-LD 不會被執行，不受 script-src 限制）
+// 瀏覽器解析 HTML 時會把 CRLF 正規化成 LF 再計算雜湊；Windows 簽出的檔案是 CRLF，所以先換掉
 const inlineHashes = [...readFileSync(`${OUT}/index.html`, 'utf8').matchAll(/<script>([\s\S]*?)<\/script>/g)]
-  .map(([, code]) => `'sha256-${createHash('sha256').update(code).digest('base64')}'`);
+  .map(([, code]) => `'sha256-${createHash('sha256').update(code.replace(/\r\n?/g, '\n')).digest('base64')}'`);
 const CSP = [
   "default-src 'self'",
   `script-src 'self' ${inlineHashes.join(' ')}`,

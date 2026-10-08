@@ -396,7 +396,7 @@ export const uiStrings = {
     'settings.visual.api': '牌圖模式',
     'settings.visual.api.desc': '經典偉特塔羅牌圖（1909 公版，已內建於本機，無需網路）',
     'settings.visual.line': '線稿模式',
-    'settings.visual.line.desc': '自製牌組（78 張完備）：大牌是彩色場景插畫，小牌是金色線描',
+    'settings.visual.line.desc': '自製牌組（78 張完備）：每一張都是彩色場景插畫',
     'settings.pref.title': '顯示偏好',
     'settings.pref.interactiveDraw': '互動選牌',
     'settings.pref.interactiveDraw.desc': '占卜時親手從牌堆中選牌；關閉則直接翻出結果',

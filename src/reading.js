@@ -14,6 +14,7 @@ import {
 import {
   courtCards,
   fullTarotCards,
+  getCardImageUrl,
   majorArcana,
   minorArcana,
   numberedCards,
@@ -30,7 +31,8 @@ import {
   setReadingHistory
 } from './state.js';
 import { readBtn, readBtnText, resultsEl, spreadTypeEl } from './dom.js';
-import { LAYOUT_IMG_SIZES, renderCard } from './render.js';
+import { LAYOUT_IMG_SIZES, renderCard, visualStyle } from './render.js';
+import { getCardArtImage } from './deck.js';
 import { generateInsight } from './insight.js';
 
 function getDeck(deckType) {
@@ -308,16 +310,46 @@ function shareGlyph(ctx, suit, x, y, s, color) {
   }
   ctx.restore();
 }
-export function generateShareImage() {
+// 分享圖的牌面：線稿模式畫自製牌組，圖片模式畫偉特牌縮圖；文字模式維持只有花色符號
+function loadImage(src) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null);
+    img.src = src;
+  });
+}
+function shareCardFaces(cards) {
+  if (visualStyle === 'line') {
+    const cs = getComputedStyle(document.documentElement);
+    const colors = Object.fromEntries(['paper', 'tint', 'ink', 'gold'].map(k => [k, cs.getPropertyValue(`--deck-${k}`).trim()]));
+    return Promise.all(cards.map(async (card) => {
+      const svg = getCardArtImage(card, colors, true);
+      if (!svg) return null;
+      const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
+      const img = await loadImage(url);
+      URL.revokeObjectURL(url);
+      return img;
+    }));
+  }
+  if (visualStyle === 'api') return Promise.all(cards.map(card => loadImage(getCardImageUrl(card, 'webp', 160))));
+  return Promise.resolve(cards.map(() => null));
+}
+export async function generateShareImage() {
   const { spreadName, question, drawnCards, bottomCard, timestamp, seed } = lastReadingData;
   if (!drawnCards) {
     showToast(t('toast.noReading'), 'warning');
     return;
   }
   const cards = [...drawnCards, bottomCard];
+  const faces = await shareCardFaces(cards);
+  const withFaces = faces.some(Boolean);
   const width = 800;
   const pad = 64;
-  const rowH = 72;
+  const rowH = withFaces ? 104 : 72;
+  // 牌面縮圖的高度與文字欄的左緣
+  const faceH = 88;
+  const textX = withFaces ? pad + 70 : pad + 44;
   const headerH = question ? 232 : 192;
   const height = headerH + cards.length * rowH + 100;
   const canvas = document.createElement('canvas');
@@ -356,18 +388,33 @@ export function generateShareImage() {
   ctx.stroke();
   cards.forEach((card, i) => {
     const y = headerH + i * rowH;
+    // 有牌面時文字往下移，與縮圖的垂直中線對齊
+    const dy = withFaces ? 14 : 0;
     const suitColor = P.suit ? (P.suit[card.suit] || P.accent) : P.text;
-    shareGlyph(ctx, card.suit, pad + 14, y + 28, 0.42, suitColor);
+    const face = faces[i];
+    if (face) {
+      const h = faceH;
+      const w = Math.round(h * face.naturalWidth / face.naturalHeight);
+      const cx = pad + 26;
+      const cy = y + 2 + h / 2;
+      ctx.save();
+      ctx.translate(cx, cy);
+      if (card.orientation === 'reversed') ctx.rotate(Math.PI);
+      ctx.drawImage(face, -w / 2, -h / 2, w, h);
+      ctx.restore();
+    } else {
+      shareGlyph(ctx, card.suit, pad + 14, y + 28 + dy, 0.42, suitColor);
+    }
     ctx.fillStyle = P.sub;
     ctx.font = `600 14px ${font}`;
-    ctx.fillText(t(card.position), pad + 44, y + 16);
+    ctx.fillText(t(card.position), textX, y + 16 + dy);
     ctx.fillStyle = suitColor;
     ctx.font = `600 24px ${font}`;
-    ctx.fillText(truncate(card.name, width - pad * 2 - 140), pad + 44, y + 46);
+    ctx.fillText(truncate(card.name, width - textX - pad - 96), textX, y + 46 + dy);
     ctx.font = `500 17px ${font}`;
     ctx.fillStyle = card.orientation === 'reversed' ? P.rev : P.up;
     const oriLabel = t(orientationNames[card.orientation] || card.orientation);
-    ctx.fillText(oriLabel, width - pad - ctx.measureText(oriLabel).width, y + 44);
+    ctx.fillText(oriLabel, width - pad - ctx.measureText(oriLabel).width, y + 44 + dy);
   });
   ctx.fillStyle = P.sub;
   ctx.font = `400 14px ${font}`;
