@@ -242,7 +242,8 @@ export function head(x, y, o = {}) {
       ? Ln(`M${f(x + dir * r * 0.28)} ${ey}q${f(dir * r * 0.14)} ${f(r * 0.12)} ${f(dir * r * 0.28)} 0`, K.ink, 0.9)
       : FC(f(x + dir * r * 0.46), ey, f(r * 0.1), K.ink);
     s += Ln(`M${f(x + dir * r * 0.3)} ${f(ey - r * 0.24)}l${f(dir * r * 0.32)} ${f(-r * 0.04)}`, browC, browW);
-    s += o.open
+    // mouth: 'none' 讓呼叫端自己畫嘴
+    if (o.mouth !== 'none') s += o.open
       ? F(`M${f(x + dir * r * 0.6)} ${f(mouthY - r * 0.06)}l${f(dir * r * 0.34)} ${f(-r * 0.04)}l${f(-dir * r * 0.06)} ${f(r * 0.2)}Z`, '#8a4a40')
       : Ln(`M${f(x + dir * r * 0.55)} ${mouthY}l${f(dir * r * 0.28)} ${f(-r * 0.04)}`, K.lip, 0.9);
     if (!plain) s += `<circle cx="${f(x + dir * r * 0.4)}" cy="${f(ey + r * 0.34)}" r="${f(r * 0.16)}" fill="${K.blush}" fill-opacity=".45" stroke="none"/>`;

@@ -309,10 +309,21 @@
 }
 .card-db-art {
   margin-bottom: var(--space-4);
+  /* 資料庫一次列出 78 張：畫面外的牌面先不排版、不繪製，捲到附近才畫（線稿牌組每張上百個元素） */
+  content-visibility: auto;
+  contain-intrinsic-block-size: auto 243px;
 }
 .card-db-art :is(svg, img) {
   width: 100%;
   max-width: 140px;
+}
+/* 線稿牌面還沒填入前的空位，大小與牌面相同，捲動時版面不會跳 */
+.card-db-art[data-art] {
+  width: 100%;
+  max-width: 140px;
+  aspect-ratio: 300 / 519;
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-sm);
 }
 .flash-art {
   display: flex;
@@ -3785,6 +3796,29 @@ button:focus-visible,
   .card {
     break-inside: avoid;
     page-break-inside: avoid;
+  }
+  /* 線稿牌框在深色、霓虹主題下是深色；印在白紙上一律用淺色牌面 */
+  :root,
+  :root:not(.light),
+  .dark {
+    --deck-paper: #fbf8f1;
+    --deck-tint: #f4eee2;
+    --deck-ink: #2d2a33;
+    --deck-gold: #a8844c;
+  }
+  .neon svg.line-art {
+    --deck-paper: #fbf8f1;
+    --deck-tint: #f4eee2;
+    --deck-ink: #2d2a33;
+    --deck-gold: #a8844c;
+  }
+  .neon .card.visual-api .card-image.line-art {
+    background: var(--deck-paper);
+    color: var(--deck-ink);
+    filter: none;
+  }
+  .card-db-art {
+    content-visibility: visible;
   }
 }
 @media (prefers-reduced-motion: reduce) {

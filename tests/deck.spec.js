@@ -90,6 +90,11 @@ test.describe('線稿模式', () => {
     await page.goto('/');
     await openTab(page, 'database');
     const arts = page.locator('#tabDatabase svg.line-art');
+    // 牌面捲到附近才填入：一開始只畫畫面附近的幾張，捲到底後 78 張全部到齊
+    await expect(arts.first()).toBeVisible();
+    expect(await arts.count()).toBeLessThan(78);
+    await page.locator('#tabDatabase .card-db-item').last().scrollIntoViewIfNeeded();
+    for (const item of await page.locator('#tabDatabase .card-db-item').all()) await item.scrollIntoViewIfNeeded();
     await expect(arts).toHaveCount(78);
     const broken = await page.evaluate(() => {
       const bad = [];

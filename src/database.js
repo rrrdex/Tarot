@@ -3,7 +3,7 @@ import { debounce, escapeHTML } from './utils.js';
 import { fullTarotCards, suitNames } from './data.js';
 import { cardMeanings } from './meanings.js';
 import { loadLore } from './lazy.js';
-import { cardThumb } from './render.js';
+import { cardThumb, visualStyle } from './render.js';
 
 const debouncedSearch = debounce((filter) => {
   renderCardDatabaseFiltered(filter);
@@ -46,12 +46,14 @@ function renderCardDatabaseFiltered(filter = '') {
     grid.innerHTML = `<div class="history-empty">${escapeHTML(t('db.empty'))}</div>`;
     return;
   }
+  // 線稿牌組每張上百個元素：先放空位，捲到附近才填入牌面
+  const deferArt = visualStyle === 'line';
   grid.innerHTML = filtered.map((c, i) => {
     const m = cardMeanings[c.nameKey];
-    const art = cardThumb(c, '', 140);
+    const art = deferArt ? null : cardThumb(c, '', 140);
     return `
 <div class="card-db-item" role="button" tabindex="${i === 0 ? 0 : -1}" data-keynav-item data-suit="${c.suit}" data-action="openCardModal" data-card="${c.nameKey}">
-${art ? `<div class="card-db-art">${art}</div>` : ''}
+${deferArt ? `<div class="card-db-art" data-art="${c.nameKey}"></div>` : art ? `<div class="card-db-art">${art}</div>` : ''}
 <div class="card-db-number">${escapeHTML(c.suit === 'Major Arcana' ? c.number : t(suitNames[c.suit]))}</div>
 <div class="card-db-name">${escapeHTML(c.name)}</div>
 <div class="card-db-english">${escapeHTML(c.englishName)}</div>
@@ -59,4 +61,20 @@ ${m ? `<div class="card-db-keywords">${m.keywords.map(escapeHTML).join('・')}</
 </div>
 `;
   }).join('');
+  if (deferArt) observeArt(grid);
+}
+const cardByKey = new Map(fullTarotCards.map(c => [c.nameKey, c]));
+let artObserver = null;
+function observeArt(grid) {
+  artObserver?.disconnect();
+  artObserver = new IntersectionObserver((entries) => {
+    for (const entry of entries) {
+      if (!entry.isIntersecting) continue;
+      const el = entry.target;
+      el.innerHTML = cardThumb(cardByKey.get(el.dataset.art), '', 140) || '';
+      el.removeAttribute('data-art');
+      artObserver.unobserve(el);
+    }
+  }, { rootMargin: '600px 0px' });
+  grid.querySelectorAll('.card-db-art[data-art]').forEach(el => artObserver.observe(el));
 }
