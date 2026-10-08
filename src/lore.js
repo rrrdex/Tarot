@@ -967,7 +967,7 @@ export const deckHistory = [
   },
   {
     title: '我們手上這副牌',
-    text: '偉特牌一九零九年十二月由倫敦 Rider 公司出版，A. E. Waite 構思、Pamela Colman Smith 繪製，兩人都是黃金黎明成員。PCS 把五十六張小牌全部畫成有情節的場景，這是它成為現代標準的主因。她只拿一筆固定酬勞，之後數十年幾乎沒有署名。此版已進入公共領域，本 app 用的就是它。'
+    text: '偉特牌一九零九年十二月由倫敦 Rider 公司出版，A. E. Waite 構思、Pamela Colman Smith 繪製，兩人都是黃金黎明成員。PCS 把五十六張小牌全部畫成有情節的場景，這是它成為現代標準的主因。她只拿一筆固定酬勞，之後數十年幾乎沒有署名。此版已進入公有領域，本 app 用的就是它。'
   }
 ];
 export function getCardLore(card) {

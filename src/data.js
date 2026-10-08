@@ -95,6 +95,11 @@ export const majorArcana = fullTarotCards.slice(0, 22);
 export const minorArcana = fullTarotCards.slice(22);
 export const courtCards = fullTarotCards.filter(c => ['Page', 'Knight', 'Queen', 'King'].includes(c.number));
 export const numberedCards = fullTarotCards.filter(c => !['Page', 'Knight', 'Queen', 'King'].includes(c.number) && c.suit !== 'Major Arcana');
+// 牌組類型 → 實際用到的牌（與 reading.js 的 getDeck 同一套對應；這裡回傳共用陣列，呼叫端只能讀）
+const deckCardsByType = { full: fullTarotCards, major: majorArcana, minor: minorArcana, court: courtCards, numbered: numberedCards };
+export function deckCardsOf(deckType) {
+  return deckCardsByType[deckType] || fullTarotCards;
+}
 export const spreads = {
   single: { positions: ['spread.single.pos.0'], description: 'spread.single.desc' },
   three: { positions: ['spread.three.pos.0', 'spread.three.pos.1', 'spread.three.pos.2'], description: 'spread.three.desc' },

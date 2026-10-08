@@ -2,7 +2,7 @@ import { t } from './i18n.js';
 import { debounce, escapeHTML } from './utils.js';
 import { fullTarotCards, suitNames } from './data.js';
 import { cardMeanings } from './meanings.js';
-import { loadLore } from './lazy.js';
+import { loadLore, loadedDeck } from './lazy.js';
 import { cardThumb, visualStyle } from './render.js';
 
 const debouncedSearch = debounce((filter) => {
@@ -11,14 +11,35 @@ const debouncedSearch = debounce((filter) => {
 document.getElementById('cardSearch').addEventListener('input', (e) => {
   debouncedSearch(e.target.value);
 });
-export function renderCardDatabase() {
-  renderDeckHistory();
-  renderCardDatabaseFiltered(document.getElementById('cardSearch').value);
+// 方格的內容只取決於這幾樣：牌面風格、線稿牌組是否已載入、語言、搜尋字；都沒變就不重建
+let renderedKey = null;
+function databaseKey(filter) {
+  return [visualStyle, loadedDeck() ? 1 : 0, document.documentElement.lang, normalizeQuery(filter)].join('|');
 }
+// 切到分頁、換牌面風格、線稿牌組載入完成時都會呼叫；分頁沒開時先不畫，等打開再說
+export function renderCardDatabase() {
+  const panel = document.getElementById('tabDatabase');
+  if (panel && panel.classList.contains('hidden')) return;
+  renderDeckHistory();
+  const filter = document.getElementById('cardSearch').value;
+  if (databaseKey(filter) !== renderedKey) renderCardDatabaseFiltered(filter);
+}
+// 牌組源流只需畫一次；源流資料載不到（離線、新版上線後舊檔已移除）時，留一行說明而不是整塊空白
+let deckHistoryState = 'idle';
 async function renderDeckHistory() {
   const block = document.getElementById('deckHistoryBlock');
-  if (!block) return;
-  const { deckHistory: items } = await loadLore();
+  if (!block || deckHistoryState === 'loading' || deckHistoryState === 'done') return;
+  deckHistoryState = 'loading';
+  let items;
+  try {
+    ({ deckHistory: items } = await loadLore());
+  } catch {
+    deckHistoryState = 'failed';
+    block.classList.remove('hidden');
+    block.innerHTML = `<p class="deck-history-text deck-history-offline">${escapeHTML(t('db.deckHistory.offline'))}</p>`;
+    return;
+  }
+  deckHistoryState = 'done';
   if (!items.length) {
     block.classList.add('hidden');
     block.innerHTML = '';
@@ -32,16 +53,31 @@ async function renderDeckHistory() {
 </div>
 `).join('');
 }
+// 搜尋時不分大小寫、忽略空白：「權杖 一」「MAJOR」都找得到
+function normalizeQuery(s) {
+  return String(s).toLowerCase().replace(/\s+/g, '');
+}
+// 每張牌可被搜尋的文字：牌名、英文名、花色（中英）、關鍵詞；編號另外比對整串
+function searchFields(c) {
+  const m = cardMeanings[c.nameKey];
+  return [c.name, c.englishName, t(suitNames[c.suit]), c.suit, ...(m ? m.keywords : [])].map(normalizeQuery);
+}
+function cardMatches(c, q) {
+  // 編號要整串相符：「0」只找愚者，「II」不會連 III、XII 一起找出來
+  if (normalizeQuery(c.number) === q) return true;
+  return searchFields(c).some(f => f.includes(q));
+}
 function renderCardDatabaseFiltered(filter = '') {
   const grid = document.getElementById('cardDatabaseGrid');
-  const q = filter.trim();
-  const filtered = fullTarotCards.filter(c => {
-    if (!q) return true;
-    const m = cardMeanings[c.nameKey];
-    return c.name.includes(q) ||
-    c.englishName.toLowerCase().includes(q.toLowerCase()) ||
-    (m && m.keywords.some(k => k.includes(q)));
-  });
+  const q = normalizeQuery(filter);
+  renderedKey = databaseKey(filter);
+  const filtered = q ? fullTarotCards.filter(c => cardMatches(c, q)) : fullTarotCards;
+  // 有輸入才報筆數；內容沒變時不重寫，免得切回分頁就被讀屏重唸一次
+  const countEl = document.getElementById('cardSearchCount');
+  if (countEl) {
+    const text = q ? t('db.search.count', { n: filtered.length }) : '';
+    if (countEl.textContent !== text) countEl.textContent = text;
+  }
   if (!filtered.length) {
     grid.innerHTML = `<div class="history-empty">${escapeHTML(t('db.empty'))}</div>`;
     return;
@@ -56,7 +92,7 @@ function renderCardDatabaseFiltered(filter = '') {
 ${deferArt ? `<div class="card-db-art" data-art="${c.nameKey}"></div>` : art ? `<div class="card-db-art">${art}</div>` : ''}
 <div class="card-db-number">${escapeHTML(c.suit === 'Major Arcana' ? c.number : t(suitNames[c.suit]))}</div>
 <div class="card-db-name">${escapeHTML(c.name)}</div>
-<div class="card-db-english">${escapeHTML(c.englishName)}</div>
+<div class="card-db-english" lang="en">${escapeHTML(c.englishName)}</div>
 ${m ? `<div class="card-db-keywords">${m.keywords.map(escapeHTML).join('・')}</div>` : ''}
 </div>
 `;

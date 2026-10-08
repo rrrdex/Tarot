@@ -2,6 +2,7 @@ import { t } from './i18n.js';
 import { escapeHTML, showToast } from './utils.js';
 import { fullTarotCards, orientationNames } from './data.js';
 import { cardThumb } from './render.js';
+import * as storage from './storage.js';
 
 const PROFILE_BIRTHDAY_KEY = 'birthday';
 const PROFILE_SHICHEN_KEY = 'birthShichen';
@@ -12,6 +13,7 @@ const profilePositionNames = {
   legacy: 'profile.pos.legacy', return: 'profile.pos.return'
 };
 const PROFILE_POS = 5;
+const PROFILE_COMMIT_DELAY = 800;
 const PROFILE_M = 78n * 77n * 76n * 75n * 74n * 32n;
 const PROFILE_K = 982451653n;
 function profileDayIndex(y, m, d) {
@@ -70,32 +72,32 @@ function profileComputeCards(str, shichen) {
   }))
   .filter(entry => entry.card);
 }
+// 儲存失敗（空間已滿、網站資料被封鎖）時仍以這次輸入的值顯示，到關閉頁面為止
+const profileMemory = {};
+function profileRead(key) {
+  return Object.prototype.hasOwnProperty.call(profileMemory, key) ? profileMemory[key] : storage.get(key);
+}
 function profileGetBirthday() {
-  try {
-    const v = localStorage.getItem(PROFILE_BIRTHDAY_KEY);
-    return profileParseBirthday(v) ? v : '';
-  } catch {
-    return '';
-  }
+  const v = profileRead(PROFILE_BIRTHDAY_KEY);
+  return profileParseBirthday(v) ? v : '';
 }
 function profileSetBirthday(value) {
-  try {
-    if (value) localStorage.setItem(PROFILE_BIRTHDAY_KEY, value);
-    else localStorage.removeItem(PROFILE_BIRTHDAY_KEY);
-  } catch {}
+  profileMemory[PROFILE_BIRTHDAY_KEY] = value || null;
+  if (value) storage.set(PROFILE_BIRTHDAY_KEY, value);
+  else storage.remove(PROFILE_BIRTHDAY_KEY);
 }
 export function profileGetShichen() {
-  try {
-    const v = profileParseShichen(localStorage.getItem(PROFILE_SHICHEN_KEY));
-    return v === null ? PROFILE_SHICHEN_UNKNOWN : v;
-  } catch {
-    return PROFILE_SHICHEN_UNKNOWN;
-  }
+  const v = profileParseShichen(profileRead(PROFILE_SHICHEN_KEY));
+  return v === null ? PROFILE_SHICHEN_UNKNOWN : v;
 }
 function profileSetShichen(value) {
-  try {
-    localStorage.setItem(PROFILE_SHICHEN_KEY, String(value));
-  } catch {}
+  profileMemory[PROFILE_SHICHEN_KEY] = String(value);
+  storage.set(PROFILE_SHICHEN_KEY, String(value));
+}
+// 匯入設定後改從儲存空間重新讀取
+export function profileForgetMemory() {
+  delete profileMemory[PROFILE_BIRTHDAY_KEY];
+  delete profileMemory[PROFILE_SHICHEN_KEY];
 }
 function profileCurrentCards() {
   return profileComputeCards(profileGetBirthday(), profileGetShichen());
@@ -154,20 +156,38 @@ if (profileBirthdayInput) {
   const pad = (v) => String(v).padStart(2, '0');
   profileBirthdayInput.max = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
   profileBirthdayInput.value = profileGetBirthday();
-  profileBirthdayInput.addEventListener('change', () => {
+  // 用鍵盤輸入日期時，每打完一段只要湊成合法日期就會觸發 change（例如年份打到一半的 0002 年）：
+  // 停手一會兒或離開欄位才真正儲存，避免一連串的中間值與提示
+  let commitTimer = null;
+  const commitBirthday = () => {
+    clearTimeout(commitTimer);
+    commitTimer = null;
     const value = profileBirthdayInput.value;
+    if (value === profileGetBirthday()) return;
     if (!value) {
       profileSetBirthday('');
       renderProfile();
       return;
     }
     if (!profileParseBirthday(value)) {
-      showToast(t('toast.birthdayInvalid'), 'error');
+      // 不合法（例如未來的日期）就退回已儲存的值，欄位上不留被拒絕的日期
+      profileBirthdayInput.value = profileGetBirthday();
+      const d = new Date();
+      const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      const future = /^\d{4}-\d{2}-\d{2}$/.test(value) && value > today;
+      showToast(t(future ? 'toast.birthdayFuture' : 'toast.birthdayInvalid'), 'error');
       return;
     }
     profileSetBirthday(value);
     renderProfile();
     showToast(t('toast.profileUpdated'));
+  };
+  profileBirthdayInput.addEventListener('change', () => {
+    clearTimeout(commitTimer);
+    commitTimer = setTimeout(commitBirthday, PROFILE_COMMIT_DELAY);
+  });
+  profileBirthdayInput.addEventListener('blur', () => {
+    if (commitTimer) commitBirthday();
   });
 }
 if (profileShichenInput) {

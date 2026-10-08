@@ -1,7 +1,7 @@
 {
   "name": "塔羅占卜",
   "short_name": "塔羅",
-  "description": "純粹的塔羅占卜工具，所有資料僅存於您的裝置",
+  "description": "純粹的塔羅占卜工具，所有資料僅存於你的裝置",
   "start_url": ".",
   "display": "standalone",
   "background_color": "#fafafa",

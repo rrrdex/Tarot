@@ -1,6 +1,7 @@
 import { build } from 'esbuild';
 import { createHash } from 'node:crypto';
-import { cpSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { VERSION, jsOptions } from './scripts/bundle.mjs';
 import { uiStrings } from './src/strings.js';
 import { keepNumberWithUnit } from './src/text.js';
@@ -15,9 +16,14 @@ const STATIC = [
   'robots.txt',
   'sitemap.xml',
   '_headers',
-  'img',
+  'img/og.png',
   'Henry’s_Prayer_Journal.html'
 ];
+// 牌圖只附網頁實際會用到的 avif／webp；原始 JPG 與 img/cards_original.rar 留在原始碼庫，不上線
+const CARD_IMAGES = /\.(avif|webp)$/;
+// 正式網址：GitHub Pages 的部署流程會帶入 SITE_URL；本機建置沒有就保留範例網址
+const PLACEHOLDER_URL = 'https://example.com/';
+const SITE_URL = process.env.SITE_URL ? process.env.SITE_URL.replace(/\/+$/, '') + '/' : null;
 
 rmSync(OUT, { recursive: true, force: true });
 
@@ -26,6 +32,8 @@ const js = await build({
   outdir: `${OUT}/js`,
   entryNames: '[name]-[hash]',
   chunkNames: 'chunks/[name]-[hash]',
+  // 正式版不附 source map（開發伺服器仍有）
+  sourcemap: false,
   minify: true,
   metafile: true
 });
@@ -44,10 +52,16 @@ const urlOf = (path) => path.replace(`${OUT}/`, '');
 const entryUrl = (src) => urlOf(outputs.find(([, o]) => o.entryPoint === src)[0]);
 const appJs = entryUrl('src/main.js');
 const styleCss = entryUrl('style.css');
+// 線稿牌組是動態載入的片段；index.html 的 inline script 在線稿模式下會先預載它
+const deckJs = entryUrl('src/deck.js');
 
 for (const path of STATIC) {
   cpSync(path, `${OUT}/${path}`, { recursive: true });
 }
+cpSync('img/cards', `${OUT}/img/cards`, {
+  recursive: true,
+  filter: (src) => statSync(src).isDirectory() || CARD_IMAGES.test(src)
+});
 
 function rewrite(file, replacements) {
   let text = readFileSync(file, 'utf8');
@@ -60,7 +74,8 @@ function rewrite(file, replacements) {
 
 rewrite('index.html', [
   ['href="style.css"', `href="${styleCss}"`],
-  ['src="js/app.js"', `src="${appJs}"`]
+  ['src="js/app.js"', `src="${appJs}"`],
+  ["var deck = '';", `var deck = ${JSON.stringify(deckJs)};`]
 ]);
 prerenderStrings(`${OUT}/index.html`);
 
@@ -79,11 +94,21 @@ function prerenderStrings(file) {
   writeFileSync(file, html);
 }
 
+// canonical、og:image、JSON-LD、robots.txt、sitemap.xml 裡的範例網址換成正式網址
+if (SITE_URL) {
+  for (const file of ['index.html', 'robots.txt', 'sitemap.xml']) {
+    const path = `${OUT}/${file}`;
+    const text = readFileSync(path, 'utf8');
+    if (!text.includes(PLACEHOLDER_URL)) throw new Error(`${file}: 找不到 ${PLACEHOLDER_URL}`);
+    writeFileSync(path, text.replaceAll(PLACEHOLDER_URL, SITE_URL));
+  }
+}
+
 // CSP 只放行 index.html 裡實際存在的 inline script（JSON-LD 不會被執行，不受 script-src 限制）
 // 瀏覽器解析 HTML 時會把 CRLF 正規化成 LF 再計算雜湊；Windows 簽出的檔案是 CRLF，所以先換掉
 const inlineHashes = [...readFileSync(`${OUT}/index.html`, 'utf8').matchAll(/<script>([\s\S]*?)<\/script>/g)]
   .map(([, code]) => `'sha256-${createHash('sha256').update(code.replace(/\r\n?/g, '\n')).digest('base64')}'`);
-const CSP = [
+const CSP_DIRECTIVES = [
   "default-src 'self'",
   `script-src 'self' ${inlineHashes.join(' ')}`,
   "style-src 'self' 'unsafe-inline'",
@@ -93,12 +118,29 @@ const CSP = [
   "worker-src 'self'",
   "object-src 'none'",
   "base-uri 'self'",
-  "form-action 'none'",
-  "frame-ancestors 'none'"
-].join('; ');
-writeFileSync(`${OUT}/_headers`, readFileSync('_headers', 'utf8').replaceAll('__CSP__', CSP));
+  "form-action 'none'"
+];
+// _headers 給支援它的主機（Cloudflare Pages）；GitHub Pages 不看 _headers，所以 HTML 裡也放一份 <meta>。
+// frame-ancestors 只能由回應標頭設定，<meta> 版本不含
+const CSP_HEADER = [...CSP_DIRECTIVES, "frame-ancestors 'none'"].join('; ');
+const CSP_META = CSP_DIRECTIVES.join('; ');
+{
+  const path = `${OUT}/index.html`;
+  const html = readFileSync(path, 'utf8');
+  const charset = /<meta charset="UTF-8"\s*\/?>/i;
+  if (!charset.test(html)) throw new Error('index.html: 找不到 <meta charset>');
+  writeFileSync(path, html.replace(charset, (m) => `${m} <meta http-equiv="Content-Security-Policy" content="${CSP_META}"/>`));
+}
+// 只換標頭那幾行，不動檔案開頭說明裡提到的 __CSP__
+writeFileSync(`${OUT}/_headers`, readFileSync('_headers', 'utf8')
+  .replace(/^([ \t]+Content-Security-Policy:[ \t]*)__CSP__[ \t]*$/gm, (_, head) => head + CSP_HEADER));
 
-const assets = ['./', './index.html', './manifest.json', './icon.svg', ...outputs.map(([path]) => `./${urlOf(path)}`)];
+// 圖示也預先快取，離線安裝與主畫面圖示才完整
+const manifest = JSON.parse(readFileSync('manifest.json', 'utf8'));
+const iconAssets = [...new Set([...manifest.icons.map(i => i.src), 'icons/apple-touch-icon.png'])]
+  .filter(src => src !== 'icon.svg')
+  .map(src => `./${src}`);
+const assets = ['./', './index.html', './manifest.json', './icon.svg', ...iconAssets, ...outputs.map(([path]) => `./${urlOf(path)}`)];
 // 任何預先快取的檔案內容一變，建置 ID 就變，Service Worker 才會更新離線副本
 const contentHash = createHash('sha256');
 for (const asset of assets) {
@@ -106,8 +148,23 @@ for (const asset of assets) {
   if (!asset.endsWith('/')) contentHash.update(readFileSync(`${OUT}/${asset.slice(2)}`));
 }
 const buildId = `${VERSION}-${contentHash.digest('hex').slice(0, 8)}`;
+// 牌圖快取的名字跟著牌圖內容變：牌圖沒變就沿用，換了圖才整批重新下載
+function hashDir(dir, hash) {
+  for (const name of readdirSync(dir).sort()) {
+    const path = join(dir, name);
+    if (statSync(path).isDirectory()) hashDir(path, hash);
+    else {
+      hash.update(path.replaceAll('\\', '/'));
+      hash.update(readFileSync(path));
+    }
+  }
+  return hash;
+}
+const imgCache = `tarot-img-${hashDir(`${OUT}/img/cards`, createHash('sha256')).digest('hex').slice(0, 8)}`;
+const swSource = readFileSync('sw.js', 'utf8');
 rewrite('sw.js', [
-  [/^const BUILD = .*;$/m.exec(readFileSync('sw.js', 'utf8'))[0], `const BUILD = ${JSON.stringify({ id: buildId, assets })};`]
+  [/^const BUILD = .*;$/m.exec(swSource)[0], `const BUILD = ${JSON.stringify({ id: buildId, assets })};`],
+  [/^const IMG_CACHE = .*;$/m.exec(swSource)[0], `const IMG_CACHE = ${JSON.stringify(imgCache)};`]
 ]);
 
-console.log(`\n  version ${VERSION}, build ${buildId}, ${assets.length} precached files`);
+console.log(`\n  version ${VERSION}, build ${buildId}, ${assets.length} precached files${SITE_URL ? `, site ${SITE_URL}` : ''}`);

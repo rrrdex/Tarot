@@ -1,3 +1,5 @@
+import { deckCardsOf } from './data.js';
+
 export const suitSystem = {
   'Wands':     { element: 'Fire',  french: 'Clubs',    faculty: 'suit.faculty.wands' },
   'Cups':      { element: 'Water', french: 'Hearts',   faculty: 'suit.faculty.cups' },
@@ -51,12 +53,25 @@ const zodiacTriplicity = {
   Gemini: 'Air', Libra: 'Air', Aquarius: 'Air',
   Cancer: 'Water', Scorpio: 'Water', Pisces: 'Water'
 };
-export const CARD_CLASS_COUNT = { major: 22, court: 16, pip: 40 };
 const COURT_RANKS = ['Page', 'Knight', 'Queen', 'King'];
 export function cardClass(card) {
   if (!card) return null;
   if (card.suit === 'Major Arcana') return 'major';
   return COURT_RANKS.includes(card.number) ? 'court' : 'pip';
+}
+// 統計檢定用的牌組組成：N 為牌組張數，其餘為各類別在這副牌裡的張數（不在牌組裡就是 0）
+const deckCompCache = new Map();
+export function deckComposition(deckType) {
+  const cards = deckCardsOf(deckType);
+  if (deckCompCache.has(cards)) return deckCompCache.get(cards);
+  const comp = { N: cards.length, major: 0, court: 0, pip: 0, suits: { Wands: 0, Cups: 0, Swords: 0, Pentacles: 0 }, keys: new Set(), cards };
+  cards.forEach(c => {
+    comp[cardClass(c)]++;
+    if (c.suit in comp.suits) comp.suits[c.suit]++;
+    comp.keys.add(c.nameKey);
+  });
+  deckCompCache.set(cards, comp);
+  return comp;
 }
 export function cardElement(card) {
   if (!card || !suitSystem[card.suit]) return null;
@@ -90,6 +105,9 @@ export function cardSystems(card) {
     const planet = numberPlanets[card.number];
     if (planet) rows.push({ label: 'systems.label.planet', value: systemsPlanetKey(planet) });
     out.push({ source: 'systems.std.source', note: 'systems.std.note', rows });
+  } else if (card.suit === 'Major Arcana') {
+    // 大阿卡納在標準系統下刻意留白，仍列出來源與留白的理由
+    out.push({ source: 'systems.std.source', note: 'systems.std.note.major', rows: [] });
   }
   const tRows = [];
   let tSign = null;
@@ -117,9 +135,12 @@ export function cardSystems(card) {
     const stdEl = cardElement(card);
     const tEl = card.suit !== 'Major Arcana' && thierensMinor(card) ? thierensMinor(card).element : null;
     const clash = !!(stdEl && tEl && stdEl !== tEl);
+    const note = card.suit === 'Major Arcana'
+    ? 'systems.thierens.note.major'
+    : (clash ? 'systems.thierens.note.clash' : 'systems.thierens.note');
     out.push({
       source: 'systems.thierens.source',
-      note: clash ? 'systems.thierens.note.clash' : 'systems.thierens.note',
+      note,
       rows: tRows
     });
   }

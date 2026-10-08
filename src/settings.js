@@ -1,11 +1,13 @@
 import { t } from './i18n.js';
-import { openConfirm, showToast } from './utils.js';
+import { downloadBlob, openConfirm, showToast } from './utils.js';
 import {
+  HISTORY_MAX,
   currentTab,
-  normalizeReading,
+  normalizeHistory,
   readingHistory,
   saveHistory,
-  setReadingHistory
+  setReadingHistory,
+  trimHistory
 } from './state.js';
 import {
   iconMoon,
@@ -30,13 +32,15 @@ import {
 } from './learn.js';
 import {
   profileBirthdayInput,
+  profileForgetMemory,
   profileGetShichen,
   profileParseBirthday,
   profileParseShichen,
   profileShichenInput,
   renderProfile
 } from './profile.js';
-import { setShortcutsEnabled, updateSpreadInfo } from './main.js';
+import { setShortcutsEnabled, switchTab, updateSpreadInfo } from './main.js';
+import * as storage from './storage.js';
 
 function isDarkActive() {
   const root = document.documentElement;
@@ -53,33 +57,33 @@ function updateThemeIcons() {
   iconMoon.style.display = dark ? 'none' : 'block';
   themeToggle.setAttribute('aria-label', t(dark ? 'app.themeToggle.toLight' : 'app.themeToggle.toDark'));
 }
+let themePref = storage.get('theme', 'auto');
+if (!['light', 'dark', 'neon'].includes(themePref)) themePref = 'auto';
 function syncThemeRadios() {
-  const pref = localStorage.getItem('theme') || 'auto';
   document.querySelectorAll('input[name="themePref"]').forEach(r => {
-    r.checked = r.value === pref;
+    r.checked = r.value === themePref;
   });
 }
+// 先換畫面，最後才寫入儲存空間
 function applyThemePref(pref) {
   const root = document.documentElement;
   root.classList.remove('light', 'dark', 'neon');
-  if (pref === 'light' || pref === 'dark' || pref === 'neon') {
-    root.classList.add(pref);
-    localStorage.setItem('theme', pref);
-  } else {
-    localStorage.removeItem('theme');
-  }
+  themePref = ['light', 'dark', 'neon'].includes(pref) ? pref : 'auto';
+  if (themePref !== 'auto') root.classList.add(themePref);
   updateThemeIcons();
   updateThemeColor();
   syncThemeRadios();
   if (currentTab === 'statistics') renderStatistics();
+  if (themePref === 'auto') storage.remove('theme');
+  else storage.set('theme', themePref);
 }
 export function toggleTheme() {
   applyThemePref(isDarkActive() ? 'light' : 'dark');
 }
-const savedTheme = localStorage.getItem('theme');
-if (['light', 'dark', 'neon'].includes(savedTheme)) {
-  document.documentElement.classList.add(savedTheme);
+if (['light', 'dark', 'neon'].includes(themePref)) {
+  document.documentElement.classList.add(themePref);
 }
+// 要在 applyStaticStrings 之後呼叫：按鈕的 aria-label 依目前主題而定，不能被靜態字串蓋掉
 export function initTheme() {
   updateThemeIcons();
   updateThemeColor();
@@ -98,9 +102,9 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () 
 export function updateDataStats() {
   const el = document.getElementById('dataStats');
   if (!el) return;
-  const raw = localStorage.getItem('readingHistory') || '[]';
+  const raw = storage.get('readingHistory', '[]');
   const kb = (new Blob([raw]).size / 1024).toFixed(1);
-  el.textContent = t('settings.data.stats', { n: readingHistory.length, max: 100, kb });
+  el.textContent = t('settings.data.stats', { n: readingHistory.length, max: HISTORY_MAX, kb });
 }
 document.getElementById('clearAllData').addEventListener('click', async () => {
   const ok = await openConfirm({
@@ -110,13 +114,15 @@ document.getElementById('clearAllData').addEventListener('click', async () => {
     danger: true
   });
   if (!ok) return;
-  localStorage.clear();
-  location.reload();
+  storage.clear();
+  // 連網址上的 seed、問題一起清掉，否則重新載入後又會畫出那次占卜
+  location.replace(location.pathname);
 });
+const EXPORT_PREFS = ['theme', 'interactiveDraw', 'showSpreadInfo', 'showShortcuts', 'learnMode', 'learnScope', 'birthday', 'birthShichen'];
 function buildExportData() {
   const prefs = {};
-  ['theme', 'interactiveDraw', 'showSpreadInfo', 'showShortcuts', 'learnMode', 'learnScope', 'birthday', 'birthShichen'].forEach(k => {
-    const v = localStorage.getItem(k);
+  EXPORT_PREFS.forEach(k => {
+    const v = storage.get(k);
     if (v !== null) prefs[k] = v;
   });
   return {
@@ -134,12 +140,7 @@ function buildExportData() {
 document.getElementById('exportData').addEventListener('click', () => {
   const data = buildExportData();
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `tarot-backup-${Date.now()}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
+  downloadBlob(blob, `tarot-backup-${Date.now()}.json`);
   showToast(t('toast.exported'));
 });
 const IMPORT_PREF_RULES = {
@@ -152,47 +153,98 @@ const IMPORT_PREF_RULES = {
   birthday: v => !!profileParseBirthday(v),
   birthShichen: v => profileParseShichen(v) !== null
 };
+function hasImportExtras(data) {
+  const prefs = data.prefs && typeof data.prefs === 'object' &&
+    Object.entries(IMPORT_PREF_RULES).some(([k, ok]) => typeof data.prefs[k] === 'string' && ok(data.prefs[k]));
+  const learn = data.learn && typeof data.learn === 'object' && (data.learn.progress || data.learn.streak);
+  return !!(prefs || learn);
+}
 function applyImportedExtras(data) {
   let applied = 0;
   if (data.prefs && typeof data.prefs === 'object') {
     Object.entries(IMPORT_PREF_RULES).forEach(([key, ok]) => {
       const v = data.prefs[key];
-      if (typeof v === 'string' && ok(v)) { localStorage.setItem(key, v); applied++; }
+      if (typeof v === 'string' && ok(v)) { storage.set(key, v); applied++; }
     });
   }
   if (data.learn && typeof data.learn === 'object') {
     if (data.learn.progress && typeof data.learn.progress === 'object' && !Array.isArray(data.learn.progress)) {
-      localStorage.setItem(LEARN_PROGRESS_KEY, JSON.stringify(data.learn.progress));
+      storage.set(LEARN_PROGRESS_KEY, JSON.stringify(data.learn.progress));
       setLearnProgress(loadLearnProgress());
       applied++;
     }
     if (data.learn.streak && typeof data.learn.streak === 'object') {
-      localStorage.setItem(LEARN_STREAK_KEY, JSON.stringify(data.learn.streak));
+      storage.set(LEARN_STREAK_KEY, JSON.stringify(data.learn.streak));
       setLearnStreak(loadLearnStreak());
       applied++;
     }
   }
   if (!applied) return 0;
-  applyThemePref(localStorage.getItem('theme') || 'auto');
+  applyThemePref(storage.get('theme', 'auto'));
   reloadLearnPrefs();
-  setShortcutsEnabled(localStorage.getItem('showShortcuts') !== 'false');
+  setShortcutsEnabled(storage.get('showShortcuts') !== 'false');
   const idc = document.getElementById('interactiveDraw');
-  if (idc) idc.checked = localStorage.getItem('interactiveDraw') !== 'false';
+  if (idc) idc.checked = storage.get('interactiveDraw') !== 'false';
   if (showSpreadInfoCheckbox) {
-    showSpreadInfoCheckbox.checked = localStorage.getItem('showSpreadInfo') !== 'false';
+    showSpreadInfoCheckbox.checked = storage.get('showSpreadInfo') !== 'false';
     updateSpreadInfo();
   }
   if (showShortcutsCheckbox) {
-    showShortcutsCheckbox.checked = localStorage.getItem('showShortcuts') !== 'false';
+    showShortcutsCheckbox.checked = storage.get('showShortcuts') !== 'false';
   }
+  profileForgetMemory();
   if (profileBirthdayInput) {
-    profileBirthdayInput.value = localStorage.getItem('birthday') || '';
+    profileBirthdayInput.value = storage.get('birthday', '');
   }
   if (profileShichenInput) {
     profileShichenInput.value = String(profileGetShichen());
   }
   renderProfile();
   return applied;
+}
+function importConfirmMessage(n, current, extras) {
+  const parts = [current
+    ? t('confirm.import.message', { n, current })
+    : t('confirm.import.messageEmpty', { n })];
+  if (extras) parts.push(t('confirm.import.extras'));
+  return parts.join('');
+}
+async function importData(data) {
+  if (!data || typeof data !== 'object' || !Array.isArray(data.history)) {
+    showToast(t('toast.importBadFormat'), 'error');
+    return;
+  }
+  const normalized = normalizeHistory(data.history);
+  // 檔案裡沒有任何可用的紀錄時，不拿空清單蓋掉現有的紀錄
+  if (!normalized.length && readingHistory.length) {
+    showToast(t('toast.importEmpty'), 'error');
+    return;
+  }
+  const { list: incoming, trimmed } = trimHistory(normalized);
+  const ok = await openConfirm({
+    title: t('confirm.import.title'),
+    message: importConfirmMessage(incoming.length, readingHistory.length, hasImportExtras(data)),
+    confirmText: t('confirm.import.ok'),
+    danger: true
+  });
+  if (!ok) return;
+  const previous = readingHistory;
+  setReadingHistory(incoming);
+  // 寫入失敗（空間不足）就還原，畫面上的紀錄和儲存的保持一致；提示由 storage.js 顯示
+  if (!saveHistory()) {
+    setReadingHistory(previous);
+    return;
+  }
+  if (['text', 'api', 'line'].includes(data.visualStyle)) {
+    setVisualStyle(data.visualStyle).catch(() => {});
+  }
+  const extras = applyImportedExtras(data);
+  updateDataStats();
+  switchTab(currentTab);
+  showToast(extras
+    ? t('toast.imported.withPrefs', { n: incoming.length, prefs: extras })
+    : t('toast.imported', { n: incoming.length }));
+  if (trimmed) showToast(t('toast.historyTrimmed', { n: trimmed, max: HISTORY_MAX }), 'warning');
 }
 document.getElementById('importData').addEventListener('click', () => {
   const input = document.createElement('input');
@@ -202,34 +254,15 @@ document.getElementById('importData').addEventListener('click', () => {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = async (e) => {
+    reader.onload = (e) => {
+      let data;
       try {
-        const data = JSON.parse(e.target.result);
-        if (data.history && Array.isArray(data.history)) {
-          const incoming = data.history.map(normalizeReading).filter(Boolean).slice(0, 100);
-          const ok = await openConfirm({
-            title: t('confirm.import.title'),
-            message: t('confirm.import.message', { n: incoming.length, current: readingHistory.length }),
-            confirmText: t('confirm.import.ok'),
-            danger: true
-          });
-          if (!ok) return;
-          setReadingHistory(incoming);
-          saveHistory();
-          if (['text', 'api', 'line'].includes(data.visualStyle)) {
-            setVisualStyle(data.visualStyle);
-          }
-          const extras = applyImportedExtras(data);
-          updateDataStats();
-          showToast(extras
-            ? t('toast.imported.withPrefs', { n: incoming.length, prefs: extras })
-            : t('toast.imported', { n: incoming.length }));
-        } else {
-          showToast(t('toast.importBadFormat'), 'error');
-        }
+        data = JSON.parse(e.target.result);
       } catch {
         showToast(t('toast.importParseFailed'), 'error');
+        return;
       }
+      importData(data);
     };
     reader.readAsText(file);
   };

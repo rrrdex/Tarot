@@ -20,11 +20,15 @@ async function expectNoViolations(page, label) {
   expect(summary, label).toEqual([]);
 }
 
-for (const theme of ['light', 'dark', 'neon']) {
-  test(`無障礙：各分頁與視窗（${theme} 主題）`, async ({ page }) => {
-    await seedStorage(page, { theme, interactiveDraw: 'false', birthday: '1990-05-20' });
+// 三種主題 × 三種牌面（文字、偉特牌圖片、自製線稿）
+const COMBOS = ['light', 'dark', 'neon'].flatMap(theme => ['text', 'api', 'line'].map(style => [theme, style]));
+for (const [theme, style] of COMBOS) {
+  test(`無障礙：各分頁與視窗（${theme} 主題、${style} 牌面）`, async ({ page }) => {
+    await seedStorage(page, { theme, visualStyle: style, interactiveDraw: 'false', birthday: '1990-05-20' });
     await page.goto('/?seed=123456789&spread=three&deck=full');
     await page.addStyleTag({ content: NO_MOTION });
+    // 線稿模式會先等牌組載入才畫牌
+    await expect(page.locator('#results .card').first()).toBeVisible();
     await expectNoViolations(page, 'reading');
 
     await page.locator('#readButton').click();
@@ -37,6 +41,16 @@ for (const theme of ['light', 'dark', 'neon']) {
     await page.locator('#results .card').first().click();
     await expect(page.locator('#cardModal')).toHaveClass(/show/);
     await expectNoViolations(page, 'cardModal');
+    if (style !== 'text') {
+      // 牌面放大檢視
+      await page.locator('.card-modal-art-btn').click();
+      await expect(page.locator('#cardViewer')).toHaveClass(/show/);
+      await expect(page.locator('.card-viewer-close')).toBeFocused();
+      await expectNoViolations(page, 'cardViewer');
+      await page.keyboard.press('Escape');
+      await expect(page.locator('#cardViewer')).not.toHaveClass(/show/);
+      await expect(page.locator('.card-modal-art-btn')).toBeFocused();
+    }
     await page.keyboard.press('Escape');
 
     await page.locator('#linkAbout').click();

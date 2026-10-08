@@ -34,14 +34,18 @@ jobs:
         run: npm ci
       - name: Lint
         run: npm run lint
+      # 先取得 Pages 網址，建置時把 canonical、og:image、robots.txt、sitemap.xml 的範例網址換成正式網址
+      - name: Setup Pages
+        id: pages
+        uses: actions/configure-pages@v5
       - name: Build
         run: npm run build
+        env:
+          SITE_URL: ${{ steps.pages.outputs.base_url }}
       - name: Test
         run: |
           npx playwright install --with-deps chromium
           npm test
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:

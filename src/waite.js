@@ -3,7 +3,7 @@ export const waiteTerms = {
   ace_of_pentacles: { upright: ['perfect contentment', 'felicity', 'ecstasy', 'speedy intelligence', 'gold'], reversed: ['bad intelligence', 'great riches', 'comfortable material conditions'] },
   ace_of_swords: { upright: ['triumph', 'conquest', 'triumph of force'], reversed: ['conception', 'childbirth', 'augmentation', 'multiplicity'] },
   ace_of_wands: { upright: ['creation', 'invention', 'enterprise', 'principle', 'beginning', 'source', 'birth', 'family', 'origin', 'money', 'fortune', 'inheritance'], reversed: ['fall', 'decadence', 'ruin', 'perdition'] },
-  chariot: { upright: ['succour', 'providence also war', 'triumph', 'presumption', 'vengeance', 'trouble'], reversed: ['riot', 'quarrel', 'dispute', 'litigation', 'defeat'] },
+  chariot: { upright: ['succour', 'providence', 'war', 'triumph', 'presumption', 'vengeance', 'trouble'], reversed: ['riot', 'quarrel', 'dispute', 'litigation', 'defeat'] },
   death: { upright: ['end', 'mortality', 'destruction', 'corruption', 'many contrarieties', 'failure of marriage projects'], reversed: ['inertia', 'sleep', 'lethargy', 'petrifaction', 'somnambulism', 'hope destroyed'] },
   devil: { upright: ['ravage', 'violence', 'vehemence', 'extraordinary efforts', 'force', 'fatality'], reversed: ['evil fatality', 'weakness', 'pettiness', 'blindness'] },
   eight_of_cups: { upright: ['giving joy', 'mildness', 'timidity', 'honour', 'modesty'], reversed: ['great joy', 'happiness', 'feasting'] },
@@ -74,7 +74,7 @@ export const waiteTerms = {
   two_of_cups: { upright: ['love', 'passion', 'friendship', 'affinity', 'union', 'concord', 'sympathy'], reversed: [] },
   two_of_pentacles: { upright: ['recreation and its connexions', 'agitation', 'trouble', 'embroilment'], reversed: ['enforced gaiety', 'simulated enjoyment', 'handwriting', 'composition', 'letters of exchange'] },
   two_of_swords: { upright: ['courage', 'friendship', 'affection', 'intimacy'], reversed: ['imposture', 'falsehood', 'duplicity', 'disloyalty'] },
-  two_of_wands: { upright: ['riches', 'fortune', 'magnificence', 'physical suffering', 'disease', 'chagrin', 'sadness', 'mortification', 'the mortification'], reversed: ['surprise', 'wonder', 'enchantment', 'emotion', 'trouble', 'fear'] },
+  two_of_wands: { upright: ['riches', 'fortune', 'magnificence', 'physical suffering', 'disease', 'chagrin', 'sadness', 'mortification'], reversed: ['surprise', 'wonder', 'enchantment', 'emotion', 'trouble', 'fear'] },
   wheel_of_fortune: { upright: ['destiny', 'fortune', 'success', 'elevation', 'luck', 'felicity'], reversed: ['increase', 'abundance', 'superfluity'] },
   world: { upright: ['assured success', 'recompense', 'voyage', 'route', 'emigration', 'flight', 'change of place'], reversed: ['inertia', 'fixity', 'stagnation', 'permanence', 'ill'] },
 };

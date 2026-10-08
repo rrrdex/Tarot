@@ -119,11 +119,26 @@ export function debounce(func, wait) {
     timeout = setTimeout(later, wait);
   };
 }
-export function showToast(message, type = 'success') {
+// 使用者要求減少動態時，程式觸發的捲動也改成瞬間到位
+export function scrollBehavior() {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+}
+// 下載產生的檔案；網址稍後再釋放，有些瀏覽器在 click() 之後才真正開始讀取
+export function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+// 提示放在 aria-live="polite" 的區域裡，錯誤也不另加 role="alert"，否則螢幕閱讀器會念兩次。
+// action：{ label, onClick } 會在提示裡加一個按鈕；有按鈕的提示停留較久，讓人來得及按
+export function showToast(message, type = 'success', { action = null } = {}) {
   const container = document.getElementById('toastContainer');
+  if (!container) return null;
   const toast = document.createElement('div');
   toast.className = `toast ${type}`;
-  if (type === 'error') toast.setAttribute('role', 'alert');
   const icon = type === 'success' ?
   '<svg class="toast-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clip-rule="evenodd"/></svg>' :
   type === 'error' ?
@@ -132,15 +147,33 @@ export function showToast(message, type = 'success') {
   toast.innerHTML = `
 ${icon}
 <span class="toast-message">${escapeHTML(message)}</span>
+${action ? `<button type="button" class="toast-action">${escapeHTML(action.label)}</button>` : ''}
 `;
+  const dismiss = () => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 500);
+  };
+  if (action) {
+    toast.querySelector('.toast-action').addEventListener('click', () => {
+      dismiss();
+      action.onClick();
+    });
+  }
   container.appendChild(toast);
   requestAnimationFrame(() => {
     toast.classList.add('show');
   });
-  setTimeout(() => {
-    toast.classList.remove('show');
-    setTimeout(() => toast.remove(), 500);
-  }, 3000);
+  setTimeout(dismiss, action ? 12000 : 3000);
+  return toast;
+}
+// 提示有新版本或程式片段載入失敗時，提供重新整理的按鈕；同一則提示不重複出現
+const reloadToasts = new Set();
+export function offerReload(messageKey, type = 'warning') {
+  if (reloadToasts.has(messageKey)) return;
+  reloadToasts.add(messageKey);
+  showToast(t(messageKey), type, {
+    action: { label: t('btn.reload'), onClick: () => location.reload() }
+  });
 }
 export function readNeonSuitColors(suits) {
   const probe = document.createElement('div');
@@ -166,6 +199,11 @@ export function openConfirm({ title, message, confirmText = t('btn.confirm'), da
     const okBtn = document.getElementById('confirmOk');
     const cancelBtn = document.getElementById('confirmCancel');
     const closeBtn = document.getElementById('confirmClose');
+    // 確認視窗是 alertdialog：開啟時念出訊息，焦點先落在「取消」，避免一按 Enter 就執行危險動作
+    const dialog = overlay.querySelector('.modal');
+    dialog.setAttribute('role', 'alertdialog');
+    dialog.setAttribute('aria-describedby', 'confirmMessage');
+    overlay.dataset.autofocus = '#confirmCancel';
     document.getElementById('confirmTitle').textContent = title || '';
     document.getElementById('confirmMessage').textContent = message || '';
     okBtn.textContent = confirmText;

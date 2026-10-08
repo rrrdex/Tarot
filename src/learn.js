@@ -4,6 +4,7 @@ import { fullTarotCards, suitNames } from './data.js';
 import { cardMeaningText, cardMeanings } from './meanings.js';
 import { loadLore, loadedLore } from './lazy.js';
 import { cardThumb, visualStyle } from './render.js';
+import * as storage from './storage.js';
 
 export const LEARN_PROGRESS_KEY = 'learnProgress';
 export const LEARN_STREAK_KEY = 'learnStreak';
@@ -25,7 +26,7 @@ function learnClampCount(v) {
 }
 export function loadLearnProgress() {
   try {
-    const parsed = JSON.parse(localStorage.getItem(LEARN_PROGRESS_KEY) || '{}');
+    const parsed = JSON.parse(storage.get(LEARN_PROGRESS_KEY) || '{}');
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
     const out = {};
     Object.keys(parsed).forEach(k => {
@@ -45,7 +46,7 @@ export function loadLearnProgress() {
 }
 export function loadLearnStreak() {
   try {
-    const parsed = JSON.parse(localStorage.getItem(LEARN_STREAK_KEY) || 'null');
+    const parsed = JSON.parse(storage.get(LEARN_STREAK_KEY) || 'null');
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return { last: '', days: 0, best: 0 };
     const days = learnClampCount(parsed.days);
     return {
@@ -58,20 +59,16 @@ export function loadLearnStreak() {
   }
 }
 function saveLearnProgress() {
-  try {
-    localStorage.setItem(LEARN_PROGRESS_KEY, JSON.stringify(learnProgress));
-  } catch {}
+  storage.set(LEARN_PROGRESS_KEY, JSON.stringify(learnProgress));
 }
 function saveLearnStreak() {
-  try {
-    localStorage.setItem(LEARN_STREAK_KEY, JSON.stringify(learnStreak));
-  } catch {}
+  storage.set(LEARN_STREAK_KEY, JSON.stringify(learnStreak));
 }
 export let learnProgress = loadLearnProgress();
 export let learnStreak = loadLearnStreak();
-let learnMode = localStorage.getItem(LEARN_MODE_KEY) || 'flash';
+let learnMode = storage.get(LEARN_MODE_KEY) || 'flash';
 if (learnMode !== 'flash' && learnMode !== 'quiz') learnMode = 'flash';
-let learnScope = localStorage.getItem(LEARN_SCOPE_KEY) || 'all';
+let learnScope = storage.get(LEARN_SCOPE_KEY) || 'all';
 if (!LEARN_SCOPES.includes(learnScope)) learnScope = 'all';
 export function setLearnProgress(v) {
   learnProgress = v;
@@ -79,14 +76,49 @@ export function setLearnProgress(v) {
 export function setLearnStreak(v) {
   learnStreak = v;
 }
-export function reloadLearnPrefs() {
-  learnMode = localStorage.getItem(LEARN_MODE_KEY) || 'flash';
-  learnScope = localStorage.getItem(LEARN_SCOPE_KEY) || 'all';
-}
 let learnCurrentCard = null;
 let learnFlipped = false;
 let learnSeenCount = 0;
 let learnQuiz = null;
+// 換範圍、重設進度或匯入資料後，進行中的閃卡與測驗都作廢
+function resetLearnSession() {
+  learnCurrentCard = null;
+  learnFlipped = false;
+  learnSeenCount = 0;
+  learnQuiz = null;
+}
+export function reloadLearnPrefs() {
+  learnMode = storage.get(LEARN_MODE_KEY) || 'flash';
+  if (learnMode !== 'flash' && learnMode !== 'quiz') learnMode = 'flash';
+  learnScope = storage.get(LEARN_SCOPE_KEY) || 'all';
+  if (!LEARN_SCOPES.includes(learnScope)) learnScope = 'all';
+  // 匯入的範圍要同步到下拉選單，否則畫面顯示的範圍和實際出題的不一樣
+  const scopeEl = document.getElementById('learnScope');
+  if (scopeEl) scopeEl.value = learnScope;
+  resetLearnSession();
+  syncLearnSeg();
+  const panel = document.getElementById('tabLearn');
+  if (panel && !panel.classList.contains('hidden')) renderLearn();
+}
+// 每一步都會整個重畫舞台，焦點要放回下一個該操作的位置，否則會掉回 body
+function focusLearnStage(selector) {
+  const el = document.querySelector(`#learnStage ${selector}`);
+  if (el) el.focus();
+}
+// 讀屏用的狀態列放在舞台外、常駐不重建，內容改變才會被唸出
+function announceLearn(text) {
+  const el = document.getElementById('learnStatus');
+  if (el) el.textContent = text;
+}
+// 小牌的英文名已含階級（Three of Cups），副標不再重複列出 Three；英文名標上 lang
+function learnCardSubHTML(card) {
+  const EN = '\u0000';
+  const suit = t(suitNames[card.suit] || card.suit);
+  const text = card.suit === 'Major Arcana'
+    ? t('card.sub', { en: EN, suit, number: card.number })
+    : t('card.sub.minor', { en: EN, suit });
+  return escapeHTML(text).replace(EN, `<span lang="en">${escapeHTML(card.englishName)}</span>`);
+}
 function learnDateKey(d = new Date()) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
@@ -155,14 +187,19 @@ function renderLearnStreak() {
   const el = document.getElementById('learnStreak');
   if (!el) return;
   const best = learnStreak.best >= 1 ? t('learn.streak.best', { n: learnStreak.best }) : t('learn.streak.none');
+  let main;
+  let sub;
   if (learnStreakAlive()) {
     const doneToday = learnStreak.last === learnDateKey();
-    el.textContent = t('learn.streak.days', { n: learnStreak.days });
-    el.title = doneToday ? best : t('learn.streak.continue', { best });
+    main = t('learn.streak.days', { n: learnStreak.days });
+    sub = doneToday ? best : t('learn.streak.continue', { best });
   } else {
-    el.textContent = t('learn.streak.idle');
-    el.title = best;
+    main = t('learn.streak.idle');
+    sub = best;
   }
+  // 最佳紀錄直接顯示：只放在 title 裡，觸控與讀屏都看不到
+  el.innerHTML = `${escapeHTML(main)}<span class="learn-streak-sub"> · ${escapeHTML(sub)}</span>`;
+  el.removeAttribute('title');
 }
 function renderLearnMastery() {
   const countEl = document.getElementById('learnMasteryCount');
@@ -193,15 +230,11 @@ function renderLearnFlash() {
   const card = learnCurrentCard;
   const m = cardMeanings[card.nameKey];
   const flashArt = cardThumb(card);
-  const sub = t('card.sub', {
-    en: card.englishName,
-    suit: t(suitNames[card.suit] || card.suit),
-    number: card.number
-  });
+  const sub = learnCardSubHTML(card);
   const face = learnFlipped ? `
 <div class="flash-back">
 <div class="flash-name">${escapeHTML(card.name)}</div>
-<div class="flash-sub">${escapeHTML(sub)}</div>
+<div class="flash-sub">${sub}</div>
 <div class="tags">${m.keywords.map(k => `<span class="tag">${escapeHTML(k)}</span>`).join('')}</div>
 <div class="meaning-block">
 <div class="meaning-title">${escapeHTML(t('orientation.upright'))}</div>
@@ -216,7 +249,7 @@ function renderLearnFlash() {
 <div class="flash-front">
 ${flashArt ? `<div class="flash-art" data-suit="${card.suit}">${flashArt}</div>` : ''}
 <div class="flash-name">${escapeHTML(card.name)}</div>
-<div class="flash-sub">${escapeHTML(sub)}</div>
+<div class="flash-sub">${sub}</div>
 <div class="flash-hint">${escapeHTML(t('learn.flash.hint'))}</div>
 </div>
 `;
@@ -253,6 +286,7 @@ function learnFlip() {
   if (learnFlipped) return;
   learnFlipped = true;
   renderLearnFlash();
+  focusLearnStage('#flashEasy');
 }
 function learnRate(ok) {
   if (!learnCurrentCard) return;
@@ -263,6 +297,7 @@ function learnRate(ok) {
   renderLearnFlash();
   renderLearnMastery();
   renderLearnStreak();
+  focusLearnStage('#flashcard');
 }
 function learnCandidates(target, pool) {
   const inPool = pool.filter(c => c.nameKey !== target.nameKey);
@@ -278,11 +313,9 @@ function buildLearnQuestion(target, pool, type) {
   if (!m) return null;
   const candidates = learnCandidates(target, pool);
   const options = [];
-  let art = null;
-  if (type === 'C') {
-    art = cardThumb(target, '', 132);
-    if (!art) type = 'A';
-  }
+  // 出題時只決定題型；牌面在顯示時才畫，中途換了牌面風格也會跟著換
+  // 依牌面風格決定能不能出看圖題；線稿牌組還在下載時題目先顯示文字，到齊後重畫成圖
+  if (type === 'C' && visualStyle === 'text') type = 'A';
   if (type === 'A') {
     options.push({ text: target.name, correct: true });
     for (const c of candidates) {
@@ -311,17 +344,11 @@ function buildLearnQuestion(target, pool, type) {
     options.push({ text, correct: false });
   }
   if (type === 'C') {
-    const lore = loadedLore()?.cardLore[target.nameKey];
-    const desc = [
-      lore && lore.symbolism ? lore.symbolism : '',
-      visualStyle === 'api' ? target.englishName : ''
-    ].filter(Boolean).join('　');
     return {
       type: 'C',
       nameKey: target.nameKey,
       prompt: t('learn.quiz.promptArt'),
       subject: '',
-      art: `<div class="quiz-art" data-suit="${target.suit}"${desc ? ` role="img" aria-label="${escapeHTML(desc)}"` : ''}>${art}</div>`,
       options: shuffle(options),
       answered: false,
       chosen: -1,
@@ -364,6 +391,35 @@ function buildLearnQuiz() {
   if (!questions.length) return null;
   return { questions, index: 0, correctCount: 0, wrongKeys: [], finished: false };
 }
+// 看圖題的牌面：顯示時才依目前的牌面風格畫；換成文字模式畫不出來，就改問「這張牌的關鍵字」
+function quizArtView(q) {
+  const card = fullTarotCards.find(c => c.nameKey === q.nameKey);
+  const art = card ? cardThumb(card, '', 132) : null;
+  if (!art) return { prompt: t('learn.quiz.promptCard', { name: card ? card.name : '' }), art: '' };
+  return { prompt: q.prompt, art: `<div class="quiz-art" data-suit="${card.suit}" data-card="${card.nameKey}">${art}</div>` };
+}
+// 牌面的讀屏說明用到源流資料裡的象徵描述；資料晚到就補上，載不到也不影響作答
+function labelQuizArt() {
+  const el = document.querySelector('#learnStage .quiz-art[data-card]');
+  if (!el) return;
+  const card = fullTarotCards.find(c => c.nameKey === el.dataset.card);
+  const lore = loadedLore()?.cardLore[el.dataset.card];
+  const desc = [
+    lore && lore.symbolism ? lore.symbolism : '',
+    visualStyle === 'api' && card ? card.englishName : ''
+  ].filter(Boolean).join('　');
+  if (!desc) return;
+  el.setAttribute('role', 'img');
+  el.setAttribute('aria-label', desc);
+}
+function quizMarkHTML(icon, label) {
+  return `<span class="quiz-mark"><span aria-hidden="true">${icon}</span> ${escapeHTML(label)}</span>`;
+}
+function quizFeedbackText(q) {
+  if (q.correct) return t('learn.quiz.feedback.correct');
+  const right = q.options.find(o => o.correct);
+  return t('learn.quiz.feedback.wrong', { answer: right ? right.text : '' });
+}
 function renderLearnQuiz() {
   const stage = document.getElementById('learnStage');
   if (!stage) return;
@@ -383,24 +439,33 @@ function renderLearnQuiz() {
   const total = learnQuiz.questions.length;
   const q = learnQuiz.questions[learnQuiz.index];
   const isLast = learnQuiz.index >= total - 1;
+  const view = q.type === 'C' ? quizArtView(q) : { prompt: q.prompt, art: '' };
   stage.innerHTML = `
 <div class="quiz-progress">${escapeHTML(t('learn.quiz.progress', { n: learnQuiz.index + 1, total }))}</div>
 <div class="quiz-card">
-<div class="quiz-prompt">${escapeHTML(q.prompt)}</div>
+<div class="quiz-prompt">${escapeHTML(view.prompt)}</div>
 ${q.subject ? `<div class="quiz-subject">${keywordList(q.subject.split('・'))}</div>` : ''}
-${q.art || ''}
+${view.art}
 <div class="quiz-options" data-keynav="grid">
 ${q.options.map((o, i) => {
       let cls = 'quiz-option';
+      let mark = '';
+      // 對錯不能只靠紅綠：加上 ✓／✗ 與文字，色盲、高對比模式與讀屏都分得出來
       if (q.answered) {
-        if (o.correct) cls += ' correct';
-        else if (i === q.chosen) cls += ' wrong';
+        if (o.correct) {
+          cls += ' correct';
+          mark = quizMarkHTML('✓', t('learn.quiz.mark.correct'));
+        } else if (i === q.chosen) {
+          cls += ' wrong';
+          mark = quizMarkHTML('✗', t('learn.quiz.mark.chosen'));
+        }
       }
-      return `<button class="${cls}" data-i="${i}" tabindex="${i === 0 ? 0 : -1}" data-keynav-item${q.answered ? ' disabled' : ''}>${keywordList(o.text.split('・'))}</button>`;
+      return `<button class="${cls}" data-i="${i}" tabindex="${i === 0 ? 0 : -1}" data-keynav-item${q.answered ? ' disabled' : ''}>${keywordList(o.text.split('・'))}${mark}</button>`;
     }).join('')}
 </div>
 </div>
 ${q.answered ? `
+<p class="quiz-feedback">${escapeHTML(quizFeedbackText(q))}</p>
 <div class="quiz-actions">
 <button class="btn btn-primary btn-sm" id="quizNext">${escapeHTML(t(isLast ? 'learn.quiz.toResult' : 'learn.quiz.next'))}</button>
 </div>
@@ -416,6 +481,7 @@ ${q.answered ? `
   }
   const nextBtn = document.getElementById('quizNext');
   if (nextBtn) nextBtn.addEventListener('click', learnQuizNext);
+  labelQuizArt();
 }
 function learnAnswer(i) {
   if (!learnQuiz) return;
@@ -429,6 +495,9 @@ function learnAnswer(i) {
   learnRecord(q.nameKey, q.correct);
   renderLearnQuiz();
   renderLearnStreak();
+  // 選項都被停用了，焦點移到「下一題」，結果交給狀態列唸出
+  focusLearnStage('#quizNext');
+  announceLearn(quizFeedbackText(q));
 }
 function learnQuizNext() {
   if (!learnQuiz) return;
@@ -436,10 +505,13 @@ function learnQuizNext() {
     learnQuiz.finished = true;
     renderLearnQuiz();
     renderLearnMastery();
+    focusLearnStage('.quiz-result-score');
   } else {
     learnQuiz.index += 1;
     renderLearnQuiz();
+    focusLearnStage('.quiz-option');
   }
+  announceLearn('');
 }
 function renderLearnQuizResult() {
   const stage = document.getElementById('learnStage');
@@ -452,7 +524,7 @@ function renderLearnQuizResult() {
   .filter(Boolean);
   stage.innerHTML = `
 <div class="quiz-result">
-<div class="quiz-result-score">${escapeHTML(t('learn.quiz.score', { n: correct, total }))}</div>
+<div class="quiz-result-score" tabindex="-1">${escapeHTML(t('learn.quiz.score', { n: correct, total }))}</div>
 <div class="quiz-result-rate">${escapeHTML(t('learn.quiz.rate', { pct }))}</div>
 ${wrongItems.length ? `
 <div class="quiz-result-wrong">
@@ -473,10 +545,16 @@ ${wrongItems.map((c, i) => `<span class="tag" role="button" tabindex="${i === 0 
     againBtn.addEventListener('click', () => {
       learnQuiz = null;
       renderLearnQuiz();
+      focusLearnStage('.quiz-option');
     });
   }
   const toFlashBtn = document.getElementById('quizToFlash');
-  if (toFlashBtn) toFlashBtn.addEventListener('click', () => setLearnMode('flash'));
+  if (toFlashBtn) {
+    toFlashBtn.addEventListener('click', () => {
+      setLearnMode('flash');
+      focusLearnStage('#flashcard');
+    });
+  }
 }
 export function syncLearnSeg() {
   document.querySelectorAll('#learnModeSeg .seg-item').forEach(b => {
@@ -484,22 +562,25 @@ export function syncLearnSeg() {
     b.classList.toggle('active', on);
     b.setAttribute('aria-selected', on);
     b.tabIndex = on ? 0 : -1;
+    // 兩個分段共用同一個舞台，舞台的名稱跟著目前的分段走
+    if (on) document.getElementById('learnStage')?.setAttribute('aria-labelledby', b.id);
   });
 }
 export function renderLearnStage() {
-  // 看圖題的讀屏說明要用到牌面象徵，先確保資料到位
-  if (!loadedLore()) {
-    loadLore().then(renderLearnStage);
-    return;
-  }
+  // 分頁沒開時不畫（換牌面風格時也會呼叫到這裡），切到學習分頁時 renderLearn 會重畫
+  const panel = document.getElementById('tabLearn');
+  if (panel && panel.classList.contains('hidden')) return;
   if (learnMode === 'quiz') renderLearnQuiz();
   else renderLearnFlash();
+  // 源流資料只用在看圖題的讀屏說明：不必等它，到了再補；載入失敗也照常作答
+  if (!loadedLore()) loadLore().then(labelQuizArt).catch(() => {});
 }
 function setLearnMode(mode) {
   if (mode !== 'flash' && mode !== 'quiz') return;
   learnMode = mode;
-  try { localStorage.setItem(LEARN_MODE_KEY, mode); } catch {}
+  storage.set(LEARN_MODE_KEY, mode);
   syncLearnSeg();
+  announceLearn('');
   renderLearnStage();
 }
 export function renderLearn() {
@@ -522,11 +603,9 @@ if (learnScopeEl) {
   learnScopeEl.value = learnScope;
   learnScopeEl.addEventListener('change', () => {
     learnScope = LEARN_SCOPES.includes(learnScopeEl.value) ? learnScopeEl.value : 'all';
-    try { localStorage.setItem(LEARN_SCOPE_KEY, learnScope); } catch {}
-    learnCurrentCard = null;
-    learnFlipped = false;
-    learnSeenCount = 0;
-    learnQuiz = null;
+    storage.set(LEARN_SCOPE_KEY, learnScope);
+    resetLearnSession();
+    announceLearn('');
     renderLearnStage();
     renderLearnMastery();
   });
@@ -541,16 +620,11 @@ if (learnResetBtn) {
       danger: true
     });
     if (!ok) return;
-    try {
-      localStorage.removeItem(LEARN_PROGRESS_KEY);
-      localStorage.removeItem(LEARN_STREAK_KEY);
-    } catch {}
+    storage.remove(LEARN_PROGRESS_KEY);
+    storage.remove(LEARN_STREAK_KEY);
     learnProgress = {};
     learnStreak = { last: '', days: 0, best: 0 };
-    learnCurrentCard = null;
-    learnFlipped = false;
-    learnSeenCount = 0;
-    learnQuiz = null;
+    resetLearnSession();
     renderLearn();
     showToast(t('toast.learnReset'));
   });

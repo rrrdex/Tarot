@@ -2,6 +2,7 @@ import { uiStrings } from './strings.js';
 import { keepNumberWithUnit } from './text.js';
 import { syncCanonical } from './utils.js';
 import { rerenderForLang } from './main.js';
+import * as storage from './storage.js';
 
 const I18N_KEY = 'lang';
 const I18N_FALLBACK = 'zh';
@@ -17,12 +18,8 @@ let lang = (() => {
     const q = new URLSearchParams(location.search).get('lang');
     if (q && Object.prototype.hasOwnProperty.call(uiStrings, q)) return q;
   } catch {   }
-  try {
-    const v = localStorage.getItem(I18N_KEY);
-    return Object.prototype.hasOwnProperty.call(uiStrings, v) ? v : I18N_FALLBACK;
-  } catch {
-    return I18N_FALLBACK;
-  }
+  const v = storage.get(I18N_KEY);
+  return Object.prototype.hasOwnProperty.call(uiStrings, v) ? v : I18N_FALLBACK;
 })();
 export function applyLangToDocument() {
   const meta = I18N_LANGS[lang] || {};
@@ -38,9 +35,9 @@ export function applyLangToDocument() {
 function setLang(code) {
   if (!uiStrings[code] || code === lang) return;
   lang = code;
-  try { localStorage.setItem(I18N_KEY, code); } catch {   }
   applyLangToDocument();
   rerenderForLang();
+  storage.set(I18N_KEY, code);
 }
 export function buildLangSwitch() {
   const el = document.getElementById('langSwitch');
@@ -54,13 +51,14 @@ lang="${I18N_LANGS[next].htmlLang}" aria-label="${t('app.langSwitch.label', { la
 >${I18N_LANGS[next].label}</button>`;
   el.querySelector('button').addEventListener('click', () => setLang(next));
 }
+// 非字串的鍵（例如資料裡不存在的花色）回傳空字串。
+// 佔位符一次掃完：填進去的使用者文字裡就算有 {suit} 也不會再被代換
 export function t(key, vars) {
+  if (typeof key !== 'string') return '';
   const table = uiStrings[lang] || uiStrings[I18N_FALLBACK];
   let s = Object.prototype.hasOwnProperty.call(table, key) ? table[key] : key;
   if (vars) {
-    Object.keys(vars).forEach(k => {
-      s = s.split('{' + k + '}').join(String(vars[k]));
-    });
+    s = s.replace(/\{(\w+)\}/g, (m, k) => (Object.prototype.hasOwnProperty.call(vars, k) ? String(vars[k]) : m));
   }
   return keepNumberWithUnit(s);
 }

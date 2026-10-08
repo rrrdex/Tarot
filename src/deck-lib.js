@@ -12,8 +12,10 @@ export const P = (d, c = '') => `<path${cls(c)} d="${d}"/>`;
 export const C = (cx, cy, r, c = '') => `<circle${cls(c)} cx="${cx}" cy="${cy}" r="${r}"/>`;
 export const E = (cx, cy, rx, ry, c = '') => `<ellipse${cls(c)} cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}"/>`;
 export const G = (transform, inner, c = '') => `<g${cls(c)} transform="${transform}">${inner}</g>`;
+// 文字一律轉義：牌名來自資料（匯入的紀錄也可能帶進來），不可直接當標記
+const escText = (s) => String(s).replace(/[&<>]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[ch]));
 export const T = (x, y, text, size, c = 'dk-txt', spacing = 0) =>
-  `<text${cls(c)} x="${f(x + spacing / 2)}" y="${y}" font-size="${size}"${spacing ? ` letter-spacing="${spacing}"` : ''} text-anchor="middle">${text}</text>`;
+  `<text${cls(c)} x="${f(x + spacing / 2)}" y="${y}" font-size="${size}"${spacing ? ` letter-spacing="${spacing}"` : ''} text-anchor="middle">${escText(text)}</text>`;
 // 只含座標對（M/L/C/Q）的路徑左右鏡射
 export const mirror = (d) => d.replace(/(-?\d+(?:\.\d+)?) (-?\d+(?:\.\d+)?)/g, (_, x, y) => `${f(300 - x)} ${y}`);
 
@@ -91,7 +93,7 @@ export function archWindowD(x, y, w, h) {
   const r = w / 2;
   return `M${x - r} ${y + h}V${y}A${r} ${r} 0 0 1 ${x + r} ${y}V${y + h}Z`;
 }
-export const SUIT_ART = {
+const SUIT_ART = {
   'Wands': P(leafD(0, -12, 13, -48) + leafD(0, -2, 12, 48) + leafD(0, 8, 10, -48), 'dk-gf') +
     P('M0 30V-25', 'dk-b') + P('M-2.6 19H2.6M-2.6 -19H2.6', 'dk-t') + C(0, -28.5, 3, 'dk-gf'),
   'Cups': P('M-16 -26H16C16 -8 8 0 0 0C-8 0 -16 -8 -16 -26Z', 'dk-tf') + P('M-16 -26H16M-12 -16H12', 'dk-g') +
@@ -104,8 +106,8 @@ export const SUIT_ART = {
 export const sym = (suit, x, y, s, rot = 0) => G(`translate(${x} ${y}) scale(${s})${rot ? ` rotate(${rot})` : ''}`, SUIT_ART[suit]);
 
 export const ARCH = 'M50 448V178A100 100 0 0 1 250 178V448Z';
-export const ARCH_INNER = 'M57 441V178A93 93 0 0 1 243 178V441Z';
-export const ELEMENT_GLYPH = {
+const ARCH_INNER = 'M57 441V178A93 93 0 0 1 243 178V441Z';
+const ELEMENT_GLYPH = {
   'Wands': 'M150 41L159.5 57H140.5Z',
   'Cups': 'M140.5 41H159.5L150 57Z',
   'Swords': 'M150 41L159.5 57H140.5ZM144 51H156',
@@ -244,7 +246,7 @@ export function head(x, y, o = {}) {
     s += Ln(`M${f(x + dir * r * 0.3)} ${f(ey - r * 0.24)}l${f(dir * r * 0.32)} ${f(-r * 0.04)}`, browC, browW);
     // mouth: 'none' 讓呼叫端自己畫嘴
     if (o.mouth !== 'none') s += o.open
-      ? F(`M${f(x + dir * r * 0.6)} ${f(mouthY - r * 0.06)}l${f(dir * r * 0.34)} ${f(-r * 0.04)}l${f(-dir * r * 0.06)} ${f(r * 0.2)}Z`, '#8a4a40')
+      ? F(`M${f(x + dir * r * 0.5)} ${f(mouthY - r * 0.06)}l${f(dir * r * 0.3)} ${f(-r * 0.04)}l${f(-dir * r * 0.18)} ${f(r * 0.22)}Z`, '#8a4a40')
       : Ln(`M${f(x + dir * r * 0.55)} ${mouthY}l${f(dir * r * 0.28)} ${f(-r * 0.04)}`, K.lip, 0.9);
     if (!plain) s += `<circle cx="${f(x + dir * r * 0.4)}" cy="${f(ey + r * 0.34)}" r="${f(r * 0.16)}" fill="${K.blush}" fill-opacity=".45" stroke="none"/>`;
   }
@@ -269,8 +271,8 @@ export function seatedRobe(o) {
     `C${cx + shW - 4} ${f(waist - 10)} ${cx + shW + 4} ${f(sh + 20)} ${cx + shW} ${sh}Q${cx} ${sh - 6} ${cx - shW} ${sh}Z`;
   const kx = kneeW * 0.52;
   return GF(d, color, deep) +
-    HL(`M${f(cx - kx - 12)} ${lap}C${f(cx - kx - 10)} ${lap - 9} ${f(cx - kx + 10)} ${lap - 9} ${f(cx - kx + 12)} ${lap}C${f(cx - kx + 6)} ${lap - 4} ${f(cx - kx - 6)} ${lap - 4} ${f(cx - kx - 12)} ${lap}Z` +
-      `M${f(cx + kx - 12)} ${lap}C${f(cx + kx - 10)} ${lap - 9} ${f(cx + kx + 10)} ${lap - 9} ${f(cx + kx + 12)} ${lap}C${f(cx + kx + 6)} ${lap - 4} ${f(cx + kx - 6)} ${lap - 4} ${f(cx + kx - 12)} ${lap}Z`, 0.22) +
+    (o.kneeHL === 0 ? '' : HL(`M${f(cx - kx - 12)} ${lap}C${f(cx - kx - 10)} ${lap - 9} ${f(cx - kx + 10)} ${lap - 9} ${f(cx - kx + 12)} ${lap}C${f(cx - kx + 6)} ${lap - 4} ${f(cx - kx - 6)} ${lap - 4} ${f(cx - kx - 12)} ${lap}Z` +
+      `M${f(cx + kx - 12)} ${lap}C${f(cx + kx - 10)} ${lap - 9} ${f(cx + kx + 10)} ${lap - 9} ${f(cx + kx + 12)} ${lap}C${f(cx + kx + 6)} ${lap - 4} ${f(cx + kx - 6)} ${lap - 4} ${f(cx + kx - 12)} ${lap}Z`, o.kneeHL ?? 0.22)) +
     SH(`M${cx - kneeW} ${lap + 4}Q${cx} ${lap + 16} ${cx + kneeW} ${lap + 4}L${cx + kneeW} ${lap + 12}Q${cx} ${lap + 22} ${cx - kneeW} ${lap + 12}Z`, o.band ?? 0.16) +
     Ln(`M${cx} ${lap + 6}L${cx} ${hem}M${f(cx - kx)} ${lap + 8}L${f(cx - kx - 4)} ${hem}M${f(cx + kx)} ${lap + 8}L${f(cx + kx + 4)} ${hem}`, deep, 0.9);
 }
@@ -308,7 +310,7 @@ export function horse(fill, shade = '#d9d2c5') {
     F('M100 6C92 16 84 28 74 34C80 34 86 32 90 28C94 22 98 14 104 10Z', '#cfc6b6') + F('M102 3L100 -4L107 4Z', fill) +
     FC(113, 18, 1.6, K.ink) + FC(127, 34, 1, K.ink) + Ln('M122 41l6 -2', '#a89e8e', 0.8);
 }
-export function bookD(x, y) {
+function bookD(x, y) {
   return `M${x - 11} ${y}Q${x - 5} ${y - 3} ${x} ${y}Q${x + 5} ${y - 3} ${x + 11} ${y}V${y + 7}Q${x + 5} ${y + 4} ${x} ${y + 7}Q${x - 5} ${y + 4} ${x - 11} ${y + 7}Z`;
 }
 export function cloudD(x, y, w) {

@@ -19,7 +19,8 @@ export function renderStatistics() {
   const cardCount = {}, suitCount = {}, spreadCount = {};
   let favoriteCount = 0;
   readingHistory.forEach(r => {
-    const cards = [...r.drawnCards, r.bottomCard];
+    // 只算牌陣裡抽出的牌；底牌墊在牌堆最底、不算抽牌
+    const cards = (Array.isArray(r.drawnCards) ? r.drawnCards : []).filter(c => c && typeof c === 'object');
     totalCards += cards.length;
     spreadCount[r.spreadName] = (spreadCount[r.spreadName] || 0) + 1;
     if (r.favorite) favoriteCount++;
@@ -120,36 +121,78 @@ ${topCards.map(([key, count]) => `
 `;
   drawPieChart('suitPieChart', suitCount, 'suitLegend');
 }
+// 圓餅圖的畫布像素在繪製當下就定死；容器尺寸或 devicePixelRatio 變了（旋轉、縮放視窗、
+// 換螢幕）就得重畫，否則會被拉伸或糊掉。觀察者只盯目前這張畫布，重新渲染時換掉
+let pieObserver = null;
+let pieDprQuery = null;
+let pieRedrawTimer = 0;
+function watchPieChart(canvas, redraw) {
+  if (pieObserver) pieObserver.disconnect();
+  if (pieDprQuery) pieDprQuery.query.removeEventListener('change', pieDprQuery.handler);
+  pieObserver = null;
+  pieDprQuery = null;
+  const schedule = () => {
+    clearTimeout(pieRedrawTimer);
+    pieRedrawTimer = setTimeout(() => {
+      if (canvas.isConnected) redraw();
+    }, 100);
+  };
+  if (typeof ResizeObserver === 'function') {
+    pieObserver = new ResizeObserver(schedule);
+    pieObserver.observe(canvas);
+  }
+  const watchDpr = () => {
+    if (!window.matchMedia) return;
+    const query = window.matchMedia(`(resolution: ${window.devicePixelRatio || 1}dppx)`);
+    const handler = () => {
+      query.removeEventListener('change', handler);
+      if (canvas.isConnected) {
+        watchDpr();
+        schedule();
+      }
+    };
+    query.addEventListener('change', handler);
+    pieDprQuery = { query, handler };
+  };
+  watchDpr();
+}
 function drawPieChart(canvasId, data, legendId) {
   const canvas = document.getElementById(canvasId);
   if (!canvas) return;
-  const rect = canvas.getBoundingClientRect();
-  if (!rect.width || !rect.height) return;
-  const width = rect.width, height = rect.height;
-  const dpr = window.devicePixelRatio || 1;
-  canvas.width = Math.round(width * dpr);
-  canvas.height = Math.round(height * dpr);
-  const ctx = canvas.getContext('2d');
-  ctx.scale(dpr, dpr);
-  const centerX = width / 2;
-  const centerY = height / 2;
-  const radius = Math.min(centerX, centerY) - 20;
   const colors = ['#007aff', '#34c759', '#ff9500', '#ff3b30', '#af52de', '#5ac8fa'];
   const total = Object.values(data).reduce((a, b) => a + b, 0);
-  let currentAngle = -Math.PI / 2;
   const entries = Object.entries(data);
   const neonColors = readNeonSuitColors(entries.map(([key]) => key));
   const colorFor = (key, index) => neonColors[key] || colors[index % colors.length];
-  entries.forEach(([key, value], index) => {
-    const sliceAngle = (value / total) * 2 * Math.PI;
-    ctx.beginPath();
-    ctx.fillStyle = colorFor(key, index);
-    ctx.moveTo(centerX, centerY);
-    ctx.arc(centerX, centerY, radius, currentAngle, currentAngle + sliceAngle);
-    ctx.closePath();
-    ctx.fill();
-    currentAngle += sliceAngle;
-  });
+  const paint = () => {
+    const rect = canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const width = rect.width, height = rect.height;
+    const dpr = window.devicePixelRatio || 1;
+    const pxW = Math.round(width * dpr);
+    const pxH = Math.round(height * dpr);
+    if (canvas.width !== pxW) canvas.width = pxW;
+    if (canvas.height !== pxH) canvas.height = pxH;
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, width, height);
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const radius = Math.max(0, Math.min(centerX, centerY) - 20);
+    let currentAngle = -Math.PI / 2;
+    entries.forEach(([key, value], index) => {
+      const sliceAngle = (value / total) * 2 * Math.PI;
+      ctx.beginPath();
+      ctx.fillStyle = colorFor(key, index);
+      ctx.moveTo(centerX, centerY);
+      ctx.arc(centerX, centerY, radius, currentAngle, currentAngle + sliceAngle);
+      ctx.closePath();
+      ctx.fill();
+      currentAngle += sliceAngle;
+    });
+  };
+  paint();
+  watchPieChart(canvas, paint);
   const legend = document.getElementById(legendId);
   if (legend) {
     legend.innerHTML = entries.map(([key, value], index) => `

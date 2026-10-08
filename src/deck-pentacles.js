@@ -6,7 +6,7 @@ import {
 
 // 花色物件：金色圓盤，外圈一道環，環內一顆五芒星（同一個畫法用在十四張牌上）
 // o.sx / o.sy 壓扁成透視（平放在地上的幣），o.rot 旋轉
-export function coin(x, y, r, o = {}) {
+function coin(x, y, r, o = {}) {
   const sx = o.sx ?? 1;
   const sy = o.sy ?? 1;
   const w = f(Math.max(0.55, r * 0.075));

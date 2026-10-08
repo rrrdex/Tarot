@@ -1,14 +1,14 @@
 import { t } from './i18n.js';
 import { uiStrings } from './strings.js';
-import { fullTarotCards, orientationNames, suitNames } from './data.js';
+import { orientationNames, suitNames } from './data.js';
 import { foliRecurrence, waiteAdditional, waiteRecurrence, waiteTerms } from './waite.js';
 import { mofaTerms } from './mofa.js';
 import { waiteTermZh } from './waite-zh.js';
 import {
-  CARD_CLASS_COUNT,
   SYSTEMS_ELEMENT_KEY,
   cardClass,
   cardElement,
+  deckComposition,
   suitSystem,
   thierensMajors,
   zodiacQuality
@@ -41,9 +41,6 @@ function insightRecurrence(cards) {
   out.sort((a, b) => b.n - a.n);
   return out;
 }
-const INSIGHT_DECK = 78;
-const INSIGHT_MAJORS = 22;
-const INSIGHT_PER_SUIT = 14;
 const INSIGHT_ALPHA = 0.05;
 export function insightChoose(n, k) {
   if (k < 0 || k > n) return 0;
@@ -69,6 +66,15 @@ function insightBinomTail(n, k) {
 export function insightPct(p) {
   if (p < 0.001) return '<0.1%';
   return (p * 100).toFixed(p < 0.1 ? 1 : 0) + '%';
+}
+// 內文用的機率片語：精確值說「是」，上界（多重比較校正）說「不超過」，極小值一律「低於 0.1%」
+export function insightProb(p, bound) {
+  if (p < 0.001) return t('insight.prob.below');
+  return t(bound ? 'insight.prob.atMost' : 'insight.prob.is', { p: insightPct(p) });
+}
+// 檢定只在這個類別確實可變時才有意義：整副都是它或整副沒有它，就不檢定
+function insightTestable(K, N) {
+  return K > 0 && K < N;
 }
 function insightFoliTerm(ori, rank, n) {
   const byCount = foliRecurrence[rank];
@@ -136,31 +142,34 @@ function insightEchoTerms(srcKey, card, ori) {
   const m = waiteAdditional[card.nameKey];
   return (m && m[rv ? 'reversed' : 'upright']) || [];
 }
-const insightEchoDeckFreq = {};
-function insightEchoFreq(src) {
-  if (insightEchoDeckFreq[src.key]) return insightEchoDeckFreq[src.key];
+// 語詞頻率按牌組分開算：K 是「這副牌裡帶這個語詞的張數」
+const insightEchoDeckFreq = new Map();
+function insightEchoFreq(src, deck) {
+  if (!insightEchoDeckFreq.has(deck)) insightEchoDeckFreq.set(deck, {});
+  const cache = insightEchoDeckFreq.get(deck);
+  if (cache[src.key]) return cache[src.key];
   const freq = new Map();
-  fullTarotCards.forEach(card => {
+  deck.cards.forEach(card => {
     const set = new Set();
     insightEchoTerms(src.key, card, 'upright').forEach(x => set.add(x));
     if (src.oriented) insightEchoTerms(src.key, card, 'reversed').forEach(x => set.add(x));
     set.forEach(x => freq.set(x, (freq.get(x) || 0) + 1));
   });
-  insightEchoDeckFreq[src.key] = freq;
+  cache[src.key] = freq;
   return freq;
 }
-function insightEchoP(K, n, k, oriented) {
-  if (!oriented) return insightHyperTail(INSIGHT_DECK, K, n, k);
-  const denom = insightChoose(INSIGHT_DECK, n);
+function insightEchoP(N, K, n, k, oriented) {
+  if (!oriented) return insightHyperTail(N, K, n, k);
+  const denom = insightChoose(N, n);
   if (!denom) return 1;
   let p = 0;
   for (let d = k; d <= Math.min(n, K); d++) {
-    const hyper = insightChoose(K, d) * insightChoose(INSIGHT_DECK - K, n - d) / denom;
+    const hyper = insightChoose(K, d) * insightChoose(N - K, n - d) / denom;
     p += hyper * insightBinomTail(d, k);
   }
   return Math.min(1, p);
 }
-function insightEcho(dealt) {
+function insightEcho(dealt, deck) {
   const n = dealt.length;
   if (n < INSIGHT_ECHO_MIN) return [];
   const groups = [];
@@ -172,14 +181,14 @@ function insightEcho(dealt) {
         hit.get(term).push(card);
       });
     });
-    const freq = insightEchoFreq(src);
+    const freq = insightEchoFreq(src, deck);
     const byCards = new Map();
     hit.forEach((hitCards, term) => {
       if (hitCards.length < INSIGHT_ECHO_MIN) return;
       const K = Math.max(freq.get(term) || 0, hitCards.length);
       const id = hitCards.map(c => c.nameKey).sort().join(',');
       const g = byCards.get(id);
-      const p = insightEchoP(K, n, hitCards.length, src.oriented);
+      const p = insightEchoP(deck.N, K, n, hitCards.length, src.oriented);
       if (!g) {
         byCards.set(id, { src, terms: [term], best: term, cards: hitCards, k: hitCards.length, K, p });
       } else {
@@ -226,6 +235,17 @@ function insightEcho(dealt) {
   live.sort((a, b) => (b.cardSet.size - a.cardSet.size) || (a.minP - b.minP));
   return live.slice(0, INSIGHT_ECHO_MAX);
 }
+// Thierens 的十二個星座牌，每種性質各 4 張；已知抽到 k 張星座牌時，全落在同一性質的精確機率
+const insightSignCards = Object.values(thierensMajors).filter(s => s && zodiacQuality[s]);
+function insightQualityP(k) {
+  const byQ = {};
+  insightSignCards.forEach(s => { byQ[zodiacQuality[s]] = (byQ[zodiacQuality[s]] || 0) + 1; });
+  const total = insightChoose(insightSignCards.length, k);
+  if (!total) return 1;
+  let p = 0;
+  Object.values(byQ).forEach(m => { p += insightChoose(m, k) / total; });
+  return Math.min(1, p);
+}
 function insightTopCount(list, keyOf) {
   const counts = new Map();
   list.forEach(item => {
@@ -248,8 +268,12 @@ export function generateInsight(reading) {
   const cards = Array.isArray(reading.drawnCards) ? reading.drawnCards.filter(Boolean) : [];
   const n = cards.length;
   const b = reading.bottomCard;
+  // N、K 依這次實際用的牌組；舊記錄沒有 deckType、或牌與牌組對不上，就當完整 78 張
+  let deck = deckComposition(reading.deckType);
+  if (cards.concat(b ? [b] : []).some(c => c.nameKey && !deck.keys.has(c.nameKey))) deck = deckComposition('full');
+  const N = deck.N;
   let found = 0;
-  let reportedSuit = null;
+  let suitFound = null;
   if (n >= 3) {
     const cls = { major: 0, court: 0, pip: 0 };
     cards.forEach(c => { const k0 = cardClass(c); if (k0) cls[k0]++; });
@@ -271,15 +295,15 @@ export function generateInsight(reading) {
   }
   if (n) {
     const k = cards.filter(c => c.suit === 'Major Arcana').length;
-    if (k >= 2) {
-      const p = insightHyperTail(INSIGHT_DECK, INSIGHT_MAJORS, n, k);
+    if (k >= 2 && insightTestable(deck.major, N)) {
+      const p = insightHyperTail(N, deck.major, n, k);
       if (p < INSIGHT_ALPHA) {
         found++;
         out.push({
           tag: t('insight.major.tag', { p: insightPct(p) }),
           text: t('insight.major.text', {
-            n, k, p: insightPct(p),
-            exp: (n * INSIGHT_MAJORS / INSIGHT_DECK).toFixed(1),
+            n, k, N, K: deck.major, prob: insightProb(p),
+            exp: (n * deck.major / N).toFixed(1),
             cards: cards.filter(c => c.suit === 'Major Arcana').map(insightMention).join('、')
           })
         });
@@ -288,22 +312,25 @@ export function generateInsight(reading) {
     const minors = cards.filter(c => c.suit !== 'Major Arcana');
     const domSuit = insightTopCount(minors, c => c.suit);
     const domSys = suitSystem[domSuit.key];
-    if (domSuit.key && domSuit.count >= 2 && domSys) {
-      const raw = insightHyperTail(INSIGHT_DECK, INSIGHT_PER_SUIT, n, domSuit.count);
+    const suitK = domSuit.key ? deck.suits[domSuit.key] : 0;
+    if (domSuit.key && domSuit.count >= 2 && domSys && insightTestable(suitK, N)) {
+      // 四個花色挑最多的那個：Bonferroni ×4，所以是上界
+      const raw = insightHyperTail(N, suitK, n, domSuit.count);
       const p = Math.min(1, raw * 4);
       if (p < INSIGHT_ALPHA) {
         found++;
-        reportedSuit = domSuit.key;
         const suitLabel = t(suitNames[domSuit.key] || domSuit.key);
-        out.push({
+        const item = {
           tag: t('insight.suit.tag', { suit: suitLabel, p: insightPct(p) }),
           text: t('insight.suit.text', {
-            suit: suitLabel, k: domSuit.count, n, p: insightPct(p),
+            suit: suitLabel, k: domSuit.count, n, prob: insightProb(p, true),
             element: t(SYSTEMS_ELEMENT_KEY[domSys.element]),
             faculty: t(domSys.faculty),
             cards: minors.filter(c => c.suit === domSuit.key).map(insightMention).join('、')
           })
-        });
+        };
+        out.push(item);
+        suitFound = { suit: domSuit.key, count: domSuit.count, item };
       }
     }
     if (n >= 2) {
@@ -314,20 +341,20 @@ export function generateInsight(reading) {
         found++;
         out.push({
           tag: t('insight.reversed.tag', { p: insightPct(pRev) }),
-          text: t('insight.reversed.text', { k: rev, n, p: insightPct(pRev) })
+          text: t('insight.reversed.text', { k: rev, n, prob: insightProb(pRev) })
         });
       } else if (rev < n - rev && pUp < INSIGHT_ALPHA) {
         found++;
         out.push({
           tag: t('insight.upright.tag', { p: insightPct(pUp) }),
-          text: t('insight.upright.text', { k: n - rev, n, p: insightPct(pUp) })
+          text: t('insight.upright.text', { k: n - rev, n, prob: insightProb(pUp) })
         });
       }
     }
     const recs = insightRecurrence(cards);
     recs.forEach(r => {
       found++;
-      const rank = t('rank.' + r.rank);
+      const rank = t('rank.label.' + r.rank);
       const ori = t(r.ori === 'reversed' ? 'orientation.reversed' : 'orientation.upright');
       const term = t('waite.recur.' + r.ori + '.' + r.rank + '.' + r.n);
       const foli = insightFoliTerm(r.ori, r.rank, r.n);
@@ -342,15 +369,16 @@ export function generateInsight(reading) {
     ['court', 'pip'].forEach(cls => {
       const clsCards = cards.filter(c => cardClass(c) === cls);
       const k2 = clsCards.length;
-      if (k2 < 2) return;
-      const p = insightHyperTail(INSIGHT_DECK, CARD_CLASS_COUNT[cls], n, k2);
+      const K = deck[cls];
+      if (k2 < 2 || !insightTestable(K, N)) return;
+      const p = insightHyperTail(N, K, n, k2);
       if (p < INSIGHT_ALPHA) {
         found++;
         out.push({
           tag: t('insight.class.' + cls + '.tag', { p: insightPct(p) }),
           text: t('insight.class.' + cls + '.text', {
-            n, k: k2, p: insightPct(p),
-            exp: (n * CARD_CLASS_COUNT[cls] / INSIGHT_DECK).toFixed(1),
+            n, k: k2, N, K, prob: insightProb(p),
+            exp: (n * K / N).toFixed(1),
             cards: cls === 'court' ? clsCards.map(insightMention).join('、') : ''
           })
         });
@@ -362,17 +390,17 @@ export function generateInsight(reading) {
     if (signs.length >= 3) {
       const q = insightTopCount(signs, s => zodiacQuality[s]);
       if (q.key && q.count === signs.length) {
-        const p = Math.min(1, Math.pow(1 / 3, signs.length) * 3);
+        const p = insightQualityP(signs.length);
         if (p < INSIGHT_ALPHA) {
           found++;
           out.push({
             tag: t('insight.quality.tag', { quality: t('quality.' + q.key), p: insightPct(p) }),
-            text: t('insight.quality.text', { k: signs.length, quality: t('quality.' + q.key), p: insightPct(p) })
+            text: t('insight.quality.text', { k: signs.length, quality: t('quality.' + q.key), prob: insightProb(p) })
           });
         }
       }
     }
-    insightEcho((b && b.nameKey) ? cards.concat([b]) : cards).forEach(compo => {
+    insightEcho((b && b.nameKey) ? cards.concat([b]) : cards, deck).forEach(compo => {
       found++;
       const partText = (g) => t('insight.echo.part', {
         terms: g.terms.map(x => g.src.show(x)).join('、'),
@@ -386,7 +414,7 @@ export function generateInsight(reading) {
           out.push({
             tag: t('insight.echo.tag', { term: first.src.short(first.best) }),
             text: t(first.terms.length > 1 ? 'insight.echo.text.multi' : 'insight.echo.text', {
-              K: first.K,
+              K: first.K, N,
               term: first.terms.map(x => first.src.show(x)).join('、'),
               best: first.src.show(first.best),
               src: t('insight.echo.src.' + first.src.key),
@@ -441,7 +469,7 @@ export function generateInsight(reading) {
       out.push({
         tag: t('insight.axis.tag', { p1, p2 }),
         text: t('insight.axis.rank.text', {
-          p1, p2, rank: t('rank.' + rankKey),
+          p1, p2, rank: t('rank.label.' + rankKey),
           c1: insightMention(a), c2: insightMention(z)
         })
       });
@@ -449,21 +477,25 @@ export function generateInsight(reading) {
     if (roles.past && roles.present && roles.future) {
       const three = [roles.past, roles.present, roles.future];
       const s0 = three[0].suit;
-      if (s0 !== 'Major Arcana' && s0 !== reportedSuit && three.every(c => c.suit === s0)) {
-        found++;
-        out.push({
-          tag: t('insight.axis.suit.tag'),
-          text: t('insight.axis.suit.text', {
-            cards: three.map(insightMention).join('、'),
-            suit: t(suitNames[s0] || s0)
-          })
-        });
+      if (s0 !== 'Major Arcana' && three.every(c => c.suit === s0)) {
+        const suit = t(suitNames[s0] || s0);
+        if (suitFound && suitFound.suit === s0) {
+          // 同一花色已經被點名主導：時間線的觀察併進那一條，不重複列
+          const exact = suitFound.count === three.length;
+          suitFound.item.text += t(exact ? 'insight.axis.suit.merge.exact' : 'insight.axis.suit.merge', { suit });
+        } else {
+          found++;
+          out.push({
+            tag: t('insight.axis.suit.tag'),
+            text: t('insight.axis.suit.text', { cards: three.map(insightMention).join('、'), suit })
+          });
+        }
       }
     }
     if (!found && n >= 3) {
       out.push({
         tag: t('insight.balanced.tag'),
-        text: t('insight.balanced.text')
+        text: t('insight.balanced.text') + (n <= 4 ? t('insight.balanced.small', { n }) : '')
       });
     }
   }

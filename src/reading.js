@@ -1,11 +1,13 @@
 import { t } from './i18n.js';
 import {
+  downloadBlob,
   escapeHTML,
   formatDate,
   isValidSeed,
   newSeed,
   randomInt,
   readNeonSuitColors,
+  scrollBehavior,
   seedRng,
   showToast,
   shuffle,
@@ -24,77 +26,123 @@ import {
   suitNames
 } from './data.js';
 import {
+  HISTORY_MAX,
+  currentTab,
   lastReadingData,
   readingHistory,
   saveHistory,
   setLastReadingData,
-  setReadingHistory
+  setReadingHistory,
+  trimHistory
 } from './state.js';
 import { readBtn, readBtnText, resultsEl, spreadTypeEl } from './dom.js';
 import { LAYOUT_IMG_SIZES, renderCard, visualStyle } from './render.js';
 import { loadDeck } from './lazy.js';
 import { generateInsight } from './insight.js';
+import * as storage from './storage.js';
 
-function getDeck(deckType) {
-  switch (deckType) {
-    case 'major': return [...majorArcana];
-    case 'minor': return [...minorArcana];
-    case 'court': return [...courtCards];
-    case 'numbered': return [...numberedCards];
-    default: return [...fullTarotCards];
-  }
+const DECKS = {
+  full: fullTarotCards,
+  major: majorArcana,
+  minor: minorArcana,
+  court: courtCards,
+  numbered: numberedCards
+};
+export function isDeckType(v) {
+  return Object.prototype.hasOwnProperty.call(DECKS, v);
 }
-let pendingReading = null;
-function buildReadingConfig(seedOverride, save) {
-  const deckType = document.getElementById('deckType').value;
-  const spreadType = spreadTypeEl.value;
-  const spreadName = spreadTypeEl.options[spreadTypeEl.selectedIndex].dataset.spreadName;
-  const question = document.getElementById('question').value.trim();
+function getDeck(deckType) {
+  return [...(DECKS[deckType] || fullTarotCards)];
+}
+// 分享連結的 picks 是否能用在這個牌組與牌陣：張數對、不重複、都在可選的範圍內（最後一張是底牌）
+export function validPicks(picks, deckType, spreadType) {
+  const spread = spreads[spreadType];
+  if (!spread || !Array.isArray(picks) || picks.length !== spread.positions.length) return false;
+  const max = getDeck(deckType).length - 2;
+  return picks.every(n => Number.isInteger(n) && n >= 0 && n <= max) && new Set(picks).size === picks.length;
+}
+function spreadNameOf(spreadType) {
+  const opt = Array.from(spreadTypeEl.options).find(o => o.value === spreadType);
+  return (opt && opt.dataset.spreadName) || `spread.${spreadType}.name`;
+}
+// 牌組、牌陣與問題由呼叫端明確指定（分享連結），沒指定才讀表單
+function buildReadingConfig(seedOverride, save, opts = {}) {
+  const deckType = isDeckType(opts.deckType) ? opts.deckType : document.getElementById('deckType').value;
+  const spreadType = spreads[opts.spreadType] ? opts.spreadType : spreadTypeEl.value;
+  const question = typeof opts.question === 'string' ? opts.question : document.getElementById('question').value.trim();
   const deck = getDeck(deckType);
   const seed = isValidSeed(seedOverride) ? String(seedOverride) : newSeed();
   const rng = seedRng(seed);
   const shuffled = shuffle(deck, rng);
   const orientations = shuffled.map(() => rng() > 0.5 ? 'upright' : 'reversed');
   const spread = spreads[spreadType];
-  return { seed, deckType, spreadType, spreadName, question, shuffled, orientations, positions: spread.positions, save };
+  return {
+    seed, deckType, spreadType, spreadName: spreadNameOf(spreadType), question,
+    shuffled, orientations, positions: spread.positions, save,
+    // 開啟分享連結時不搶焦點（只捲動），免得頁面一載入就畫出焦點框
+    focus: opts.focus !== false
+  };
 }
-export function performReading(seedOverride, save = true, picks = null) {
-  const cfg = buildReadingConfig(seedOverride, save);
+// 每次開始、取消或改看別的紀錄都換一個號碼；延遲執行的完成步驟發現號碼變了就作廢，
+// 避免舊的那一次在稍後蓋掉（並存下）新的結果
+let readingToken = 0;
+let pendingReading = null;
+let readBusy = false;
+export function isReadBusy() {
+  return readBusy;
+}
+// 不用 disabled：按鈕停用時焦點會被丟掉，螢幕閱讀器也讀不到轉圈中的狀態
+function setReadBusy(on) {
+  readBusy = on;
+  if (on) {
+    readBtn.setAttribute('aria-disabled', 'true');
+    readBtnText.innerHTML = `<span class="spinner" aria-hidden="true"></span><span class="visually-hidden">${escapeHTML(t('reading.busy'))}</span>`;
+  } else if (readBtn.hasAttribute('aria-disabled')) {
+    readBtn.removeAttribute('aria-disabled');
+    readBtnText.textContent = t('btn.startReading');
+  }
+}
+export function cancelPendingReading() {
+  readingToken++;
+  pendingReading = null;
+  setReadBusy(false);
+}
+export function performReading(seedOverride, save = true, picks = null, opts = {}) {
+  cancelPendingReading();
+  const cfg = buildReadingConfig(seedOverride, save, opts);
   const num = cfg.positions.length;
   if (cfg.shuffled.length < num + 1) {
     showToast(t('toast.deckTooSmall'), 'error');
     return;
   }
+  const token = readingToken;
   const firstN = () => Array.from({ length: num }, (_, i) => i);
   if (picks === 'first') {
-    completeReading(cfg, firstN());
+    completeReading(cfg, firstN(), false, token);
     return;
   }
   if (Array.isArray(picks)) {
-    const max = cfg.shuffled.length - 2;
-    const clean = [...new Set(picks.filter(n => Number.isInteger(n) && n >= 0 && n <= max))].slice(0, num);
-    completeReading(cfg, clean.length === num ? clean : firstN());
+    completeReading(cfg, validPicks(picks, cfg.deckType, cfg.spreadType) ? picks : firstN(), false, token);
     return;
   }
-  const interactive = localStorage.getItem('interactiveDraw') !== 'false';
+  const interactive = storage.get('interactiveDraw') !== 'false';
   if (!interactive) {
-    readBtn.disabled = true;
-    readBtnText.innerHTML = '<span class="spinner"></span>';
-    setTimeout(() => completeReading(cfg, firstN(), true), 500);
+    setReadBusy(true);
+    setTimeout(() => completeReading(cfg, firstN(), true, token), 500);
     return;
   }
-  renderCardSelection(cfg);
+  renderCardSelection(cfg, token);
 }
-function renderCardSelection(cfg) {
-  pendingReading = { ...cfg, picks: [] };
+function renderCardSelection(cfg, token) {
+  pendingReading = { ...cfg, picks: [], token };
   const num = cfg.positions.length;
   const pickable = cfg.shuffled.length - 1;
   resultsEl.innerHTML = `
 <div class="panel fade-in">
 <div class="pick-header">
-<h2 class="results-title">${escapeHTML(t('pick.title'))}</h2>
+<h2 class="results-title" tabindex="-1">${escapeHTML(t('pick.title'))}</h2>
 <p class="pick-hint">${escapeHTML(t(cfg.spreadName))} · ${t('pick.hint', { n: num })}</p>
-<div class="pick-progress" id="pickProgress">${escapeHTML(t('pick.progress', { n: 0, total: num }))}</div>
+<div class="pick-progress" id="pickProgress" role="status">${escapeHTML(t('pick.progress', { n: 0, total: num }))}</div>
 </div>
 <div class="pick-grid" id="pickGrid" data-keynav="grid">
 ${Array.from({ length: pickable }, (_, i) => `
@@ -108,6 +156,8 @@ ${Array.from({ length: pickable }, (_, i) => `
 </div>
 </div>
 `;
+  // 結果區換成選牌畫面，網址上不再是上一次的結果
+  syncReadingURL();
   const grid = document.getElementById('pickGrid');
   grid.addEventListener('click', (e) => {
     const btn = e.target.closest('.pick-card');
@@ -127,33 +177,52 @@ ${Array.from({ length: pickable }, (_, i) => `
     }
   });
   document.getElementById('pickReshuffle').addEventListener('click', () => {
-    performReading(undefined, cfg.save);
+    performReading(undefined, cfg.save, null, { deckType: cfg.deckType, spreadType: cfg.spreadType, question: cfg.question });
   });
   document.getElementById('pickCancel').addEventListener('click', () => {
-    pendingReading = null;
+    cancelPendingReading();
     resultsEl.innerHTML = '';
+    syncReadingURL();
+    readBtn.focus();
   });
-  requestAnimationFrame(() => {
-    resultsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  });
+  focusResults();
+}
+// 選過的牌會停用：把唯一可用 Tab 進入的位置（tabindex=0）交給下一張還能選的牌
+function passRovingFocus(btn, hadFocus) {
+  if (btn.tabIndex !== 0) return;
+  const cards = Array.from(btn.parentElement.querySelectorAll('.pick-card'));
+  const start = cards.indexOf(btn);
+  for (let k = 1; k < cards.length; k++) {
+    const next = cards[(start + k) % cards.length];
+    if (next.disabled) continue;
+    btn.tabIndex = -1;
+    next.tabIndex = 0;
+    if (hadFocus) next.focus();
+    return;
+  }
 }
 function selectPick(idx, btn) {
   const cfg = pendingReading;
   if (!cfg || cfg.picks.length >= cfg.positions.length) return;
   cfg.picks.push(idx);
+  const order = cfg.picks.length;
   if (btn) {
+    const hadFocus = document.activeElement === btn;
     btn.classList.add('selected');
-    btn.textContent = cfg.picks.length;
+    btn.textContent = order;
     btn.disabled = true;
+    btn.setAttribute('aria-label', t('pick.cardPicked', { n: idx + 1, order }));
+    passRovingFocus(btn, hadFocus);
   }
   const progress = document.getElementById('pickProgress');
-  if (progress) progress.textContent = t('pick.progress', { n: cfg.picks.length, total: cfg.positions.length });
-  if (cfg.picks.length === cfg.positions.length) {
+  if (progress) progress.textContent = t('pick.progress', { n: order, total: cfg.positions.length });
+  if (order === cfg.positions.length) {
     pendingReading = null;
-    setTimeout(() => completeReading(cfg, cfg.picks, true), 450);
+    setTimeout(() => completeReading(cfg, cfg.picks, true, cfg.token), 450);
   }
 }
-function completeReading(cfg, picks, revealed = false) {
+function completeReading(cfg, picks, revealed, token) {
+  if (token !== readingToken) return;
   const { seed, deckType, spreadType, spreadName, question, shuffled, orientations, positions, save } = cfg;
   const drawn = picks.map((deckIdx, i) => ({
     ...shuffled[deckIdx],
@@ -166,7 +235,7 @@ function completeReading(cfg, picks, revealed = false) {
     position: 'spread.bottom',
     orientation: orientations[bottomIdx]
   };
-  setLastReadingData({
+  const reading = {
     id: Date.now(),
     seed,
     deckType,
@@ -180,20 +249,50 @@ function completeReading(cfg, picks, revealed = false) {
     favorite: false,
     tags: [],
     note: ''
-  });
+  };
+  setLastReadingData(reading);
+  let trimmed = 0;
   if (save) {
-    readingHistory.unshift(lastReadingData);
-    if (readingHistory.length > 100) setReadingHistory(readingHistory.slice(0, 100));
-    saveHistory();
+    const result = trimHistory([reading, ...readingHistory], HISTORY_MAX, reading.id);
+    setReadingHistory(result.list);
+    trimmed = result.trimmed;
   }
-  renderResults(lastReadingData, revealed);
-  const isDefaultPicks = picks.every((p, i) => p === i);
-  updateURL({ seed, deck: deckType, spread: spreadType, q: question || null, picks: isDefaultPicks ? null : picks.join('-') });
-  readBtn.disabled = false;
-  readBtnText.textContent = t('btn.startReading');
+  // 先更新畫面，最後才寫入儲存空間：寫入失敗時結果照樣顯示
+  renderResults(reading, revealed);
+  setReadBusy(false);
+  syncReadingURL();
+  focusResults(cfg.focus);
+  if (save) {
+    saveHistory();
+    if (trimmed) showToast(t('toast.historyTrimmed', { n: trimmed, max: HISTORY_MAX }), 'warning');
+  }
+}
+// 焦點移到結果標題（螢幕閱讀器從這裡開始念），畫面捲到結果區
+export function focusResults(moveFocus = true) {
+  const title = resultsEl.querySelector('.results-title');
+  if (title && moveFocus) title.focus({ preventScroll: true });
   requestAnimationFrame(() => {
-    resultsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    resultsEl.scrollIntoView({ behavior: scrollBehavior(), block: 'start' });
   });
+}
+// 結果區目前顯示的那一次占卜（選牌中、取消後都沒有）
+export function shownReading() {
+  const panel = resultsEl.querySelector('[data-reading-id]');
+  if (!panel || !lastReadingData || lastReadingData.id === undefined) return null;
+  return String(lastReadingData.id) === panel.dataset.readingId ? lastReadingData : null;
+}
+const NO_READING_PARAMS = { seed: null, deck: null, spread: null, q: null, picks: null };
+function readingURLParams(r) {
+  if (!r || !isValidSeed(r.seed)) return NO_READING_PARAMS;
+  const picks = Array.isArray(r.picks) && !r.picks.every((p, i) => p === i) ? r.picks.join('-') : null;
+  return { seed: r.seed, deck: r.deckType || null, spread: r.spreadType || null, q: r.question || null, picks };
+}
+// 網址只帶「占卜分頁上正在顯示的結果」：複製、分享、重新整理都以它為準；在其他分頁時不帶，重新整理才不會跳回占卜分頁
+export function syncReadingURL() {
+  updateURL(readingURLParams(currentTab === 'reading' ? shownReading() : null));
+}
+export function clearReadingURL() {
+  updateURL(NO_READING_PARAMS);
 }
 export function renderResults(data, revealed = false) {
   const { spreadName, spreadType, question, drawnCards, bottomCard, favorite, note } = data;
@@ -201,7 +300,7 @@ export function renderResults(data, revealed = false) {
   const layout = (spreadLayouts[spreadType] &&
     spreadLayouts[spreadType].cells.length === drawnCards.length) ? spreadLayouts[spreadType] : null;
   const cardsHTML = layout ? `
-<div class="spread-layout" style="--cols: ${layout.cols}" data-keynav="grid">
+<div class="spread-layout" style="--cols: ${layout.cols}" data-cols="${layout.cols}" data-keynav="grid">
 ${drawnCards.map((c, i) => {
       const cell = layout.cells[i];
       const gr = cell.rs ? `${cell.r} / span ${cell.rs}` : cell.r;
@@ -209,7 +308,7 @@ ${drawnCards.map((c, i) => {
     }).join('')}
 </div>
 <div class="bottom-card-row" style="--delay: ${drawnCards.length * 70}ms">
-${renderCard(bottomCard, true, anim, 0, LAYOUT_IMG_SIZES)}
+${renderCard(bottomCard, true, anim, 0, '220px')}
 </div>
 ` : `
 <div class="cards-grid" data-keynav="grid">
@@ -230,9 +329,9 @@ ${insights.map(item => `
 </div>
 ` : '';
   resultsEl.innerHTML = `
-<div class="panel fade-in">
+<div class="panel fade-in" data-reading-id="${escapeHTML(String(data.id))}">
 <div class="results-header">
-<h2 class="results-title">${escapeHTML(t('reading.results.title'))}</h2>
+<h2 class="results-title" tabindex="-1">${escapeHTML(t('reading.results.title'))}</h2>
 <div class="results-meta">
 <span class="badge ${favorite ? 'favorite' : ''}">${escapeHTML(t(spreadName))}</span>
 ${question ? `<span>${escapeHTML(question)}</span>` : ''}
@@ -249,24 +348,29 @@ ${insightHTML}
 </div>
 `;
 }
+function cardLine(c) {
+  return `${t(c.position)}：${c.name}（${t(orientationNames[c.orientation] || c.orientation)}）`;
+}
 export function copyResults() {
   const { spreadName, question, drawnCards, bottomCard } = lastReadingData;
-  const url = location.href;
+  if (!drawnCards) return;
   const text = [
-    `${t(spreadName)}${question ? ` - ${question}` : ''}`,
+    `${t(spreadName)}${question ? `—${question}` : ''}`,
     '---',
-    ...drawnCards.map(c => `${t(c.position)}: ${c.name} (${t(orientationNames[c.orientation] || c.orientation)})`),
-    `${t('spread.bottom')}: ${bottomCard.name} (${t(orientationNames[bottomCard.orientation] || bottomCard.orientation)})`,
+    ...drawnCards.map(cardLine),
+    cardLine(bottomCard),
     '',
-    url
+    location.href
   ].join('\n');
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(text).then(() => {
-      showToast(t('toast.copied'));
-    }).catch(() => {
-      showToast(t('toast.copyFailed'), 'error');
-    });
+  if (!navigator.clipboard) {
+    showToast(t('toast.copyFailed'), 'error');
+    return;
   }
+  navigator.clipboard.writeText(text).then(() => {
+    showToast(t('toast.copied'));
+  }).catch(() => {
+    showToast(t('toast.copyFailed'), 'error');
+  });
 }
 function shareImagePalette() {
   const cs = getComputedStyle(document.documentElement);
@@ -284,6 +388,21 @@ function shareImagePalette() {
     glow: lit,
     suit: lit ? suit : null
   };
+}
+// 線稿牌面的顏色：霓虹主題把牌框色設在 svg.line-art 上（而且依花色變），不在 :root，
+// 所以拿一張隱藏的牌實際量，墨線色取 color（霓虹主題用花色色）
+function lineArtColors(suit) {
+  const host = document.createElement('div');
+  host.className = 'card visual-api';
+  host.dataset.suit = suit;
+  host.style.display = 'none';
+  host.innerHTML = '<svg class="card-image line-art"></svg>';
+  document.body.appendChild(host);
+  const cs = getComputedStyle(host.firstElementChild);
+  const v = (name) => cs.getPropertyValue(name).trim();
+  const colors = { paper: v('--deck-paper'), tint: v('--deck-tint'), gold: v('--deck-gold'), ink: cs.color };
+  host.remove();
+  return colors;
 }
 function shareGlyph(ctx, suit, x, y, s, color) {
   ctx.save();
@@ -323,10 +442,10 @@ async function shareCardFaces(cards) {
   if (visualStyle === 'line') {
     const { getCardArtImage } = await loadDeck().catch(() => ({}));
     if (!getCardArtImage) return cards.map(() => null);
-    const cs = getComputedStyle(document.documentElement);
-    const colors = Object.fromEntries(['paper', 'tint', 'ink', 'gold'].map(k => [k, cs.getPropertyValue(`--deck-${k}`).trim()]));
+    const bySuit = new Map();
     return Promise.all(cards.map(async (card) => {
-      const svg = getCardArtImage(card, colors, true);
+      if (!bySuit.has(card.suit)) bySuit.set(card.suit, lineArtColors(card.suit));
+      const svg = getCardArtImage(card, bySuit.get(card.suit), true);
       if (!svg) return null;
       const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
       const img = await loadImage(url);
@@ -337,12 +456,31 @@ async function shareCardFaces(cards) {
   if (visualStyle === 'api') return Promise.all(cards.map(card => loadImage(getCardImageUrl(card, 'webp', 160))));
   return Promise.resolve(cards.map(() => null));
 }
+// 產生中再按一次不會重複下載
+let shareImageBusy = false;
 export async function generateShareImage() {
-  const { spreadName, question, drawnCards, bottomCard, timestamp, seed } = lastReadingData;
-  if (!drawnCards) {
+  if (shareImageBusy) return;
+  const data = lastReadingData;
+  if (!data.drawnCards) {
     showToast(t('toast.noReading'), 'warning');
     return;
   }
+  shareImageBusy = true;
+  try {
+    const blob = await drawShareImage(data);
+    if (!blob) {
+      showToast(t('toast.shareImageFailed'), 'error');
+      return;
+    }
+    downloadBlob(blob, `tarot-${data.seed || Date.now()}.png`);
+    showToast(t('toast.shareImageDone'));
+  } catch {
+    showToast(t('toast.shareImageFailed'), 'error');
+  } finally {
+    shareImageBusy = false;
+  }
+}
+async function drawShareImage({ spreadName, question, drawnCards, bottomCard, timestamp }) {
   const cards = [...drawnCards, bottomCard];
   const faces = await shareCardFaces(cards);
   const withFaces = faces.some(Boolean);
@@ -421,19 +559,7 @@ export async function generateShareImage() {
   ctx.fillStyle = P.sub;
   ctx.font = `400 14px ${font}`;
   ctx.fillText(t('app.share.imageFooter'), pad, height - 44);
-  canvas.toBlob((blob) => {
-    if (!blob) {
-      showToast(t('toast.shareImageFailed'), 'error');
-      return;
-    }
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `tarot-${seed || Date.now()}.png`;
-    a.click();
-    URL.revokeObjectURL(url);
-    showToast(t('toast.shareImageDone'));
-  }, 'image/png');
+  return new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
 }
 export function printReading() {
   window.print();

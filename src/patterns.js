@@ -1,33 +1,56 @@
 import { t } from './i18n.js';
 import { escapeHTML } from './utils.js';
 import { suitNames } from './data.js';
-import { SYSTEMS_ELEMENT_KEY, suitSystem } from './systems.js';
+import { SYSTEMS_ELEMENT_KEY, deckComposition, suitSystem } from './systems.js';
 import { cardMeanings } from './meanings.js';
 import { readingHistory } from './state.js';
-import { insightChoose, insightPct } from './insight.js';
+import { insightChoose, insightProb } from './insight.js';
 
 const patternMinorSuits = ['Wands', 'Cups', 'Swords', 'Pentacles'];
-function patternBinomTail(n, k, p) {
+// 機率分布以陣列表示：dist[j] = 計數恰為 j 的機率。每次占卜各自的牌組不同，
+// 所以逐筆把該次的分布捲積進來，得到的是精確分布，不是二項近似
+function patternHyperPmf(N, K, n) {
+  const out = new Array(n + 1).fill(0);
+  const denom = insightChoose(N, n);
+  if (!denom) {
+    out[0] = 1;
+    return out;
+  }
+  for (let i = 0; i <= n; i++) out[i] = insightChoose(K, i) * insightChoose(N - K, n - i) / denom;
+  return out;
+}
+function patternBinomPmf(n, q) {
+  let dist = [1];
+  for (let i = 0; i < n; i++) dist = patternConvolve(dist, [1 - q, q]);
+  return dist;
+}
+function patternConvolve(dist, pmf) {
+  const out = new Array(dist.length + pmf.length - 1).fill(0);
+  for (let i = 0; i < dist.length; i++) {
+    if (!dist[i]) continue;
+    for (let j = 0; j < pmf.length; j++) out[i + j] += dist[i] * pmf[j];
+  }
+  return out;
+}
+function patternUpperTail(dist, k) {
   if (k <= 0) return 1;
-  if (k > n) return 0;
-  if (n > 400) {
-    const mean = n * p;
-    if (k <= mean) return 1;
-    return Math.min(1, Math.exp(-2 * (k - mean) * (k - mean) / n));
-  }
   let s = 0;
-  for (let i = k; i <= n; i++) {
-    s += insightChoose(n, i) * Math.pow(p, i) * Math.pow(1 - p, n - i);
-  }
+  for (let i = k; i < dist.length; i++) s += dist[i];
   return Math.min(1, s);
 }
-function patternBinomLowTail(n, k, p) {
-  return patternBinomTail(n, n - k, 1 - p);
+function patternLowerTail(dist, k) {
+  let s = 0;
+  for (let i = 0; i <= Math.min(k, dist.length - 1); i++) s += dist[i];
+  return Math.min(1, s);
+}
+function patternMean(dist) {
+  return dist.reduce((acc, v, i) => acc + v * i, 0);
 }
 const PATTERN_ALPHA = 0.05;
 function patternSuitLabel(suit) {
   return t(suitNames[suit] || suit);
 }
+// 只算牌陣裡實際抽出的牌；底牌不算抽牌，與統計分頁一致
 function patternCardsOf(reading) {
   const out = [];
   if (!reading || typeof reading !== 'object') return out;
@@ -36,8 +59,13 @@ function patternCardsOf(reading) {
       if (c && typeof c === 'object') out.push(c);
     });
   }
-  if (reading.bottomCard && typeof reading.bottomCard === 'object') out.push(reading.bottomCard);
   return out;
+}
+// 每筆占卜用的牌組；牌與記錄的牌組對不上（舊資料、匯入）就當完整 78 張
+function patternDeckOf(reading, cards) {
+  const deck = deckComposition(reading && reading.deckType);
+  if (cards.length > deck.N || cards.some(c => !deck.keys.has(c.nameKey))) return deckComposition('full');
+  return deck;
 }
 function patternTopMinorSuit(counts) {
   let suit = null;
@@ -51,7 +79,15 @@ function patternTopMinorSuit(counts) {
   });
   return { suit, count };
 }
-function generatePatterns(history) {
+// 某類別在一組占卜裡的總數分布：Kof(deck) 給出該類別在牌組裡的張數
+function patternClassDist(entries, Kof) {
+  let dist = [1];
+  entries.forEach(e => {
+    if (e.cards.length) dist = patternConvolve(dist, patternHyperPmf(e.deck.N, Kof(e.deck), e.cards.length));
+  });
+  return dist;
+}
+export function generatePatterns(history) {
   if (!Array.isArray(history)) return [];
   const n = history.length;
   if (n < 5) {
@@ -63,8 +99,12 @@ function generatePatterns(history) {
       text: t('pattern.building.text', { n: 5 - n })
     }];
   }
+  const entries = history.map(r => {
+    const cards = patternCardsOf(r);
+    return { reading: r, cards, deck: patternDeckOf(r, cards) };
+  });
   const allCards = [];
-  history.forEach(r => patternCardsOf(r).forEach(c => allCards.push(c)));
+  entries.forEach(e => e.cards.forEach(c => allCards.push(c)));
   const total = allCards.length;
   const out = [];
   const suitCounts = {};
@@ -77,7 +117,9 @@ function generatePatterns(history) {
   });
   const top = patternTopMinorSuit(suitCounts);
   if (top.suit && total) {
-    const p = Math.min(1, patternBinomTail(total, top.count, 14 / 78) * 4);
+    // 每種牌組裡四個花色張數相同，所以「最多的花色」也就是機率最小的那個；×4 校正挑最多
+    const dist = patternClassDist(entries, d => d.suits[top.suit]);
+    const p = Math.min(1, patternUpperTail(dist, top.count) * 4);
     const sys = suitSystem[top.suit];
     if (p < PATTERN_ALPHA && sys) {
       out.push({
@@ -85,9 +127,9 @@ function generatePatterns(history) {
         text: t('pattern.dominant.text', {
           suit: patternSuitLabel(top.suit),
           k: top.count, total,
-          exp: (total * 14 / 78).toFixed(1),
+          exp: patternMean(dist).toFixed(1),
           pct: Math.round((top.count / total) * 100),
-          p: insightPct(p),
+          prob: insightProb(p, true),
           element: t(SYSTEMS_ELEMENT_KEY[sys.element]),
           faculty: t(sys.faculty)
         })
@@ -95,21 +137,20 @@ function generatePatterns(history) {
     }
   }
   const tagStats = new Map();
-  history.forEach(r => {
+  entries.forEach(e => {
+    const r = e.reading;
     if (!r || !Array.isArray(r.tags)) return;
-    const cards = patternCardsOf(r);
     const seen = new Set();
-    r.tags.forEach(t => {
-      const name = String(t);
-      if (!name || seen.has(name)) return;
-      seen.add(name);
-      let stat = tagStats.get(name);
+    r.tags.forEach(tag => {
+      if (typeof tag !== 'string' || !tag || seen.has(tag)) return;
+      seen.add(tag);
+      let stat = tagStats.get(tag);
       if (!stat) {
-        stat = { readings: 0, cards: 0, suits: {} };
-        tagStats.set(name, stat);
+        stat = { entries: [], cards: 0, suits: {} };
+        tagStats.set(tag, stat);
       }
-      stat.readings++;
-      cards.forEach(c => {
+      stat.entries.push(e);
+      e.cards.forEach(c => {
         stat.cards++;
         if (patternMinorSuits.includes(c.suit)) stat.suits[c.suit] = (stat.suits[c.suit] || 0) + 1;
       });
@@ -117,14 +158,15 @@ function generatePatterns(history) {
   });
   const tagFindings = [];
   let tagsTested = 0;
-  tagStats.forEach(stat => { if (stat.readings >= 3 && stat.cards) tagsTested++; });
+  tagStats.forEach(stat => { if (stat.entries.length >= 3 && stat.cards) tagsTested++; });
   tagStats.forEach((stat, name) => {
-    if (stat.readings < 3 || !stat.cards) return;
+    if (stat.entries.length < 3 || !stat.cards) return;
     const best = patternTopMinorSuit(stat.suits);
     if (!best.suit) return;
-    const p = Math.min(1, patternBinomTail(stat.cards, best.count, 14 / 78) * 4 * Math.max(1, tagsTested));
+    const dist = patternClassDist(stat.entries, d => d.suits[best.suit]);
+    const p = Math.min(1, patternUpperTail(dist, best.count) * 4 * Math.max(1, tagsTested));
     if (p >= PATTERN_ALPHA) return;
-    tagFindings.push({ name, suit: best.suit, readings: stat.readings, cards: stat.cards, count: best.count, p });
+    tagFindings.push({ name, suit: best.suit, readings: stat.entries.length, cards: stat.cards, count: best.count, p });
   });
   tagFindings.sort((a, b) => a.p - b.p);
   tagFindings.slice(0, 2).forEach(f => {
@@ -138,24 +180,26 @@ function generatePatterns(history) {
         k: f.count,
         suit: patternSuitLabel(f.suit),
         pct: Math.round((f.count / f.cards) * 100),
-        p: insightPct(f.p),
+        prob: insightProb(f.p, true),
         faculty: sys ? t(sys.faculty) : ''
       })
     });
   });
   if (total) {
-    const pHigh = patternBinomTail(total, revCount, 0.5);
-    const pLow = patternBinomLowTail(total, revCount, 0.5);
+    // 正逆位各半、彼此獨立：精確的二項分布
+    const dist = patternBinomPmf(total, 0.5);
+    const pHigh = patternUpperTail(dist, revCount);
+    const pLow = patternLowerTail(dist, revCount);
     const pct = Math.round((revCount / total) * 100);
     if (revCount * 2 > total && pHigh < PATTERN_ALPHA) {
       out.push({
         tag: t('pattern.reversed.high.tag'),
-        text: t('pattern.reversed.high.text', { k: revCount, total, pct, p: insightPct(pHigh) })
+        text: t('pattern.reversed.high.text', { k: revCount, total, pct, prob: insightProb(pHigh) })
       });
     } else if (revCount * 2 < total && pLow < PATTERN_ALPHA) {
       out.push({
         tag: t('pattern.reversed.low.tag'),
-        text: t('pattern.reversed.low.text', { k: revCount, total, pct, p: insightPct(pLow) })
+        text: t('pattern.reversed.low.text', { k: revCount, total, pct, prob: insightProb(pLow) })
       });
     }
   }
@@ -169,41 +213,58 @@ function generatePatterns(history) {
     }
     e.count++;
   });
+  // 任何一張牌在某次占卜裡至多出現一次，機率是 抽牌數／牌組張數（不在牌組裡就是 0）；
+  // 挑機率最小的那張，再乘上「用過的牌組裡一共有幾種牌」做多重比較校正
+  const possible = new Set();
+  entries.forEach(e => { if (e.cards.length) e.deck.keys.forEach(k => possible.add(k)); });
   let topCard = null;
   let topCardKey = null;
+  let topRaw = 1;
   cardCounts.forEach((e, key) => {
-    if (!topCard || e.count > topCard.count) {
+    if (e.count < 3) return;
+    let dist = [1];
+    entries.forEach(en => {
+      if (!en.cards.length || !en.deck.keys.has(key)) return;
+      const q = en.cards.length / en.deck.N;
+      dist = patternConvolve(dist, [1 - q, q]);
+    });
+    const raw = patternUpperTail(dist, e.count);
+    if (!topCard || raw < topRaw || (raw === topRaw && e.count > topCard.count)) {
       topCard = e;
       topCardKey = key;
+      topRaw = raw;
     }
   });
   if (topCard && total) {
-    const p = Math.min(1, 78 * patternBinomTail(total, topCard.count, 1 / 78));
-    if (topCard.count >= 3 && p < PATTERN_ALPHA) {
+    const p = Math.min(1, possible.size * topRaw);
+    if (p < PATTERN_ALPHA) {
       const meaning = cardMeanings[topCardKey] || null;
       const keywords = (meaning && Array.isArray(meaning.keywords)) ? meaning.keywords : [];
       const kw = keywords.slice(0, 2).join('、');
       out.push({
         tag: t('pattern.regular.tag'),
         text: t(kw ? 'pattern.regular.text' : 'pattern.regular.text.noKeywords',
-          { name: topCard.name, n: topCard.count, total, p: insightPct(p), kw })
+          { name: topCard.name, n: topCard.count, total, size: possible.size, prob: insightProb(p, true), kw })
       });
     }
   }
   if (total) {
-    const pHigh = patternBinomTail(total, majorCount, 22 / 78);
-    const pLow = patternBinomLowTail(total, majorCount, 22 / 78);
+    // 只用大阿卡納或完全不含大阿卡納的牌組，分布退化成定值，兩邊的機率都是 1，不會誤報
+    const dist = patternClassDist(entries, d => d.major);
+    const mean = patternMean(dist);
+    const pHigh = patternUpperTail(dist, majorCount);
+    const pLow = patternLowerTail(dist, majorCount);
     const pct = Math.round((majorCount / total) * 100);
-    const exp = (total * 22 / 78).toFixed(1);
-    if (majorCount > total * 22 / 78 && pHigh < PATTERN_ALPHA) {
+    const exp = mean.toFixed(1);
+    if (majorCount > mean && pHigh < PATTERN_ALPHA) {
       out.push({
         tag: t('pattern.major.high.tag'),
-        text: t('pattern.major.high.text', { k: majorCount, total, exp, pct, p: insightPct(pHigh) })
+        text: t('pattern.major.high.text', { k: majorCount, total, exp, pct, prob: insightProb(pHigh) })
       });
-    } else if (majorCount < total * 22 / 78 && pLow < PATTERN_ALPHA) {
+    } else if (majorCount < mean && pLow < PATTERN_ALPHA) {
       out.push({
         tag: t('pattern.major.low.tag'),
-        text: t('pattern.major.low.text', { k: majorCount, total, exp, pct, p: insightPct(pLow) })
+        text: t('pattern.major.low.text', { k: majorCount, total, exp, pct, prob: insightProb(pLow) })
       });
     }
   }
