@@ -32,7 +32,7 @@ import {
 } from './state.js';
 import { readBtn, readBtnText, resultsEl, spreadTypeEl } from './dom.js';
 import { LAYOUT_IMG_SIZES, renderCard, visualStyle } from './render.js';
-import { getCardArtImage } from './deck.js';
+import { loadDeck } from './lazy.js';
 import { generateInsight } from './insight.js';
 
 function getDeck(deckType) {
@@ -319,8 +319,10 @@ function loadImage(src) {
     img.src = src;
   });
 }
-function shareCardFaces(cards) {
+async function shareCardFaces(cards) {
   if (visualStyle === 'line') {
+    const { getCardArtImage } = await loadDeck().catch(() => ({}));
+    if (!getCardArtImage) return cards.map(() => null);
     const cs = getComputedStyle(document.documentElement);
     const colors = Object.fromEntries(['paper', 'tint', 'ink', 'gold'].map(k => [k, cs.getPropertyValue(`--deck-${k}`).trim()]));
     return Promise.all(cards.map(async (card) => {

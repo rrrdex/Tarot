@@ -13,8 +13,7 @@ import { mofaTerms } from './mofa.js';
 import { waiteTermZh } from './waite-zh.js';
 import { cardClass, cardSystems, waiteCourtLooks } from './systems.js';
 import { cardMeaningText, cardMeanings, minorRankMeanings } from './meanings.js';
-import { loadContexts, loadLore } from './lazy.js';
-import { getCardArt } from './deck.js';
+import { loadContexts, loadDeck, loadLore, loadedDeck } from './lazy.js';
 import { lastReadingData } from './state.js';
 import { renderResults } from './reading.js';
 import { renderCardDatabase } from './database.js';
@@ -30,6 +29,16 @@ export function setVisualStyle(style) {
     radio.checked = radio.value === style;
   });
   refreshCardVisuals();
+  // 切到線稿模式時牌組可能還沒下載：先以文字顯示，載入後再補上插畫
+  if (style === 'line' && !loadedDeck()) loadDeck().then(refreshCardVisuals).catch(() => {});
+}
+// 啟動時先等線稿牌組載入再畫牌，避免先閃一下文字版
+export function ensureDeck() {
+  return visualStyle === 'line' && !loadedDeck() ? loadDeck().catch(() => {}) : Promise.resolve();
+}
+// 用函式宣告（會提升）：其他模組在 render.js 求值完成前就可能呼叫到這裡
+function deckArt(card, extraClass) {
+  return loadedDeck()?.getCardArt(card, extraClass) ?? null;
 }
 function refreshCardVisuals() {
   if (lastReadingData.drawnCards) renderResults(lastReadingData);
@@ -55,7 +64,7 @@ export function cardThumb(card, extraClass = '', displayWidth = 150) {
   if (!card) return null;
   if (visualStyle === 'text') return null;
   if (visualStyle === 'line') {
-    return getCardArt(card, extraClass);
+    return deckArt(card, extraClass);
   }
   const jpg = getCardImageUrl(card);
   if (!jpg) return null;
@@ -101,7 +110,7 @@ export function renderCard(card, isBottom = false, anim = 'slide-in', idx = 0, i
   const meaning = cardMeanings[card.nameKey];
   const photo = visualStyle === 'api' ? getCardImageUrl(card) : null;
   const lineArt = visualStyle === 'line'
-  ? getCardArt(card, card.orientation === 'reversed' ? 'reversed' : '')
+  ? deckArt(card, card.orientation === 'reversed' ? 'reversed' : '')
   : null;
   const visualClass = (photo || lineArt) ? 'visual-api' : '';
   const size = photo ? cardImageSize(card) : null;

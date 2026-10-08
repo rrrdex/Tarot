@@ -18,6 +18,7 @@ import {
 } from './dom.js';
 import {
   closeCardModal,
+  ensureDeck,
   openCardModal,
   renderDailyCard,
   setVisualStyle,
@@ -444,17 +445,19 @@ export function rerenderForLang() {
   }
   if (q) document.getElementById('question').value = q;
   updateSpreadInfo();
-  renderDailyCard();
-  renderProfile();
-  setVisualStyle(visualStyle);
-  switchTab(isValidSeed(seed) ? 'reading' : currentTab);
-  if (isValidSeed(seed)) {
-    const picksParam = url.searchParams.get('picks');
-    const picks = picksParam
-    ? picksParam.split('-').map(Number)
-    : 'first';
-    performReading(seed, false, picks);
-  }
+  ensureDeck().then(() => {
+    renderDailyCard();
+    renderProfile();
+    setVisualStyle(visualStyle);
+    switchTab(isValidSeed(seed) ? 'reading' : currentTab);
+    if (isValidSeed(seed)) {
+      const picksParam = url.searchParams.get('picks');
+      const picks = picksParam
+      ? picksParam.split('-').map(Number)
+      : 'first';
+      performReading(seed, false, picks);
+    }
+  });
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
     navigator.serviceWorker.register('sw.js').catch(() => {});
   }

@@ -49,6 +49,29 @@ test.describe('線稿牌組的 SVG', () => {
   });
 });
 
+test.describe('線稿牌組按需載入', () => {
+  test('文字模式不會下載線稿牌組', async ({ page }) => {
+    const deckRequests = [];
+    page.on('request', (req) => {
+      if (/\/chunks\/deck-/.test(req.url())) deckRequests.push(req.url());
+    });
+    await page.goto('/?seed=123456789&spread=three&deck=full');
+    await expect(page.locator('#results .card')).toHaveCount(4);
+    await openTab(page, 'database');
+    expect(deckRequests).toEqual([]);
+  });
+
+  test('從設定切到線稿模式後，牌面補上插畫', async ({ page }) => {
+    await page.goto('/?seed=123456789&spread=three&deck=full');
+    await expect(page.locator('#results .card')).toHaveCount(4);
+    await expect(page.locator('#results svg.line-art')).toHaveCount(0);
+    await openTab(page, 'settings');
+    await page.locator('input[name="visualStyle"][value="line"]').check({ force: true });
+    await openTab(page, 'reading');
+    await expect(page.locator('#results .card svg.line-art')).toHaveCount(4);
+  });
+});
+
 test.describe('線稿模式', () => {
   test.beforeEach(async ({ page }) => {
     await seedStorage(page, { visualStyle: 'line' });
