@@ -3,6 +3,7 @@
    再加上新版型共用的語意 token（shared.css 使用）與本版型專用的原始色票（--tpl-*，給 skin 用）。
    之後的完整外觀（skin）規則接在檔案最後的「外觀」段落，一律以 :root[data-template="aurora"] 開頭。
    色票都包在 @media screen 裡：列印時退回 style.css 的白紙配色，版型不影響列印。
+   霓虹（.dark＋.tpl-neon）在深色之上另有一組霓虹配色，見檔案最後的「霓虹（neon）」段落。
    深色的判斷與 style.css 相同：明確選深色（.dark；霓虹在新版型由 JS 換成 .dark，保險起見一併列 .neon），
    或跟隨系統且系統是深色（prefers-color-scheme: dark 且沒有 .light）。
    對比（已驗證）：--text、--text-secondary、--text-tertiary、--accent、--accent-text、狀態色
@@ -1348,5 +1349,442 @@
     background:
       var(--tpl-glow-1) right -160px top -200px / 640px 640px no-repeat,
       var(--tpl-glow-2) left -220px top 38% / 560px 560px no-repeat;
+  }
+}
+
+/* ── 霓虹（neon）：霓虹星夜 ──
+   主題選「霓虹占卜館」時，<html> 同時有 .dark 與 .tpl-neon：先套上面的深色 token，再由這裡疊上霓虹。
+   選擇器一律以 :root:root[data-template="aurora"].tpl-neon 開頭（比深色與外觀規則都重），全部包在 @media screen 裡，列印維持白紙。
+   設計：更深的靛黑夜空（暗角＋淡淡星點＋琥珀、紫、青三團光），玻璃卡片的邊緣是一道微亮的霓虹紫；
+   柔金換成發光的霓虹琥珀（主要按鈕、選中的分段、目前的導覽項目、翻頁圓點、焦點框）；青色只當第二個點綴色（背景光、寶劍牌）；
+   襯線標題帶一圈柔和的紫色光暈。內文不發光，也沒有任何閃爍或新增的動畫。
+   對比（已驗證，最差情況以光暈中心計）：--text、--text-body、--text-secondary、--text-tertiary、--accent、--accent-text、狀態色
+   在 --bg、--surface、--surface-elevated、--sheet-bg、玻璃卡片（含疊在光暈上）都 ≥ 5:1；--tpl-on-gold 在琥珀上 ≥ 10:1；
+   --control-border ≥ 3:1；--pager-fill 相對 --pager-track ≥ 3:1；--chart-1…5 與花色光在卡片底上 ≥ 3:1。 */
+@media screen {
+  :root:root[data-template="aurora"].tpl-neon {
+    /* 網站共用 token */
+    --bg: #080619;
+    --bg-secondary: #0D0A24;
+    --bg-tertiary: #130F31;
+    --surface: #130F31;
+    --surface-elevated: #1A1540;
+    --text: #F2EEFF;
+    --text-secondary: #B3ACD8;
+    --text-tertiary: #ABA4D2;
+    --divider: rgba(183, 140, 255, 0.22);
+    --control-border: #8577C2;
+    --accent: #FFC24A;
+    --accent-hover: #FFD06A;
+    --accent-active: #F0AE2E;
+    --accent-contrast: #1A1000;
+    --accent-light: rgba(255, 194, 74, 0.14);
+    --success: #4BE08A;
+    --warning: #FFB547;
+    --danger: #FF5C7A;
+    --danger-text: #FF7A90;
+    --success-text: #4BE08A;
+    --warning-text: #FFB547;
+    --yesno-yes: #4BE08A;
+    --yesno-no: #FF7A90;
+    /* 新版型共用的語意 token */
+    --accent-text: #FFD27E;
+    --accent-soft: #2A2036;
+    --text-body: #DCD6F5;
+    --nav-bg: rgba(16, 12, 40, 0.88);
+    --nav-fg: #B3ACD8;
+    --nav-fg-active: #FFD27E;
+    --nav-active-bg: rgba(255, 194, 74, 0.14);
+    --nav-border: rgba(183, 140, 255, 0.4);
+    --sheet-bg: #120E2E;
+    --sheet-handle: rgba(199, 166, 255, 0.5);
+    --scrim: rgba(3, 2, 12, 0.72);
+    --pager-track: rgba(190, 160, 255, 0.45);
+    --pager-fill: #FFC24A;
+    --card-back: #100C2B;
+    --card-back-edge: rgba(183, 140, 255, 0.62);
+    --card-back-mark: #FFC24A;
+    --card-lift: 0 0 0 1px rgba(183, 140, 255, 0.45), 0 0 28px rgba(160, 110, 255, 0.45);
+    /* 本版型的原始色票：琥珀（主色）、霓虹紫（邊線與標題光暈）、青（第二點綴） */
+    --tpl-gold: #FFC24A;
+    --tpl-on-gold: #1A1000;
+    --tpl-gold-line: rgba(255, 194, 74, 0.55);
+    --tpl-amber-fill: linear-gradient(180deg, #FFD371, #FFB938);
+    --tpl-amber-fill-hover: linear-gradient(180deg, #FFDE8C, #FFC550);
+    --tpl-amber-glow: 0 0 0 1px rgba(255, 200, 90, 0.5), 0 0 18px rgba(255, 190, 60, 0.5), 0 0 44px rgba(255, 170, 40, 0.18);
+    --tpl-violet: #B78CFF;
+    --tpl-violet-text: #C7A6FF;
+    --tpl-cyan: #5CE1FF;
+    --tpl-edge-glow: 0 0 22px -8px rgba(170, 120, 255, 0.6);
+    --tpl-heading-halo: 0 0 12px rgba(170, 120, 255, 0.55), 0 0 30px rgba(150, 100, 255, 0.25);
+    --tpl-soft: #D2CBF0;
+    --tpl-line: rgba(183, 140, 255, 0.3);
+    --tpl-glass: rgba(160, 130, 255, 0.07);
+    --tpl-dock: rgba(16, 12, 40, 0.88);
+    --tpl-sheet: rgba(18, 14, 46, 0.96);
+    --tpl-card-face: #110D2C;
+    --tpl-card-active: #1E1648;
+    --tpl-halo: 0 0 0 1px rgba(255, 194, 74, 0.35), 0 0 26px rgba(255, 180, 60, 0.35);
+    --tpl-glow-1: radial-gradient(circle, rgba(255, 185, 56, 0.2), rgba(255, 185, 56, 0) 70%);
+    --tpl-glow-2: radial-gradient(circle, rgba(154, 107, 255, 0.3), rgba(154, 107, 255, 0) 70%);
+    --tpl-glow-3: radial-gradient(circle, rgba(56, 217, 255, 0.14), rgba(56, 217, 255, 0) 70%);
+    --tpl-blur: saturate(150%) blur(18px);
+    --tpl-glass-strong: rgba(18, 14, 46, 0.84);
+    --tpl-control: rgba(160, 130, 255, 0.06);
+    --tpl-shadow: 0 0 22px -8px rgba(170, 120, 255, 0.55), inset 0 1px 0 rgba(220, 200, 255, 0.08), 0 12px 32px rgba(0, 0, 0, 0.4);
+    --tpl-shadow-strong: 0 0 32px -10px rgba(170, 120, 255, 0.65), inset 0 1px 0 rgba(220, 200, 255, 0.1), 0 18px 48px rgba(0, 0, 0, 0.6);
+    /* 統計圖表：琥珀、霓虹紫、青、粉紅、薄荷 */
+    --chart-1: #FFC24A;
+    --chart-2: #B78CFF;
+    --chart-3: #5CE1FF;
+    --chart-4: #FF7AC6;
+    --chart-5: #7CF0B5;
+  }
+
+  /* ── 背景：靛黑夜空，暗角＋三團光（琥珀右上、紫左側、青右下）＋淡淡的星點（中央淡出，不壓在內文上） ── */
+  :root:root[data-template="aurora"].tpl-neon body::before {
+    background:
+      radial-gradient(ellipse 130% 95% at 50% 40%, rgba(2, 1, 10, 0) 55%, rgba(2, 1, 10, 0.6) 100%),
+      var(--tpl-glow-1) right -80px top -120px / 340px 340px no-repeat,
+      var(--tpl-glow-2) left -140px top 300px / 320px 320px no-repeat,
+      var(--tpl-glow-3) right -130px bottom -90px / 320px 320px no-repeat;
+  }
+  :root:root[data-template="aurora"].tpl-neon body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cg fill='%23fff'%3E%3Ccircle cx='18' cy='32' r='.7' opacity='.35'/%3E%3Ccircle cx='96' cy='14' r='.5' opacity='.25'/%3E%3Ccircle cx='210' cy='40' r='.6' opacity='.3'/%3E%3Ccircle cx='60' cy='110' r='.6' opacity='.22'/%3E%3Ccircle cx='120' cy='170' r='.5' opacity='.25'/%3E%3Ccircle cx='30' cy='200' r='.7' opacity='.3'/%3E%3Ccircle cx='170' cy='225' r='.5' opacity='.2'/%3E%3C/g%3E%3Ccircle cx='150' cy='62' r='.9' fill='%23C7A6FF' opacity='.4'/%3E%3Ccircle cx='190' cy='132' r='.8' fill='%23FFE2A8' opacity='.35'/%3E%3Ccircle cx='230' cy='208' r='.6' fill='%239EEBFF' opacity='.3'/%3E%3C/svg%3E") 0 0 / 240px 240px repeat,
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='370' height='370'%3E%3Cg fill='%23fff'%3E%3Ccircle cx='44' cy='70' r='.5' opacity='.22'/%3E%3Ccircle cx='250' cy='30' r='.6' opacity='.28'/%3E%3Ccircle cx='330' cy='170' r='.5' opacity='.2'/%3E%3Ccircle cx='140' cy='300' r='.6' opacity='.25'/%3E%3C/g%3E%3Ccircle cx='300' cy='320' r='.8' fill='%23C7A6FF' opacity='.3'/%3E%3C/svg%3E") 90px 60px / 370px 370px repeat;
+    -webkit-mask-image: radial-gradient(ellipse 75% 65% at 50% 45%, transparent 35%, #000 92%);
+    mask-image: radial-gradient(ellipse 75% 65% at 50% 45%, transparent 35%, #000 92%);
+  }
+  :root:root[data-template="aurora"].tpl-neon ::selection {
+    background: rgba(255, 194, 74, 0.35);
+    color: var(--text);
+  }
+  :root:root[data-template="aurora"].tpl-neon :is(mark, .card-db-hit mark) {
+    background: rgba(255, 194, 74, 0.3);
+    color: var(--text);
+  }
+
+  /* ── 襯線標題：柔和的紫色光暈（只給大標題；小字、內文不加，保持清晰） ── */
+  :root:root[data-template="aurora"].tpl-neon :is(
+    .title h1, .hero-title, .results-title, .modal-title, .insight-title, .settings-title,
+    .daily-card-name, .rd-card-name, .flash-name, .quiz-prompt, .quiz-result-score, .learn-mastery-title,
+    .deck-history-heading, .spread-info-title, .sym-list-title, .sym-detail-title, .pick-header h2, .pick-header h3, .cmp-name
+  ) {
+    text-shadow: var(--tpl-heading-halo);
+  }
+  /* 琥珀色的大數字：琥珀光暈 */
+  :root:root[data-template="aurora"].tpl-neon :is(.stat-value, .changelog-version) {
+    text-shadow: 0 0 14px rgba(255, 190, 60, 0.4);
+  }
+
+  /* ── 頁首：玻璃下緣一道霓虹紫的光 ── */
+  :root:root[data-template="aurora"].tpl-neon .app-header {
+    background: color-mix(in srgb, var(--bg) 74%, transparent);
+    border-bottom-color: rgba(183, 140, 255, 0.3);
+    box-shadow: 0 10px 30px -20px rgba(150, 100, 255, 0.8);
+  }
+  :root:root[data-template="aurora"].tpl-neon .icon-btn {
+    border-color: rgba(183, 140, 255, 0.36);
+    box-shadow: var(--tpl-edge-glow);
+  }
+  @media (hover: hover) {
+    :root:root[data-template="aurora"].tpl-neon .icon-btn:hover {
+      border-color: var(--tpl-gold-line);
+      box-shadow: 0 0 16px -4px rgba(255, 190, 60, 0.55);
+    }
+  }
+
+  /* ── 玻璃卡片：邊線是微亮的霓虹紫（顏色在 --tpl-line、光暈在 --tpl-shadow） ── */
+  :root:root[data-template="aurora"].tpl-neon :is(.panel, .history-item, .stat-card, .quiz-card, .quiz-result, .learn-empty, .spread-info, .daily-card, .profile-chip, .insight-panel, .deck-history-group) {
+    border-color: var(--tpl-line);
+    box-shadow: var(--tpl-shadow);
+  }
+
+  /* ── 表單：焦點時琥珀框＋光暈 ── */
+  :root:root[data-template="aurora"].tpl-neon :is(input[type=text], input[type=search], input[type=date], select:not(.btn), .select-trigger, textarea):focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(255, 194, 74, 0.2), 0 0 18px rgba(255, 190, 60, 0.35);
+  }
+
+  /* ── 按鈕：主要是發光的琥珀膠囊，次要是琥珀霓虹框，第三級是紫色霓虹框 ── */
+  :root:root[data-template="aurora"].tpl-neon .btn-primary {
+    background: var(--tpl-amber-fill);
+    color: var(--tpl-on-gold);
+    box-shadow: inset 0 1px 0 rgba(255, 245, 215, 0.6), var(--tpl-amber-glow);
+  }
+  @media (hover: hover) {
+    :root:root[data-template="aurora"].tpl-neon .btn-primary:hover:not(:disabled) {
+      background: var(--tpl-amber-fill-hover);
+      box-shadow: inset 0 1px 0 rgba(255, 245, 215, 0.7), 0 0 0 1px rgba(255, 214, 130, 0.7), 0 0 24px rgba(255, 190, 60, 0.65), 0 0 56px rgba(255, 170, 40, 0.25);
+    }
+  }
+  :root:root[data-template="aurora"].tpl-neon .btn-primary:active:not(:disabled) {
+    background: var(--accent-active);
+  }
+  :root:root[data-template="aurora"].tpl-neon .btn-primary:disabled {
+    box-shadow: none;
+  }
+  :root:root[data-template="aurora"].tpl-neon .btn-secondary {
+    border-color: var(--tpl-gold-line);
+    color: var(--accent-text);
+    box-shadow: 0 0 14px -6px rgba(255, 190, 60, 0.55), inset 0 0 12px -8px rgba(255, 190, 60, 0.55);
+  }
+  :root:root[data-template="aurora"].tpl-neon :is(.btn-tertiary, select.btn) {
+    border-color: rgba(183, 140, 255, 0.42);
+  }
+  @media (hover: hover) {
+    :root:root[data-template="aurora"].tpl-neon :is(.btn-tertiary, select.btn):hover {
+      border-color: rgba(199, 166, 255, 0.75);
+      box-shadow: 0 0 16px -6px rgba(170, 120, 255, 0.7);
+    }
+  }
+  :root:root[data-template="aurora"].tpl-neon #filterFavorite[aria-pressed="true"] {
+    border-color: var(--tpl-gold);
+    box-shadow: 0 0 14px -4px rgba(255, 190, 60, 0.55);
+  }
+
+  /* ── 標籤：關鍵詞、徽章是細細的琥珀霓虹管（淡底＋琥珀細框，不用整塊琥珀底，免得在靛黑上發濁）；
+     選中的篩選標籤帶一點琥珀光 ── */
+  :root:root[data-template="aurora"].tpl-neon :is(.tag, .badge, .pick-progress, .footer-version) {
+    background: rgba(255, 194, 74, 0.08);
+    border-color: rgba(255, 194, 74, 0.38);
+  }
+  :root:root[data-template="aurora"].tpl-neon :is(.badge, .pick-progress, .footer-version) {
+    box-shadow: inset 0 0 0 1px rgba(255, 194, 74, 0.38);
+  }
+  :root:root[data-template="aurora"].tpl-neon .rd-paged .rd-kw .kw {
+    background: rgba(255, 194, 74, 0.08);
+    box-shadow: inset 0 0 0 1px rgba(255, 194, 74, 0.38), 0 0 12px -6px rgba(255, 190, 60, 0.6);
+  }
+  :root:root[data-template="aurora"].tpl-neon .tag.refs-kind {
+    background: transparent;
+  }
+  :root:root[data-template="aurora"].tpl-neon .tag:is([role=button], button) {
+    background: transparent;
+    border-color: rgba(183, 140, 255, 0.34);
+  }
+  :root:root[data-template="aurora"].tpl-neon .tag.active,
+  :root:root[data-template="aurora"].tpl-neon .tag:is([role=button], button).active {
+    border-color: var(--tpl-gold);
+    box-shadow: 0 0 12px -3px rgba(255, 190, 60, 0.55);
+  }
+
+  /* ── 分段按鈕：紫色霓虹軌道，選中的是發光的琥珀膠囊 ── */
+  :root:root[data-template="aurora"].tpl-neon .segmented {
+    border-color: rgba(183, 140, 255, 0.34);
+    box-shadow: inset 0 0 16px -8px rgba(170, 120, 255, 0.6);
+  }
+  :root:root[data-template="aurora"].tpl-neon .seg-item.active {
+    background: var(--tpl-amber-fill);
+    color: var(--tpl-on-gold);
+    box-shadow: 0 0 0 1px rgba(255, 200, 90, 0.5), 0 0 16px rgba(255, 190, 60, 0.5);
+  }
+
+  /* ── 浮動膠囊導覽列：紫色霓虹邊；目前的項目是發光的琥珀字＋短光條 ── */
+  :root:root[data-template="aurora"].tpl-neon .tpl-nav::before {
+    border-color: var(--nav-border);
+    box-shadow: 0 0 28px -6px rgba(170, 120, 255, 0.6), inset 0 1px 0 rgba(220, 200, 255, 0.1), 0 18px 48px rgba(0, 0, 0, 0.6);
+  }
+  :root:root[data-template="aurora"].tpl-neon .tpl-nav-item[aria-current="page"] {
+    text-shadow: 0 0 10px rgba(255, 190, 60, 0.6);
+  }
+  :root:root[data-template="aurora"].tpl-neon .tpl-nav-item[aria-current="page"] .tpl-nav-icon {
+    filter: drop-shadow(0 0 5px rgba(255, 190, 60, 0.65));
+  }
+  :root:root[data-template="aurora"].tpl-neon .tpl-nav-item[aria-current="page"]::after {
+    width: 20px;
+    margin-left: -10px;
+    box-shadow: 0 0 8px rgba(255, 190, 60, 0.9), 0 0 2px rgba(255, 225, 160, 0.9);
+  }
+
+  /* ── 焦點框：琥珀線＋光暈 ── */
+  :root:root[data-template="aurora"].tpl-neon :focus-visible {
+    outline-color: var(--accent);
+  }
+  :root:root[data-template="aurora"].tpl-neon :is(.btn, .icon-btn, .modal-close, .seg-item, .tag, .tpl-nav-item, .sym-btn, .quiz-option, .history-action, .history-fav, .spread-option, .rd-pager-btn, .card-viewer-close):focus-visible {
+    box-shadow: 0 0 0 4px rgba(255, 194, 74, 0.16), 0 0 20px rgba(255, 190, 60, 0.5);
+  }
+
+  /* ── 每日一牌：太陽紋小牌換成琥珀線 ── */
+  :root:root[data-template="aurora"].tpl-neon .daily-card:not(:empty):not(:has(.daily-card-art))::before {
+    border-color: var(--tpl-gold-line);
+    box-shadow: 0 0 14px -4px rgba(255, 190, 60, 0.5);
+    background:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23FFC24A' stroke-width='1.5' stroke-linecap='round'%3E%3Cpath d='M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1'/%3E%3Ccircle cx='12' cy='12' r='3.2'/%3E%3C/svg%3E") center / 26px 26px no-repeat,
+      var(--tpl-card-face);
+  }
+  :root:root[data-template="aurora"].tpl-neon .daily-card:hover {
+    border-color: rgba(199, 166, 255, 0.6);
+  }
+  @media (hover: hover) {
+    :root:root[data-template="aurora"].tpl-neon .profile-chip:hover {
+      border-color: rgba(199, 166, 255, 0.6);
+    }
+  }
+
+  /* ── 抽牌：靛黑牌背、紫色霓虹細框、琥珀星芒；選中的牌是發光的琥珀 ── */
+  :root:root[data-template="aurora"].tpl-neon .pick-card {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 104'%3E%3Crect x='5' y='5' width='50' height='94' rx='4' fill='none' stroke='%23B78CFF' stroke-opacity='.55'/%3E%3Cpath d='M30 40l2.6 9.4L42 52l-9.4 2.6L30 64l-2.6-9.4L18 52l9.4-2.6z' fill='%23FFC24A' fill-opacity='.9'/%3E%3Ccircle cx='30' cy='22' r='1.4' fill='%235CE1FF' fill-opacity='.7'/%3E%3Ccircle cx='30' cy='82' r='1.4' fill='%235CE1FF' fill-opacity='.7'/%3E%3C/svg%3E");
+    box-shadow: inset 0 0 0 1px var(--card-back-edge), 0 0 12px -4px rgba(170, 120, 255, 0.6);
+  }
+  @media (hover: hover) {
+    :root:root[data-template="aurora"].tpl-neon .pick-card:hover:not(:disabled) {
+      box-shadow: inset 0 0 0 1px var(--tpl-violet-text), 0 0 22px rgba(170, 120, 255, 0.6);
+    }
+  }
+  :root:root[data-template="aurora"].tpl-neon .pick-card.selected {
+    background-image: none;
+    background: var(--tpl-amber-fill);
+    color: var(--tpl-on-gold);
+    box-shadow: var(--tpl-amber-glow);
+  }
+  :root:root[data-template="aurora"].tpl-neon .pick-card:focus-visible {
+    box-shadow: inset 0 0 0 1px var(--card-back-edge), 0 0 0 4px rgba(255, 194, 74, 0.16), 0 0 20px rgba(255, 190, 60, 0.5);
+  }
+
+  /* ── 結果：牌面卡片、逐張解讀抽屜、翻頁圓點 ── */
+  :root:root[data-template="aurora"].tpl-neon .card {
+    border-color: var(--tpl-line);
+    box-shadow: var(--tpl-edge-glow);
+  }
+  @media (hover: hover) {
+    :root:root[data-template="aurora"].tpl-neon .card:hover {
+      border-color: rgba(199, 166, 255, 0.6);
+      box-shadow: 0 0 0 1px rgba(183, 140, 255, 0.3), 0 0 26px rgba(160, 110, 255, 0.45);
+    }
+  }
+  /* 底牌維持琥珀虛線框（深色版的金色虛線） */
+  :root:root[data-template="aurora"].tpl-neon .card.bottom {
+    border-color: var(--tpl-gold-line);
+  }
+  :root:root[data-template="aurora"].tpl-neon .reading-detail.rd-paged {
+    border-color: rgba(183, 140, 255, 0.34);
+    box-shadow: var(--tpl-shadow-strong);
+  }
+  :root:root[data-template="aurora"].tpl-neon .rd-dots > span.on {
+    box-shadow: 0 0 8px rgba(255, 190, 60, 0.85), 0 0 2px rgba(255, 225, 160, 0.9);
+  }
+  :root:root[data-template="aurora"].tpl-neon .rd-num {
+    box-shadow: 0 0 10px -3px rgba(255, 190, 60, 0.6);
+  }
+  :root:root[data-template="aurora"].tpl-neon .rd-role {
+    border-left-color: var(--tpl-gold);
+  }
+
+  /* ── 統計：琥珀長條帶光 ── */
+  :root:root[data-template="aurora"].tpl-neon .trend-bar {
+    opacity: 0.92;
+    box-shadow: 0 0 10px -2px rgba(255, 190, 60, 0.55);
+  }
+
+  /* ── 資料庫：符號選中是發光的琥珀；知識庫標題下一道琥珀光線 ── */
+  :root:root[data-template="aurora"].tpl-neon .sym-btn[aria-pressed="true"] {
+    background: var(--tpl-amber-fill);
+    box-shadow: 0 0 0 1px rgba(255, 200, 90, 0.5), 0 0 16px rgba(255, 190, 60, 0.5);
+  }
+  :root:root[data-template="aurora"].tpl-neon .deck-history-heading {
+    box-shadow: 0 8px 10px -10px rgba(255, 190, 60, 0.8);
+  }
+  :root:root[data-template="aurora"].tpl-neon .history-empty::before {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23FFC24A' stroke-width='1.3' stroke-linejoin='round'%3E%3Cpath d='M12 3l2 7 7 2-7 2-2 7-2-7-7-2 7-2z'/%3E%3C/svg%3E");
+    filter: drop-shadow(0 0 6px rgba(255, 190, 60, 0.6));
+  }
+
+  /* ── 學習 ── */
+  @media (hover: hover) {
+    :root:root[data-template="aurora"].tpl-neon .flashcard:not(.flipped):hover {
+      box-shadow: var(--tpl-halo);
+    }
+  }
+
+  /* ── 視窗：抽屜邊緣一道紫光；選中的牌義區塊帶琥珀光 ── */
+  :root:root[data-template="aurora"].tpl-neon .modal-overlay:not(.card-viewer) .modal {
+    border-color: rgba(183, 140, 255, 0.38);
+    box-shadow: 0 0 40px -12px rgba(160, 110, 255, 0.75), inset 0 1px 0 rgba(220, 200, 255, 0.1), 0 18px 48px rgba(0, 0, 0, 0.6);
+  }
+  :root:root[data-template="aurora"].tpl-neon .modal-close {
+    border-color: rgba(183, 140, 255, 0.36);
+  }
+  :root:root[data-template="aurora"].tpl-neon .meaning-block.active {
+    border-color: var(--tpl-gold-line);
+    box-shadow: 0 0 22px -8px rgba(255, 190, 60, 0.5);
+  }
+  :root:root[data-template="aurora"].tpl-neon .spread-option[aria-selected=true] {
+    box-shadow: inset 0 0 0 1px rgba(255, 194, 74, 0.35);
+  }
+  :root:root[data-template="aurora"].tpl-neon .card-viewer {
+    background: color-mix(in srgb, #04030E 84%, transparent);
+  }
+
+  /* ── 提示訊息、捲軸、頁尾 ── */
+  :root:root[data-template="aurora"].tpl-neon .toast {
+    border-color: rgba(183, 140, 255, 0.38);
+  }
+  :root:root[data-template="aurora"].tpl-neon ::-webkit-scrollbar-thumb {
+    background: rgba(183, 140, 255, 0.45);
+  }
+  :root:root[data-template="aurora"].tpl-neon * {
+    scrollbar-color: rgba(183, 140, 255, 0.45) transparent;
+  }
+  :root:root[data-template="aurora"].tpl-neon .app-footer {
+    border-top-color: rgba(183, 140, 255, 0.28);
+  }
+
+  /* ── 線稿牌依花色發光（設定說明「線稿模式的牌依花色發光」）：
+     權杖琥珀、聖杯粉紅、寶劍青、錢幣薄荷、大阿卡納淡紫；統計圓餅圖與分享圖也讀 --neon-suit ── */
+  :root:root[data-template="aurora"].tpl-neon [data-suit] {
+    --neon-suit: #B78CFF;
+  }
+  :root:root[data-template="aurora"].tpl-neon [data-suit=Wands] {
+    --neon-suit: #FFC24A;
+  }
+  :root:root[data-template="aurora"].tpl-neon [data-suit=Cups] {
+    --neon-suit: #FF8AD8;
+  }
+  :root:root[data-template="aurora"].tpl-neon [data-suit=Swords] {
+    --neon-suit: #5CE1FF;
+  }
+  :root:root[data-template="aurora"].tpl-neon [data-suit=Pentacles] {
+    --neon-suit: #7CF0B5;
+  }
+  :root:root[data-template="aurora"].tpl-neon [data-suit="Major Arcana"] {
+    --neon-suit: #C4A1FF;
+  }
+  :root:root[data-template="aurora"].tpl-neon svg.line-art {
+    --deck-paper: #0B0922;
+    --deck-tint: #120E2E;
+    --deck-gold: color-mix(in srgb, var(--neon-suit, #B78CFF) 45%, #FFF3D6);
+  }
+  :root:root[data-template="aurora"].tpl-neon :is(.card-db-art, .flash-art, .quiz-art, .card-modal-art, .daily-card-art, .profile-chip-art) svg {
+    color: var(--neon-suit);
+    border-color: color-mix(in srgb, var(--neon-suit) 45%, transparent);
+    box-shadow: 0 0 14px -3px color-mix(in srgb, var(--neon-suit) 50%, transparent);
+  }
+  :root:root[data-template="aurora"].tpl-neon .card-viewer-art svg {
+    color: var(--neon-suit);
+    border-color: color-mix(in srgb, var(--neon-suit) 45%, transparent);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--neon-suit) 50%, transparent), 0 0 44px color-mix(in srgb, var(--neon-suit) 32%, transparent), 0 24px 60px rgba(0, 0, 0, 0.6);
+  }
+  :root:root[data-template="aurora"].tpl-neon .card.visual-api .card-image.line-art {
+    background: #0B0922;
+    color: var(--neon-suit);
+    border-color: color-mix(in srgb, var(--neon-suit) 45%, transparent);
+    filter: drop-shadow(0 0 5px color-mix(in srgb, var(--neon-suit) 65%, transparent)) drop-shadow(0 0 16px color-mix(in srgb, var(--neon-suit) 25%, transparent));
+  }
+}
+/* 霓虹的背景光在寬螢幕放大 */
+@media screen and (min-width: 768px) {
+  :root:root[data-template="aurora"].tpl-neon body::before {
+    background:
+      radial-gradient(ellipse 120% 95% at 50% 40%, rgba(2, 1, 10, 0) 55%, rgba(2, 1, 10, 0.6) 100%),
+      var(--tpl-glow-1) right -160px top -200px / 660px 660px no-repeat,
+      var(--tpl-glow-2) left -220px top 38% / 580px 580px no-repeat,
+      var(--tpl-glow-3) right 8% bottom -260px / 560px 560px no-repeat;
   }
 }

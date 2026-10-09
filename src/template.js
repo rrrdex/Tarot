@@ -1,4 +1,4 @@
-// 版型：簡約（minimal，原本的樣子）與三種新版型。
+// 版型：星夜玻璃（aurora，預設）、現代編輯、沉浸手勢，以及原本的簡約（minimal）。
 // index.html 的 inline script 在繪製前就把 <html data-template> 設好；這裡負責之後的切換、
 // 新版型共用的導覽列，以及個人牌在不同版型裡的位置
 import { currentTab, lastReadingData } from './state.js';
@@ -9,10 +9,12 @@ import * as storage from './storage.js';
 
 export const TEMPLATES = ['minimal', 'aurora', 'editorial', 'immersive'];
 const TEMPLATE_KEY = 'template';
+// 沒選過版型時用星夜玻璃；index.html 的 inline script 用同一個預設
+export const DEFAULT_TEMPLATE = 'aurora';
 // 直接讀 <html> 上的屬性、不碰模組裡的常數：其他模組在本模組求值前（循環引用）呼叫也安全
 export function currentTemplate() {
   const v = document.documentElement.dataset.template;
-  return v === 'aurora' || v === 'editorial' || v === 'immersive' ? v : 'minimal';
+  return v === 'minimal' || v === 'editorial' || v === 'immersive' ? v : 'aurora';
 }
 export function isNewTemplate() {
   return currentTemplate() !== 'minimal';
@@ -37,20 +39,20 @@ function placeProfileCards() {
 }
 // 先換畫面，最後才寫入儲存空間（寫入失敗也照常切換）
 export function applyTemplate(name, { save = true } = {}) {
-  const tpl = TEMPLATES.includes(name) ? name : 'minimal';
+  const tpl = TEMPLATES.includes(name) ? name : DEFAULT_TEMPLATE;
   const changed = tpl !== currentTemplate();
   document.documentElement.dataset.template = tpl;
   placeProfileCards();
   syncTemplateRadios();
   syncNav(currentTab);
   if (changed) {
-    // 霓虹主題在新版型以深色顯示；網址列顏色、統計圖的配色都跟著新的 token
+    // 霓虹主題在新版型是該版型自己的霓虹配色；網址列顏色、統計圖的配色都跟著新的 token
     refreshTheme();
     // 逐張解讀在新版型是翻頁器，在簡約版型是清單：重畫目前顯示的結果
     if (shownReading()) renderResults(lastReadingData);
   }
   if (!save) return;
-  if (tpl === 'minimal') storage.remove(TEMPLATE_KEY);
+  if (tpl === DEFAULT_TEMPLATE) storage.remove(TEMPLATE_KEY);
   else storage.set(TEMPLATE_KEY, tpl);
 }
 document.querySelectorAll('input[name="templatePref"]').forEach(radio => {

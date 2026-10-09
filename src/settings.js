@@ -40,7 +40,7 @@ import {
   renderProfile
 } from './profile.js';
 import { setShortcutsEnabled, switchTab, updateSpreadInfo } from './main.js';
-import { TEMPLATES, applyTemplate, isNewTemplate } from './template.js';
+import { DEFAULT_TEMPLATE, TEMPLATES, applyTemplate, isNewTemplate } from './template.js';
 import { syncHapticsCheckbox } from './haptics.js';
 import * as storage from './storage.js';
 
@@ -69,8 +69,12 @@ function syncThemeRadios() {
 // 霓虹主題只在簡約版型有專屬外觀；新版型以深色顯示（與 index.html 的 inline script 相同）
 function applyThemeClass() {
   const root = document.documentElement;
-  root.classList.remove('light', 'dark', 'neon');
-  if (themePref !== 'auto') root.classList.add(themePref === 'neon' && isNewTemplate() ? 'dark' : themePref);
+  root.classList.remove('light', 'dark', 'neon', 'tpl-neon');
+  if (themePref === 'auto') return;
+  // 新版型的霓虹：以該版型的深色為底（.dark），再疊上各版型自己的霓虹配色（.tpl-neon）；
+  // style.css 裡簡約版型的 .neon 規則不套到新版型
+  if (themePref === 'neon' && isNewTemplate()) root.classList.add('dark', 'tpl-neon');
+  else root.classList.add(themePref);
 }
 // 換版型後重新套用主題：霓虹與深色的對應、網址列顏色、統計圖的配色
 export function refreshTheme() {
@@ -196,7 +200,7 @@ function applyImportedExtras(data) {
   }
   if (!applied) return 0;
   // 先換版型再套主題：霓虹在新版型以深色顯示
-  applyTemplate(storage.get('template', 'minimal'), { save: false });
+  applyTemplate(storage.get('template', DEFAULT_TEMPLATE), { save: false });
   applyThemePref(storage.get('theme', 'auto'));
   syncHapticsCheckbox();
   reloadLearnPrefs();

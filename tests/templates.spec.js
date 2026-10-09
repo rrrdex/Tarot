@@ -36,14 +36,15 @@ test.describe('選擇版型', () => {
     await openTab(page, 'settings');
     await page.locator('input[name="templatePref"][value="aurora"]').check();
     await expect(page.locator('html')).toHaveAttribute('data-template', 'aurora');
-    expect(await page.evaluate(() => localStorage.getItem('template'))).toBe('aurora');
+    // 星夜玻璃是預設：選它就是回到預設，不另外記
+    expect(await page.evaluate(() => localStorage.getItem('template'))).toBeNull();
     await expect(page.locator('.tabs')).toBeHidden();
     await expect(page.locator('.tpl-nav')).toBeVisible();
     // 仍在設定：導覽列的「設定」是目前項目
     await expect(nav(page, 'settings')).toHaveAttribute('aria-current', 'page');
     await page.locator('input[name="templatePref"][value="minimal"]').check();
     await expect(page.locator('html')).toHaveAttribute('data-template', 'minimal');
-    expect(await page.evaluate(() => localStorage.getItem('template'))).toBeNull();
+    expect(await page.evaluate(() => localStorage.getItem('template'))).toBe('minimal');
     await expect(page.locator('.tabs')).toBeVisible();
     await expect(page.locator('.tpl-nav')).toBeHidden();
     await expect(page.locator('#meHub')).toBeHidden();
@@ -77,21 +78,40 @@ test.describe('選擇版型', () => {
     expect(await page.locator('meta[name="theme-color"]').getAttribute('content')).toBe('#E4ECE8');
   });
 
-  test('霓虹主題在新版型以深色顯示，回到簡約才是霓虹', async ({ page }) => {
-    await seedStorage(page, { template: 'aurora', theme: 'neon' });
-    await page.goto('/');
-    await expect(page.locator('html')).toHaveClass(/\bdark\b/);
-    await expect(page.locator('html')).not.toHaveClass(/\bneon\b/);
-    await nav(page, 'settings').click();
-    await expect(page.locator('input[name="themePref"][value="neon"]')).toBeChecked();
-    await expect(page.locator('#desc-settings-theme-neon-desc .tpl-only')).toBeVisible();
-    await expect(page.locator('#desc-settings-theme-neon-desc .minimal-only')).toBeHidden();
-    await page.locator('input[name="templatePref"][value="minimal"]').check();
-    await expect(page.locator('html')).toHaveClass(/\bneon\b/);
-    await expect(page.locator('html')).not.toHaveClass(/\bdark\b/);
-    // 網址列顏色跟著目前版型的背景色
-    expect(await page.locator('meta[name="theme-color"]').getAttribute('content')).toBe('#05080f');
+  test.describe('沒選過版型', () => {
+    test.use({ defaultTemplate: null });
+    test('預設是星夜玻璃', async ({ page }) => {
+      await page.goto('/');
+      await expect(page.locator('html')).toHaveAttribute('data-template', 'aurora');
+      await expect(page.locator('.tpl-nav')).toBeVisible();
+      await nav(page, 'settings').click();
+      await expect(page.locator('input[name="templatePref"][value="aurora"]')).toBeChecked();
+    });
   });
+
+  for (const tpl of NEW_TEMPLATES) {
+    test(`${tpl}：霓虹主題是這個版型自己的霓虹配色，不是深色；回到簡約是簡約的霓虹`, async ({ page }) => {
+      await seedStorage(page, { template: tpl, theme: 'dark' });
+      await page.goto('/');
+      const themeColor = () => page.locator('meta[name="theme-color"]').getAttribute('content');
+      const darkBg = await themeColor();
+      await nav(page, 'settings').click();
+      await page.locator('input[name="themePref"][value="neon"]').check();
+      await expect(page.locator('html')).toHaveClass(/\btpl-neon\b/);
+      await expect(page.locator('html')).not.toHaveClass(/(^|\s)neon(\s|$)/);
+      await expect(page.locator('#desc-settings-theme-neon-desc')).toHaveText('夜色配上霓虹光，配色依版型調整；線稿模式的牌依花色發光');
+      // 網址列顏色換成霓虹配色的底色
+      await expect.poll(themeColor).not.toBe(darkBg);
+      // 重新整理後在繪製前就套用
+      await page.reload();
+      await expect(page.locator('html')).toHaveClass(/\btpl-neon\b/);
+      await page.locator('input[name="templatePref"][value="minimal"]').check();
+      await expect(page.locator('html')).toHaveClass(/(^|\s)neon(\s|$)/);
+      await expect(page.locator('html')).not.toHaveClass(/\btpl-neon\b/);
+      await expect(page.locator('html')).not.toHaveClass(/\bdark\b/);
+      expect(await themeColor()).toBe('#05080f');
+    });
+  }
 
   test('匯出與匯入包含版型與觸覺回饋', async ({ page }) => {
     await seedStorage(page, { template: 'immersive', haptics: 'false' });

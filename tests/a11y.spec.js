@@ -67,7 +67,9 @@ const TEMPLATE_COMBOS = [
   ['aurora', 'light', 'text'], ['aurora', 'dark', 'api'],
   ['editorial', 'light', 'api'], ['editorial', 'dark', 'line'],
   ['immersive', 'light', 'line'], ['immersive', 'dark', 'text'],
-  ['aurora', 'auto', 'text']
+  ['aurora', 'auto', 'text'],
+  // 各版型自己的霓虹配色
+  ['aurora', 'neon', 'line'], ['editorial', 'neon', 'api'], ['immersive', 'neon', 'text']
 ];
 for (const [template, theme, style] of TEMPLATE_COMBOS) {
   test(`無障礙：${template} 版型（${theme} 主題、${style} 牌面）的各分頁、翻頁器與視窗`, async ({ page }) => {

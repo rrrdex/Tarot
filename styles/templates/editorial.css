@@ -1813,3 +1813,378 @@
     letter-spacing: 0;
   }
 }
+
+/* ── 霓虹（neon）：「夜版霓虹招牌」──
+   霓虹主題在新版型會同時加上 .dark 與 .tpl-neon：深色 token 先套用，這裡再疊上霓虹（:root:root 讓權重高過深色與外觀規則）。
+   設計：雜誌的夜間版，對面是一塊霓虹招牌。
+   - 紙張變成近黑（--bg #0A0A0C，與深色的 #121316 不同，theme-color 也跟著變）；方塊是略亮一階的黑（#141418），邊緣俐落、不發光；
+   - 墨線變成細細的暖白霓虹燈管：線本身＋兩側一層很淡的光暈（box-shadow，只畫在線的那一側）；
+   - 唯一的朱紅變成紅橘霓虹燈（#FF5A3C）：主要按鈕、目前位置的短橫條、焦點框都帶光暈；
+   - 首頁大號襯線標題像招牌一樣發光（淡橘白的燈芯＋紅橘光暈）；內文不發光，維持清楚；
+   - 冷色（冰青 #6EDCEB）只用在統計圖與聖杯花色，背景右下角一點點反光。
+   「選取」仍是反白方塊：夜裡是點亮的燈箱（暖白底、近黑字）加一圈白光。
+   每日一牌改成黑底、紅橘燈管框的招牌，不再是一大塊白色。
+   沒有動畫：光暈都是靜態的，不閃爍。高對比模式會自動拿掉 box-shadow 與 text-shadow。
+   對比（已驗證）：--text 在所有底色上 ≥ 15:1，--text-secondary ≥ 7:1，--accent ≥ 5.4:1，--accent-text ≥ 7:1，
+   --accent-contrast 在 --accent 上 6.4:1，--tpl-on-inverse 在 --tpl-inverse 上 17.9:1，--tpl-inverse-accent 在 --tpl-inverse 上 5.7:1，
+   --control-border ≥ 3.6:1；發光的大標題在光暈最亮處仍 ≥ 5:1。 */
+@media screen {
+  :root:root[data-template="editorial"].tpl-neon {
+    --bg: #0A0A0C;
+    --bg-secondary: #0E0E11;
+    --bg-tertiary: #141418;
+    --surface: #141418;
+    --surface-elevated: #1C1C21;
+    --text: #F7F3EF;
+    --text-secondary: #ACA8A4;
+    --text-tertiary: #A29E9A;
+    --divider: #2A2A30;
+    --control-border: #77737A;
+    --accent: #FF5A3C;
+    --accent-hover: #FF7658;
+    --accent-active: #E8462A;
+    --accent-contrast: #0A0A0C;
+    --accent-light: rgba(255, 90, 60, 0.14);
+    --danger-text: #ff5449;
+    --success-text: #30d158;
+    --warning-text: #ff9f0a;
+    --yesno-yes: #30d158;
+    --yesno-no: #ff453a;
+    --accent-text: #FF8466;
+    --accent-soft: #3A1810;
+    --text-body: #D2CDC8;
+    --nav-bg: #0A0A0C;
+    --nav-fg: #ACA8A4;
+    --nav-fg-active: #F7F3EF;
+    --nav-active-bg: transparent;
+    --nav-border: #EDE6E0;
+    --sheet-bg: #141418;
+    --sheet-handle: #77737A;
+    --scrim: rgba(0, 0, 0, 0.72);
+    --pager-track: #3A383E;
+    --pager-fill: #F7F3EF;
+    --card-back: #0F0F12;
+    --card-back-edge: #FF5A3C;
+    --card-back-mark: #FF5A3C;
+    --card-lift: 0 12px 28px rgba(0, 0, 0, 0.6), 0 0 18px rgba(255, 90, 60, 0.28);
+    --tpl-rule: #EDE6E0;
+    --tpl-tile: #141418;
+    --tpl-muted: #ACA8A4;
+    --tpl-inverse: #F7F3EF;
+    --tpl-on-inverse: #0A0A0C;
+    --tpl-inverse-accent: #B3301A;
+    --tpl-inverse-muted: #4A4648;
+    /* 霓虹專用：紅橘光暈、白色燈管的光暈、冷色點綴 */
+    --tpl-glow: rgba(255, 90, 60, 0.55);
+    --tpl-glow-soft: rgba(255, 90, 60, 0.24);
+    --tpl-rule-glow: rgba(255, 232, 220, 0.34);
+    --tpl-rule-glow-soft: rgba(255, 232, 220, 0.14);
+    --tpl-cool: #6EDCEB;
+    /* 統計圓餅圖：紅橘、暖白、冰青、琥珀、灰；在方塊（#141418）上都 ≥ 5:1 */
+    --chart-1: #FF5A3C;
+    --chart-2: #F7F3EF;
+    --chart-3: #6EDCEB;
+    --chart-4: #F5B342;
+    --chart-5: #8A8690;
+  }
+
+  /* ── 背景：近黑的紙，上方一層紅橘招牌的反光、右下角一點冷光、四周壓暗 ── */
+  :root:root[data-template="editorial"].tpl-neon {
+    --tpl-paper:
+      radial-gradient(90% 55% at 50% -8%, rgba(255, 90, 60, 0.10), transparent 70%),
+      radial-gradient(70% 50% at 100% 105%, rgba(110, 220, 235, 0.045), transparent 70%),
+      radial-gradient(130% 95% at 50% 40%, transparent 55%, rgba(0, 0, 0, 0.55) 100%),
+      var(--bg);
+  }
+  :root:root[data-template="editorial"].tpl-neon body {
+    background: var(--tpl-paper);
+    background-attachment: fixed;
+  }
+  /* 黏在頂端的搜尋列要不透明：用同一張固定在視窗上的背景，看不出接縫 */
+  :root:root[data-template="editorial"].tpl-neon .search-field {
+    background: var(--tpl-paper);
+    background-attachment: fixed;
+  }
+
+  /* ── 白色燈管：只有一側的墨線，在線的兩側各加一層淡光 ── */
+  :root:root[data-template="editorial"].tpl-neon :is(.app-header, .results-header, .rd-header, .pick-header, .modal-header, .deck-history-heading, .cmp-head, .trend-chart) {
+    box-shadow: 0 8px 7px -8px var(--tpl-rule-glow), inset 0 -8px 7px -8px var(--tpl-rule-glow-soft);
+  }
+  :root:root[data-template="editorial"].tpl-neon :is(.app-footer, .learn-mastery-section, .card-modal-actions, .changelog-entry) {
+    box-shadow: 0 -8px 7px -8px var(--tpl-rule-glow), inset 0 8px 7px -8px var(--tpl-rule-glow-soft);
+  }
+  :root:root[data-template="editorial"].tpl-neon .spread-picker-group-title {
+    box-shadow: 0 8px 7px -8px var(--tpl-rule-glow);
+  }
+  /* 牌義段落之間的線：細一點、不發光，視窗內容才不會整片亮線 */
+  :root:root[data-template="editorial"].tpl-neon .meaning-block {
+    border-top-color: color-mix(in srgb, var(--tpl-rule) 55%, transparent);
+  }
+  :root:root[data-template="editorial"].tpl-neon .card-seg-panel > .meaning-block:first-child,
+  :root:root[data-template="editorial"].tpl-neon .flash-meanings > .meaning-block {
+    border-top-color: transparent;
+  }
+
+  /* ── 頁首：站名是暖白，帶一點白光 ── */
+  :root:root[data-template="editorial"].tpl-neon .title h1 {
+    text-shadow: 0 0 10px var(--tpl-rule-glow);
+  }
+  /* 外框圖示鈕、關閉鈕、次要按鈕：白色燈管框 */
+  :root:root[data-template="editorial"].tpl-neon :is(.icon-btn, .modal-close, .btn-secondary, .btn-tertiary) {
+    box-shadow: 0 0 6px var(--tpl-rule-glow-soft), inset 0 0 5px var(--tpl-rule-glow-soft);
+  }
+
+  /* ── 首頁大標：招牌。燈芯是淡橘白，外面一層紅橘光暈；上方的刊頭短橫線是一截紅橘燈管 ── */
+  :root:root[data-template="editorial"].tpl-neon .hero::before {
+    box-shadow: 0 0 6px var(--tpl-glow), 0 0 16px var(--tpl-glow-soft);
+  }
+  :root:root[data-template="editorial"].tpl-neon .hero-title {
+    color: #FFE6DE;
+    text-shadow:
+      0 0 1px rgba(255, 236, 228, 0.8),
+      0 0 10px rgba(255, 90, 60, 0.7),
+      0 0 26px rgba(255, 90, 60, 0.4),
+      0 0 54px rgba(255, 90, 60, 0.2);
+  }
+  /* 分頁大標：白色燈管的淡光 */
+  :root:root[data-template="editorial"].tpl-neon .results-title {
+    text-shadow: 0 0 14px var(--tpl-rule-glow-soft), 0 0 2px var(--tpl-rule-glow-soft);
+  }
+
+  /* ── 導覽列：上緣（側欄是右緣）一條白色燈管；目前的項目是一截紅橘燈管，文字帶紅橘光 ── */
+  :root:root[data-template="editorial"].tpl-neon .tpl-nav {
+    box-shadow: 0 -8px 7px -8px var(--tpl-rule-glow), inset 0 8px 7px -8px var(--tpl-rule-glow-soft);
+  }
+  :root:root[data-template="editorial"].tpl-neon .tpl-nav-item[aria-current="page"] {
+    text-shadow: 0 0 10px var(--tpl-glow);
+  }
+  :root:root[data-template="editorial"].tpl-neon .tpl-nav-item[aria-current="page"]::before {
+    box-shadow: 0 0 6px var(--tpl-glow), 0 0 14px var(--tpl-glow-soft);
+  }
+
+  /* ── 主要按鈕：紅橘燈管，填滿並向外發光 ── */
+  :root:root[data-template="editorial"].tpl-neon .btn-primary {
+    box-shadow: 0 0 0 1px rgba(255, 140, 110, 0.6), 0 0 14px var(--tpl-glow), 0 0 34px var(--tpl-glow-soft);
+  }
+  :root:root[data-template="editorial"].tpl-neon .btn-primary:disabled {
+    box-shadow: none;
+  }
+  @media (hover: hover) {
+    :root:root[data-template="editorial"].tpl-neon .btn-primary:hover:not(:disabled) {
+      box-shadow: 0 0 0 1px rgba(255, 160, 135, 0.75), 0 0 18px var(--tpl-glow), 0 0 44px var(--tpl-glow-soft);
+    }
+    :root:root[data-template="editorial"].tpl-neon :is(.icon-btn, .modal-close, .btn-secondary, .btn-tertiary):hover {
+      box-shadow: 0 0 10px var(--tpl-rule-glow), inset 0 0 6px var(--tpl-rule-glow-soft);
+    }
+  }
+
+  /* ── 焦點框：紅橘外框再加一層光（只加在本來沒有自己光暈的元件上） ── */
+  :root:root[data-template="editorial"].tpl-neon :is(.btn:not(.btn-primary), .icon-btn, .modal-close, .tag, .history-action, .history-fav, .rd-pager-btn:not(.btn-primary)):focus-visible {
+    box-shadow: 0 0 12px var(--tpl-glow);
+  }
+  :root:root[data-template="editorial"].tpl-neon .btn-primary:focus-visible {
+    box-shadow: 0 0 0 1px rgba(255, 160, 135, 0.75), 0 0 18px var(--tpl-glow), 0 0 44px var(--tpl-glow-soft);
+  }
+
+  /* ── 輸入框：底線是白色燈管，聚焦時換成紅橘燈管 ── */
+  :root:root[data-template="editorial"].tpl-neon :is(input[type=text], input[type=search], input[type=date], select:not(.btn)) {
+    box-shadow: 0 8px 7px -8px var(--tpl-rule-glow);
+  }
+  :root:root[data-template="editorial"].tpl-neon :is(input[type=text], input[type=search], input[type=date], select:not(.btn)):focus {
+    box-shadow: 0 2px 0 var(--accent), 0 10px 8px -8px var(--tpl-glow);
+  }
+  :root:root[data-template="editorial"].tpl-neon textarea {
+    box-shadow: 0 0 6px var(--tpl-rule-glow-soft), inset 0 0 5px var(--tpl-rule-glow-soft);
+  }
+  :root:root[data-template="editorial"].tpl-neon textarea:focus {
+    box-shadow: 0 0 12px var(--tpl-glow-soft), inset 0 0 6px var(--tpl-glow-soft);
+  }
+
+  /* ── 分段標籤：目前的分頁下方是一截紅橘燈管 ── */
+  :root:root[data-template="editorial"].tpl-neon .seg-item.active {
+    box-shadow: inset 0 -3px 0 var(--accent), 0 8px 7px -8px var(--tpl-glow);
+  }
+  :root:root[data-template="editorial"].tpl-neon .seg-item.active:focus-visible {
+    box-shadow: inset 0 -3px 0 var(--accent), 0 8px 7px -8px var(--tpl-glow), 0 0 12px var(--tpl-glow-soft);
+  }
+
+  /* ── 反白（選取）：點亮的燈箱，外面一圈白光 ── */
+  :root:root[data-template="editorial"].tpl-neon :is(.tag.active, .tag:is([role=button], button).active, #filterFavorite[aria-pressed="true"], .pick-progress, .footer-version) {
+    box-shadow: 0 0 10px var(--tpl-rule-glow);
+  }
+  /* 牌位分頁籤列會左右捲動（會裁掉外面的光）：內距加大、外距抵銷，留出光暈的空間，排版位置不變 */
+  :root:root[data-template="editorial"].tpl-neon .rd-tabs {
+    width: calc(100% + 12px);
+    margin: -6px -6px;
+    padding: 8px;
+  }
+  :root:root[data-template="editorial"].tpl-neon .rd-tab[aria-selected="true"] {
+    box-shadow: 0 0 7px var(--tpl-rule-glow);
+  }
+
+  /* ── 方塊：滑過時畫一圈白色燈管 ── */
+  @media (hover: hover) {
+    :root:root[data-template="editorial"].tpl-neon :is(.card, .history-item):hover {
+      box-shadow: inset 0 0 0 1.5px var(--tpl-rule), 0 0 12px var(--tpl-rule-glow-soft), inset 0 0 10px var(--tpl-rule-glow-soft);
+    }
+    :root:root[data-template="editorial"].tpl-neon .card.bottom:hover {
+      box-shadow: 0 0 12px var(--tpl-rule-glow-soft);
+    }
+    :root:root[data-template="editorial"].tpl-neon :is(.card-db-item, .profile-chip, .flashcard:not(.flipped), .spread-field:has(.select-trigger:hover), .rd-tab[aria-selected="false"]):hover {
+      box-shadow: 0 0 12px var(--tpl-rule-glow-soft), inset 0 0 8px var(--tpl-rule-glow-soft);
+    }
+  }
+
+  /* ── 牌陣的紅橘箭頭像招牌上的箭號 ── */
+  :root:root[data-template="editorial"].tpl-neon .spread-field .select-trigger::after {
+    text-shadow: 0 0 8px var(--tpl-glow);
+  }
+
+  /* ── 每日一牌：黑底招牌，紅橘燈管框；牌名暖白，帶一點紅橘光 ── */
+  :root:root[data-template="editorial"].tpl-neon .daily-card {
+    border-color: var(--accent);
+    background:
+      radial-gradient(120% 90% at 0% 0%, rgba(255, 90, 60, 0.10), transparent 60%),
+      #120E0E;
+    color: var(--text);
+    box-shadow: 0 0 14px var(--tpl-glow-soft), inset 0 0 18px rgba(255, 90, 60, 0.10);
+  }
+  @media (hover: hover) {
+    :root:root[data-template="editorial"].tpl-neon .daily-card:hover {
+      border-color: var(--accent-hover);
+      background:
+        radial-gradient(120% 90% at 0% 0%, rgba(255, 90, 60, 0.16), transparent 60%),
+        #140F0F;
+      box-shadow: 0 0 20px var(--tpl-glow-soft), inset 0 0 22px rgba(255, 90, 60, 0.14);
+    }
+  }
+  :root:root[data-template="editorial"].tpl-neon .daily-card-label {
+    color: var(--accent-text);
+  }
+  :root:root[data-template="editorial"].tpl-neon .daily-card-name {
+    color: var(--text);
+    text-shadow: 0 0 14px rgba(255, 90, 60, 0.45);
+  }
+  :root:root[data-template="editorial"].tpl-neon :is(.daily-card-ori, .daily-card-keywords, .daily-card .icon) {
+    color: var(--text-secondary);
+  }
+  :root:root[data-template="editorial"].tpl-neon .daily-card:focus-visible {
+    outline-color: var(--accent-hover);
+  }
+
+  /* ── 互動抽牌：黑色牌背，內圈一條暗紅橘線、中央一點紅橘光（65% 亮度，對底色仍 ≥ 3:1；78 張不全亮，才不刺眼）；滑過的牌燈管亮起，選中的牌整張亮起 ── */
+  :root:root[data-template="editorial"].tpl-neon .pick-card {
+    background-image: radial-gradient(circle, var(--card-back-mark) 0 2.5px, rgba(255, 90, 60, 0.35) 3.5px, transparent 9px);
+    box-shadow: inset 0 0 0 3px var(--card-back), inset 0 0 0 4px color-mix(in srgb, var(--card-back-mark) 65%, var(--card-back));
+  }
+  @media (hover: hover) {
+    :root:root[data-template="editorial"].tpl-neon .pick-card:hover:not(:disabled) {
+      box-shadow: inset 0 0 0 3px var(--card-back), inset 0 0 0 4px var(--card-back-mark), inset 0 0 10px 3px rgba(255, 90, 60, 0.16), var(--card-lift);
+    }
+  }
+  :root:root[data-template="editorial"].tpl-neon .pick-card.selected {
+    background-image: none;
+    box-shadow: 0 0 14px var(--tpl-glow), 0 0 30px var(--tpl-glow-soft);
+  }
+
+  /* ── 結果、牌義：「這次抽到的方向」左側紅橘燈管 ── */
+  :root:root[data-template="editorial"].tpl-neon .meaning-block.active {
+    box-shadow: inset 3px 0 0 var(--accent), inset 12px 0 8px -8px var(--tpl-glow-soft);
+  }
+  :root:root[data-template="editorial"].tpl-neon :is(.reflection-block, .rd-role) {
+    box-shadow: -8px 0 7px -8px var(--tpl-glow);
+  }
+
+  /* ── 統計：趨勢長條是暗一點的白，這個月是紅橘燈管 ── */
+  :root:root[data-template="editorial"].tpl-neon .trend-bar {
+    background: var(--text);
+    opacity: 0.55;
+  }
+  :root:root[data-template="editorial"].tpl-neon .trend-bar:last-child {
+    background: var(--accent);
+    opacity: 1;
+    box-shadow: 0 0 8px var(--tpl-glow), 0 0 18px var(--tpl-glow-soft);
+  }
+
+  /* ── 提示訊息：夜裡不用白塊，改成黑色方塊加一圈淡白燈管，左側色帶發光 ── */
+  :root:root[data-template="editorial"].tpl-neon .toast {
+    border-color: color-mix(in srgb, var(--tpl-rule) 30%, transparent);
+    background: var(--surface-elevated);
+    color: var(--text);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.6), 0 0 12px var(--tpl-rule-glow-soft);
+  }
+  :root:root[data-template="editorial"].tpl-neon .toast:not(.success, .error, .warning) {
+    --toast-bar: var(--accent);
+  }
+  :root:root[data-template="editorial"].tpl-neon .toast::before {
+    box-shadow: inset var(--toast-bar-w, 4px) 0 0 var(--toast-bar, transparent), inset 12px 0 12px -10px color-mix(in srgb, var(--toast-bar, transparent) 60%, transparent);
+  }
+  :root:root[data-template="editorial"].tpl-neon .toast-message {
+    color: var(--text);
+  }
+  :root:root[data-template="editorial"].tpl-neon .toast-action {
+    border-color: var(--control-border);
+    color: var(--text);
+  }
+
+  /* ── 線稿牌：依花色發光（大牌紅橘、權杖琥珀、聖杯冰青、寶劍冷白、錢幣淡綠）。
+     統計的花色圓餅圖也讀這組顏色（utils.js readNeonSuitColors），在方塊上都 ≥ 5:1 ── */
+  :root:root[data-template="editorial"].tpl-neon [data-suit] {
+    --neon-suit: #FF5A3C;
+  }
+  :root:root[data-template="editorial"].tpl-neon [data-suit=Wands] {
+    --neon-suit: #FFB547;
+  }
+  :root:root[data-template="editorial"].tpl-neon [data-suit=Cups] {
+    --neon-suit: #6EDCEB;
+  }
+  :root:root[data-template="editorial"].tpl-neon [data-suit=Swords] {
+    --neon-suit: #E6EAF5;
+  }
+  :root:root[data-template="editorial"].tpl-neon [data-suit=Pentacles] {
+    --neon-suit: #8EDB8A;
+  }
+  :root:root[data-template="editorial"].tpl-neon [data-suit="Major Arcana"] {
+    --neon-suit: #FF5A3C;
+  }
+  :root:root[data-template="editorial"].tpl-neon :is(.card-db-art, .flash-art, .quiz-art, .card-modal-art, .card-viewer-art, .daily-card-art, .profile-chip-art) svg {
+    color: var(--neon-suit);
+    border-color: color-mix(in srgb, var(--neon-suit) 35%, transparent);
+  }
+  :root:root[data-template="editorial"].tpl-neon svg.line-art {
+    --deck-paper: #0D0D10;
+    --deck-tint: #15151A;
+    --deck-gold: color-mix(in srgb, var(--neon-suit, #FF5A3C) 45%, #FFF3E6);
+  }
+  :root:root[data-template="editorial"].tpl-neon .card.visual-api .card-image.line-art {
+    border-color: color-mix(in srgb, var(--neon-suit) 40%, transparent);
+    background: #0D0D10;
+    color: var(--neon-suit);
+    box-shadow: none;
+    filter: drop-shadow(0 0 4px color-mix(in srgb, var(--neon-suit) 60%, transparent)) drop-shadow(0 0 14px color-mix(in srgb, var(--neon-suit) 22%, transparent));
+  }
+  /* 單張的大圖（卡片詳情、放大檢視、每日一牌、字卡）也發光；資料庫的整片縮圖不加濾鏡，捲動才順 */
+  :root:root[data-template="editorial"].tpl-neon :is(.card-modal-art, .card-viewer-art, .daily-card-art, .flash-art, .quiz-art) svg.line-art {
+    filter: drop-shadow(0 0 4px color-mix(in srgb, var(--neon-suit) 50%, transparent));
+  }
+  /* 手機的底部抽屜：上緣一條白色燈管的光 */
+  :root:root[data-template="editorial"].tpl-neon .modal-overlay:not(.card-viewer) .modal[role="dialog"] {
+    box-shadow: 0 -4px 14px -6px var(--tpl-rule-glow);
+  }
+  @media (min-width: 768px) {
+    /* 平板的置中視窗：一圈白色燈管 */
+    :root:root[data-template="editorial"].tpl-neon .modal-overlay:not(.card-viewer) .modal[role="dialog"] {
+      box-shadow: 0 0 14px var(--tpl-rule-glow-soft), 0 24px 60px rgba(0, 0, 0, 0.6);
+    }
+  }
+  @media (min-width: 1024px) {
+    /* 側欄：右緣的白色燈管 */
+    :root:root[data-template="editorial"].tpl-neon .tpl-nav {
+      box-shadow: 8px 0 7px -8px var(--tpl-rule-glow), inset -8px 0 7px -8px var(--tpl-rule-glow-soft);
+    }
+    /* 右側面板：左緣的白色燈管 */
+    :root:root[data-template="editorial"].tpl-neon .modal-overlay:not(.card-viewer) .modal[role="dialog"] {
+      box-shadow: -8px 0 7px -8px var(--tpl-rule-glow), inset 8px 0 7px -8px var(--tpl-rule-glow-soft);
+    }
+  }
+}
