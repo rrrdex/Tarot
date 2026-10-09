@@ -17,10 +17,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  # 建置一次：測試與部署用的是同一份 dist
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -42,14 +40,52 @@ jobs:
         run: npm run build
         env:
           SITE_URL: ${{ steps.pages.outputs.base_url }}
-      - name: Test
-        run: |
-          npx playwright install --with-deps chromium
-          npm test
-      - name: Upload artifact
+      - name: Upload dist for tests
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist
+          retention-days: 1
+      - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: 'dist'
+
+  # 完整測試拆成四份同時跑（一份失敗，其他份跟著停，不部署）
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.node-version'
+          cache: npm
+      - name: Install
+        run: npm ci
+      - name: Download dist
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Test (shard ${{ matrix.shard }}/4)
+        run: npx playwright test --shard=${{ matrix.shard }}/4
+
+  deploy:
+    needs: test
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
