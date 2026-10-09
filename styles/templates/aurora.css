@@ -98,6 +98,7 @@
     --accent-contrast: #1A1530;
     --accent-light: rgba(227, 192, 122, 0.14);
     --danger-text: #ff6f66;
+    --tpl-danger-hover: #FFB0A8;
     --success-text: #30d158;
     --warning-text: #ff9f0a;
     --yesno-yes: #30d158;
@@ -164,6 +165,7 @@
     --accent-contrast: #1A1530;
     --accent-light: rgba(227, 192, 122, 0.14);
     --danger-text: #ff6f66;
+    --tpl-danger-hover: #FFB0A8;
     --success-text: #30d158;
     --warning-text: #ff9f0a;
     --yesno-yes: #30d158;
@@ -843,6 +845,10 @@
     :root[data-template="aurora"] :is(.history-fav, .history-action):hover {
       background: var(--accent-light);
     }
+    /* 刪除鈕：深色模式在金色的 hover 底上，紅字要亮一階才夠對比（--tpl-danger-hover，淺色維持原本的紅） */
+    :root[data-template="aurora"] .history-action.danger:hover {
+      color: var(--tpl-danger-hover, var(--danger-text));
+    }
   }
   :root[data-template="aurora"] .history-time {
     color: var(--text-secondary);
@@ -1101,11 +1107,10 @@
     border-radius: 22px;
     background: var(--tpl-control);
   }
-  :root[data-template="aurora"] .checkbox-item {
-    border-radius: 18px;
-  }
-  :root[data-template="aurora"] .checkbox-item:hover {
-    background: var(--accent-light);
+  /* 選項列（與它的說明）的圓角與滑鼠移上的底色 */
+  :root[data-template="aurora"] {
+    --option-radius: 18px;
+    --option-hover: var(--accent-light);
   }
   :root[data-template="aurora"] .checkbox-item:has(input:checked) .checkbox-label {
     font-weight: var(--weight-semibold);
@@ -1383,6 +1388,7 @@
     --warning: #FFB547;
     --danger: #FF5C7A;
     --danger-text: #FF7A90;
+    --tpl-danger-hover: #FFB3C0;
     --success-text: #4BE08A;
     --warning-text: #FFB547;
     --yesno-yes: #4BE08A;

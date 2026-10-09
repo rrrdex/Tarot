@@ -13,6 +13,9 @@
    - .reading-detail.rd-paged、.rd-slide.rd-slide-off、.rd-slide-on：翻頁器（src/pager.js）
    - .deck-hero.is-dragging、--hero-drag：牌堆被往上拖曳中與拖曳距離（src/hero.js） */
 
+/* 新版型的 --font-serif 第一順位是思源宋體（Noto Serif TC）：系統沒裝時（例如 Windows）原本會退回新細明體，
+   所以網站自帶一份，依字頻切成小檔，見 styles/fonts.css（由 scripts/subset-font.py 產生）。 */
+
 /* ── 新版型專用的元素：簡約版型不顯示 ── */
 :root:not([data-template]) :is(.tpl-nav, .me-hub, .deck-hero, .spread-tiles, .tpl-only),
 :root[data-template="minimal"] :is(.tpl-nav, .me-hub, .deck-hero, .spread-tiles, .tpl-only) {

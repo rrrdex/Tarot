@@ -213,7 +213,7 @@ export function switchTab(tabName) {
   document.querySelectorAll('.tab-content').forEach(tc => {
     tc.classList.toggle('hidden', tc.id !== 'tab' + tabName.charAt(0).toUpperCase() + tabName.slice(1));
   });
-  document.title = tabName === 'reading' ? t('app.title') : `${t('tab.' + tabName)} · ${t('app.title')}`;
+  document.title = tabName === 'reading' ? t('app.docTitle') : `${t('tab.' + tabName)} · ${t('app.title')}｜The Final Star`;
   // 網址上的占卜參數只在占卜分頁顯示結果時才帶；離開占卜分頁就拿掉，重新整理才會留在目前的分頁
   if (tabName !== 'reading') clearReadingURL();
   else if (shownReading()) syncReadingURL();

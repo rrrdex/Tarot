@@ -26,5 +26,7 @@ npm test          # Playwright, runs against dist/ (build first)
 - The app version comes from the first entry of `src/changelog.js`.
 - Card images: `node scripts/images.mjs <folder of original JPGs>` regenerates the AVIF/WebP files and the 160/320/400px thumbnails. The originals are in `img/cards_original.rar`.
 - App icons: `node scripts/icons.mjs` regenerates the PNG icons in `icons/` from `icon.svg`.
-- `_headers` (cache policy, CSP) is applied by Cloudflare Pages; GitHub Pages ignores it.
-- GitHub Actions runs lint, build and tests before every deploy.
+- Site URL: `https://thefinalstar.com/` is written in `index.html`, `robots.txt` and `sitemap.xml`; set `SITE_URL` when building for another address. Canonical always points there, so mirrors don't count as duplicate pages.
+- Cloudflare Pages: build command `npm run build`, output directory `dist`, Node version from `.node-version`. `_headers` (cache policy, CSP) is applied by Cloudflare Pages; GitHub Pages ignores it.
+- Heading font: a subset of Noto Serif TC (SIL OFL 1.1, `fonts/OFL.txt`) split into small files so a page downloads only the pieces it shows. After adding text that appears in headings, run `node scripts/font-scan.mjs` against `npm run preview`, then `python scripts/subset-font.py "NotoSerifTC[wght].ttf"` (needs `pip install fonttools brotli`).
+- GitHub Actions runs lint and build, then the tests in four parallel shards, before every deploy.

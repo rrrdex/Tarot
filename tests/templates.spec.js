@@ -450,3 +450,36 @@ test.describe('新版型的寬度', () => {
     });
   }
 });
+
+test.describe('設定的選項與說明', () => {
+  test.skip(({ isMobile }) => isMobile, '要用滑鼠移上');
+  for (const tpl of ['minimal', ...NEW_TEMPLATES]) {
+    test(`${tpl}：滑鼠移上選項時，底下的說明不會被選項的底色蓋住，兩塊底色連成一塊`, async ({ page }) => {
+      await seedStorage(page, { template: tpl, theme: 'dark' });
+      await page.goto('/');
+      await page.addStyleTag({ content: '*,*::before,*::after{transition:none!important}' });
+      if (tpl === 'minimal') await openTab(page, 'settings');
+      else await nav(page, 'settings').click();
+      for (const id of ['desc-settings-template-editorial-desc', 'desc-settings-pref-interactiveDraw-desc']) {
+        const desc = page.locator(`#${id}`);
+        const item = page.locator(`label.checkbox-item:has(+ #${id})`);
+        await item.scrollIntoViewIfNeeded();
+        await item.hover();
+        // 說明每一行的中心點，最上層都是說明自己
+        const covered = await desc.evaluate(el => {
+          const range = document.createRange();
+          range.selectNodeContents(el);
+          return [...range.getClientRects()].filter(r => {
+            const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+            return hit !== el && !el.contains(hit);
+          }).length;
+        });
+        expect(covered, id).toBe(0);
+        // 選項與說明之間沒有沒上色的縫：選項的底色、說明的底色都是同一個顏色
+        const [itemBg, descBg] = await Promise.all([item, desc].map(l => l.evaluate(el => getComputedStyle(el).backgroundColor)));
+        expect(descBg, id).toBe(itemBg);
+        expect(itemBg, id).not.toBe('rgba(0, 0, 0, 0)');
+      }
+    });
+  }
+});

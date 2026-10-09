@@ -80,13 +80,13 @@ export function newSeed() {
   crypto.getRandomValues(a);
   return Array.from(a, n => n.toString(16).padStart(8, '0')).join('');
 }
-const CANONICAL_STRIP = /^(utm_|fbclid$|gclid$|msclkid$|igshid$|ref$|ref_src$)/;
+// canonical 一律是正式網址的首頁（index.html 裡寫好的那個），只保留非預設的介面語言：
+// 分享連結的 seed、牌陣與追蹤參數都不是另一頁內容，不讓搜尋引擎當成重複的頁面；在鏡像網址上開啟也指回正式網址
+const CANONICAL_BASE = document.querySelector('link[rel="canonical"]')?.getAttribute('href') || location.origin + location.pathname;
 export function syncCanonical() {
-  const url = new URL(location.href);
-  [...url.searchParams.keys()].forEach(k => {
-    if (CANONICAL_STRIP.test(k)) url.searchParams.delete(k);
-  });
-  url.hash = '';
+  const url = new URL(CANONICAL_BASE, location.href);
+  const lang = new URL(location.href).searchParams.get('lang');
+  if (lang) url.searchParams.set('lang', lang);
   let el = document.querySelector('link[rel="canonical"]');
   if (!el) {
     el = document.createElement('link');

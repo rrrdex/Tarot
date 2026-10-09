@@ -85,7 +85,7 @@
     --accent-active: #D9573D;
     --accent-contrast: #121316;
     --accent-light: rgba(240, 106, 79, 0.12);
-    --danger-text: #ff5449;
+    --danger-text: #ff6b61;
     --success-text: #30d158;
     --warning-text: #ff9f0a;
     --yesno-yes: #30d158;
@@ -141,7 +141,7 @@
     --accent-active: #D9573D;
     --accent-contrast: #121316;
     --accent-light: rgba(240, 106, 79, 0.12);
-    --danger-text: #ff5449;
+    --danger-text: #ff6b61;
     --success-text: #30d158;
     --warning-text: #ff9f0a;
     --yesno-yes: #30d158;
@@ -1167,11 +1167,10 @@
   :root:root[data-template="editorial"] .settings-section > .btn-group {
     margin-inline: 4px;
   }
-  :root:root[data-template="editorial"] .checkbox-item {
-    border-radius: 12px;
-  }
-  :root:root[data-template="editorial"] .checkbox-item:hover {
-    background: var(--bg);
+  /* 選項列（與它的說明）的圓角與滑鼠移上的底色 */
+  :root:root[data-template="editorial"] {
+    --option-radius: 12px;
+    --option-hover: var(--bg);
   }
   :root:root[data-template="editorial"] .checkbox-label {
     font-weight: 600;
@@ -1845,7 +1844,7 @@
     --accent-active: #E8462A;
     --accent-contrast: #0A0A0C;
     --accent-light: rgba(255, 90, 60, 0.14);
-    --danger-text: #ff5449;
+    --danger-text: #ff6b61;
     --success-text: #30d158;
     --warning-text: #ff9f0a;
     --yesno-yes: #30d158;

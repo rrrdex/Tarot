@@ -1,6 +1,7 @@
 export const uiStrings = {
   zh: {
     'app.title': '塔羅占卜',
+    'app.docTitle': '免費塔羅牌占卜：牌義查詢、29 種牌陣與每日一牌｜The Final Star',
     'app.name': '塔羅',
     'app.themeToggle.toDark': '切換至深色主題',
     'app.themeToggle.toLight': '切換至淺色主題',

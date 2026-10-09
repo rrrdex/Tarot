@@ -1452,11 +1452,10 @@
   :root[data-template="immersive"] .settings-title {
     padding-inline: var(--space-2);
   }
-  :root[data-template="immersive"] .checkbox-item {
-    border-radius: 18px;
-  }
-  :root[data-template="immersive"] .checkbox-item:hover {
-    background: var(--tpl-chip);
+  /* 選項列（與它的說明）的圓角與滑鼠移上的底色 */
+  :root[data-template="immersive"] {
+    --option-radius: 18px;
+    --option-hover: var(--tpl-chip);
   }
   /* 單選鈕的圓形焦點框（style.css 由選項列畫）用這個版型的粗細與距離 */
   :root[data-template="immersive"] .checkbox-item:has(> input[type=radio]:focus-visible)::before {
@@ -1489,11 +1488,11 @@
   }
   /* 開關比勾選框寬：說明縮排到選項文字的起點（內距＋開關 46px＋間距） */
   :root[data-template="immersive"] .settings-section .checkbox-item:has(input[type=checkbox]) + .checkbox-desc {
-    margin-left: calc(var(--space-4) + 46px + var(--space-4));
+    --desc-indent: calc(var(--space-4) + 46px + var(--space-4));
   }
   @media (min-width: 768px) {
     :root[data-template="immersive"] .settings-section .checkbox-item:has(input[type=checkbox]) + .checkbox-desc {
-      margin-left: calc(var(--space-5) + 46px + var(--space-4));
+      --desc-indent: calc(var(--space-5) + 46px + var(--space-4));
     }
   }
   :root[data-template="immersive"] .profile-preview {
@@ -1791,7 +1790,8 @@
   }
 }
 
-/* 手機：個人牌排成一列，可以左右滑動（每張靠齊左緣） */
+/* 手機：個人牌排成一列，可以左右滑動（每張靠齊左緣）。這一列會裁切超出的部分：
+   上下內距要放得下焦點框（線寬 2.5px＋距離 3px）與陰影 */
 @media screen and (max-width: 639.98px) {
   :root[data-template="immersive"] .me-hub .profile-row {
     flex-wrap: nowrap;
@@ -1800,7 +1800,7 @@
     scroll-padding-inline: var(--space-5);
     scrollbar-width: none;
     margin-inline: calc(var(--space-5) * -1);
-    padding: var(--space-1) var(--space-5) var(--space-4);
+    padding: var(--space-2) var(--space-5) var(--space-4);
   }
   :root[data-template="immersive"] .me-hub .profile-row::-webkit-scrollbar {
     display: none;

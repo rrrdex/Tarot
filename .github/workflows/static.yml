@@ -32,14 +32,11 @@ jobs:
         run: npm ci
       - name: Lint
         run: npm run lint
-      # 先取得 Pages 網址，建置時把 canonical、og:image、robots.txt、sitemap.xml 的範例網址換成正式網址
       - name: Setup Pages
-        id: pages
         uses: actions/configure-pages@v5
+      # canonical、og:image、sitemap 一律是正式網址 thefinalstar.com（寫在原始檔裡）：這裡只是鏡像
       - name: Build
         run: npm run build
-        env:
-          SITE_URL: ${{ steps.pages.outputs.base_url }}
       - name: Upload dist for tests
         uses: actions/upload-artifact@v4
         with:

@@ -7,8 +7,8 @@ const CACHE = `tarot-${BUILD.id}`;
 const KEEP_BUILDS = 2;
 // 導覽請求等網路超過這個時間就先用離線副本
 const NAV_TIMEOUT = 3000;
-// esbuild 產生的檔名帶內容雜湊（例如 app-5QWJ2K7A.js），內容不會變，可以直接用快取
-const HASHED = /-[A-Z0-9]{8}\.(js|css)$/;
+// esbuild 產生的檔名帶內容雜湊（例如 app-5QWJ2K7A.js、字型 noto-serif-tc-subset-XXXXXXXX.woff2），內容不會變，可以直接用快取
+const HASHED = /-[A-Z0-9]{8}\.(js|css|woff2)$/;
 const isBuildCache = (k) => k.startsWith('tarot-') && !k.startsWith('tarot-img-');
 
 self.addEventListener('install', (e) => {

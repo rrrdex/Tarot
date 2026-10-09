@@ -2929,28 +2929,39 @@ input[type=search] {
   line-height: var(--leading-tight);
   margin-bottom: var(--space-5);
 }
+/* --option-gap：選項之間的間距（說明與它的選項之間也有，滑鼠移上時由選項的陰影補上這一段底色） */
 .checkbox-group {
+  --option-gap: var(--space-1);
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--option-gap);
+}
+/* 選項列的圓角與滑鼠移上的底色：選項後面接說明時，說明也要用同一組（版型改這兩個 token 就好） */
+:root {
+  --option-radius: var(--radius-md);
+  --option-hover: var(--bg-secondary);
+}
+@media (min-width: 768px) {
+  :root {
+    --option-radius: var(--radius-lg);
+  }
 }
 .checkbox-item {
   display: flex;
   align-items: center;
   gap: var(--space-4);
   padding: var(--space-4);
-  border-radius: var(--radius-md);
+  border-radius: var(--option-radius);
   cursor: pointer;
   transition: background var(--duration-fast) var(--ease-out);
 }
 @media (min-width: 768px) {
   .checkbox-item {
     padding: var(--space-5);
-    border-radius: var(--radius-lg);
   }
 }
 .checkbox-item:hover {
-  background: var(--bg-secondary);
+  background: var(--option-hover);
 }
 /* 單選鈕的焦點框要是圓的：瀏覽器會把原生單選鈕的 border-radius 重設成 0，框只能是方的，
    所以改由選項列在單選鈕的位置畫一個圓形的焦點框（單選鈕一律是選項列的第一個元素、垂直置中） */
@@ -3007,30 +3018,58 @@ input[type=search] {
     font-size: var(--text-base);
   }
 }
+/* --desc-indent：說明縮排到選項文字的起點（內距＋選項框＋間距） */
 .checkbox-desc {
+  --desc-indent: 54px;
   font-size: var(--text-xs);
   color: var(--text-secondary);
-  margin-left: 54px;
+  margin-left: var(--desc-indent);
   line-height: var(--leading-relaxed);
 }
 @media (min-width: 768px) {
   .checkbox-desc {
+    --desc-indent: 60px;
     font-size: var(--text-sm);
-    margin-left: 60px;
   }
 }
 .settings-section .form-field + .checkbox-desc {
   margin-left: var(--space-0);
   margin-top: var(--space-3);
 }
-/* 說明要貼近自己的選項：抵銷選項的下內距 */
+/* 選項和它的說明是同一塊：選項不留下內距，說明緊接在下面、自己帶下內距；
+   滑鼠移上選項時，說明也換上同一個底色並往左延伸到選項的起點（陰影補上縮排那一段），
+   兩塊拼成一整塊，底色不會從說明的字中間切過去。說明疊在選項列之上（選項列是 position: relative） */
+.checkbox-item:has(+ .checkbox-desc) {
+  padding-bottom: 0;
+}
 .checkbox-item + .checkbox-desc {
-  margin-top: calc(var(--space-4) * -1);
-  margin-bottom: var(--space-3);
+  position: relative;
+  margin-bottom: 0;
+  padding-bottom: var(--space-3);
+  border-radius: 0 0 var(--option-radius) var(--option-radius);
+  transition: background var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out);
+}
+.checkbox-item:has(+ .checkbox-desc):hover {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  box-shadow: 0 var(--option-gap, 0px) 0 var(--option-hover);
+}
+.checkbox-item:hover + .checkbox-desc {
+  background: var(--option-hover);
+  box-shadow: calc(var(--desc-indent) * -1) 0 0 var(--option-hover);
 }
 @media (min-width: 768px) {
   .checkbox-item + .checkbox-desc {
-    margin-top: calc(var(--space-5) * -1);
+    padding-bottom: var(--space-4);
+  }
+}
+/* 少了下內距，單選鈕不在選項列的正中間：圓形焦點框跟著往上移半個內距 */
+.checkbox-item:has(+ .checkbox-desc):has(> input[type=radio]:focus-visible)::before {
+  margin-top: calc(-11px + var(--space-4) / 2);
+}
+@media (min-width: 768px) {
+  .checkbox-item:has(+ .checkbox-desc):has(> input[type=radio]:focus-visible)::before {
+    margin-top: calc(-12px + var(--space-5) / 2);
   }
 }
 .settings-section .form-field + .form-field {
@@ -3259,9 +3298,11 @@ input[type=search] {
 .modal-overlay.show .modal {
   transform: scale(1);
 }
-/* 捲動到視窗下方時，標題列（含關閉鈕）黏在頂端；捲進畫面的項目不會躲在標題列下面 */
+/* 捲動到視窗下方時，標題列（含關閉鈕）黏在頂端；捲進畫面的項目不會躲在標題列下面，
+   底部也留一點空間，用鍵盤移到最下面的按鈕時焦點框不會被視窗邊緣切掉 */
 .modal {
   scroll-padding-top: var(--modal-head-h, 96px);
+  scroll-padding-bottom: var(--space-4);
 }
 .modal-header {
   display: flex;
@@ -5465,6 +5506,7 @@ button:focus-visible,
   .neon .stat-card,
   .neon .learn-empty,
   .neon .checkbox-item,
+  .neon .checkbox-desc,
   .neon .spread-option,
   .neon .toast,
   .neon .btn,

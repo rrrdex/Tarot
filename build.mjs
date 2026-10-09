@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { cpSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { VERSION, jsOptions } from './scripts/bundle.mjs';
+import { changelog } from './src/changelog.js';
 import { uiStrings } from './src/strings.js';
 import { keepNumberWithUnit } from './src/text.js';
 
@@ -17,12 +18,13 @@ const STATIC = [
   'sitemap.xml',
   '_headers',
   'img/og.png',
+  'fonts/OFL.txt',
   'Henry’s_Prayer_Journal.html'
 ];
 // 牌圖只附網頁實際會用到的 avif／webp；原始 JPG 與 img/cards_original.rar 留在原始碼庫，不上線
 const CARD_IMAGES = /\.(avif|webp)$/;
-// 正式網址：GitHub Pages 的部署流程會帶入 SITE_URL；本機建置沒有就保留範例網址
-const PLACEHOLDER_URL = 'https://example.com/';
+// 正式網址：index.html、robots.txt、sitemap.xml 都直接寫這個。要部署到別的網址時用 SITE_URL 換掉
+const CANONICAL_URL = 'https://thefinalstar.com/';
 const SITE_URL = process.env.SITE_URL ? process.env.SITE_URL.replace(/\/+$/, '') + '/' : null;
 
 rmSync(OUT, { recursive: true, force: true });
@@ -44,6 +46,9 @@ const css = await build({
   bundle: true,
   outdir: OUT,
   entryNames: '[name]-[hash]',
+  // 自帶的字型（styles/templates/shared.css 的 @font-face）：複製到 dist/fonts 並在檔名加上內容雜湊
+  loader: { '.woff2': 'file' },
+  assetNames: 'fonts/[name]-[hash]',
   minify: true,
   metafile: true,
   logLevel: 'info'
@@ -97,14 +102,19 @@ function prerenderStrings(file) {
   writeFileSync(file, html);
 }
 
-// canonical、og:image、JSON-LD、robots.txt、sitemap.xml 裡的範例網址換成正式網址
-if (SITE_URL) {
-  for (const file of ['index.html', 'robots.txt', 'sitemap.xml']) {
-    const path = `${OUT}/${file}`;
-    const text = readFileSync(path, 'utf8');
-    if (!text.includes(PLACEHOLDER_URL)) throw new Error(`${file}: 找不到 ${PLACEHOLDER_URL}`);
-    writeFileSync(path, text.replaceAll(PLACEHOLDER_URL, SITE_URL));
-  }
+// canonical、og:image、JSON-LD、robots.txt、sitemap.xml 裡的網址：有指定 SITE_URL 才換掉正式網址
+for (const file of ['index.html', 'robots.txt', 'sitemap.xml']) {
+  const path = `${OUT}/${file}`;
+  const text = readFileSync(path, 'utf8');
+  if (!text.includes(CANONICAL_URL)) throw new Error(`${file}: 找不到 ${CANONICAL_URL}`);
+  if (SITE_URL && SITE_URL !== CANONICAL_URL) writeFileSync(path, text.replaceAll(CANONICAL_URL, SITE_URL));
+}
+// sitemap 的最後更新日期：最新一版更新紀錄的日期（同一版建置出來都一樣）
+{
+  const path = `${OUT}/sitemap.xml`;
+  const text = readFileSync(path, 'utf8');
+  if (!text.includes('</loc>')) throw new Error('sitemap.xml: 找不到 </loc>');
+  writeFileSync(path, text.replace('</loc>', `</loc><lastmod>${changelog[0].date}</lastmod>`));
 }
 
 // CSP 只放行 index.html 裡實際存在的 inline script（JSON-LD 不會被執行，不受 script-src 限制）
@@ -143,7 +153,9 @@ const manifest = JSON.parse(readFileSync('manifest.json', 'utf8'));
 const iconAssets = [...new Set([...manifest.icons.map(i => i.src), 'icons/apple-touch-icon.png'])]
   .filter(src => src !== 'icon.svg')
   .map(src => `./${src}`);
-const assets = ['./', './index.html', './manifest.json', './icon.svg', ...iconAssets, ...outputs.map(([path]) => `./${urlOf(path)}`)];
+// 字型不預先快取：只有新版型用得到，第一次用到時才下載，之後由 Service Worker 快取
+const assets = ['./', './index.html', './manifest.json', './icon.svg', ...iconAssets,
+  ...outputs.filter(([path]) => !path.endsWith('.woff2')).map(([path]) => `./${urlOf(path)}`)];
 // 任何預先快取的檔案內容一變，建置 ID 就變，Service Worker 才會更新離線副本
 const contentHash = createHash('sha256');
 for (const asset of assets) {
@@ -170,4 +182,4 @@ rewrite('sw.js', [
   [/^const IMG_CACHE = .*;$/m.exec(swSource)[0], `const IMG_CACHE = ${JSON.stringify(imgCache)};`]
 ]);
 
-console.log(`\n  version ${VERSION}, build ${buildId}, ${assets.length} precached files${SITE_URL ? `, site ${SITE_URL}` : ''}`);
+console.log(`\n  version ${VERSION}, build ${buildId}, ${assets.length} precached files, site ${SITE_URL || CANONICAL_URL}`);
