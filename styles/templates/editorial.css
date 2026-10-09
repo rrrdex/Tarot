@@ -289,6 +289,10 @@
   :root:root[data-template="editorial"] .tpl-nav-item[aria-current="page"]::before {
     background: var(--accent);
   }
+  /* 文字標籤一律單行：很窄的手機縮小字距，「資料庫」也不會斷成兩行 */
+  :root:root[data-template="editorial"] .tpl-nav-label {
+    white-space: nowrap;
+  }
 
   /* ── 版面容器：所有分頁的大面板拿掉底色，內容直接放在灰底上，小區塊各自成為白色方塊 ── */
   :root:root[data-template="editorial"] .tab-content > .panel,
@@ -624,7 +628,7 @@
     box-shadow: none;
   }
 
-  /* ── 分段標籤（資料庫、學習、我的、牌卡視窗）：文字分頁，底下一條細線，目前的分頁下方朱紅橫條 ── */
+  /* ── 分段標籤（資料庫、學習、牌卡視窗）：文字分頁，底下一條細線，目前的分頁下方朱紅橫條 ── */
   :root:root[data-template="editorial"] .segmented {
     justify-content: flex-start;
     gap: var(--space-5);
@@ -837,6 +841,10 @@
   }
   :root:root[data-template="editorial"] .rd-tab[aria-selected="true"] .rd-tab-pos {
     color: var(--tpl-inverse-accent);
+  }
+  /* 選中的分頁籤是反白底：焦點框改用反白底上的朱紅，對比才夠 */
+  :root:root[data-template="editorial"] .rd-tab[aria-selected="true"]:focus-visible {
+    outline-color: var(--tpl-inverse-accent);
   }
   @media (hover: hover) {
     :root:root[data-template="editorial"] .rd-tab[aria-selected="false"]:hover {
@@ -1053,7 +1061,7 @@
     font-family: var(--font-sans-tpl);
   }
 
-  /* ── 我的：個人牌排成方塊格、統計方塊、設定方塊 ── */
+  /* ── 統計與設定：個人牌排成方塊格、統計方塊、設定方塊 ── */
   :root:root[data-template="editorial"] .me-hub .profile-row {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(min(150px, 100%), 1fr));
@@ -1454,8 +1462,9 @@
 
   /* ── 提示訊息：反白方塊，左側一條色帶 ── */
   :root:root[data-template="editorial"] .toast {
+    --toast-bar-w: 4px;
+    --toast-bar: var(--tpl-inverse-accent);
     border: 1px solid transparent;
-    border-left: 4px solid var(--tpl-inverse-accent);
     border-radius: 12px;
     background: var(--tpl-inverse);
     color: var(--tpl-on-inverse);
@@ -1463,13 +1472,13 @@
     backdrop-filter: none;
   }
   :root:root[data-template="editorial"] .toast.success {
-    border-left-color: var(--success);
+    --toast-bar: var(--success);
   }
   :root:root[data-template="editorial"] .toast.error {
-    border-left-color: var(--danger);
+    --toast-bar: var(--danger);
   }
   :root:root[data-template="editorial"] .toast.warning {
-    border-left-color: var(--warning);
+    --toast-bar: var(--warning);
   }
   :root:root[data-template="editorial"] .toast-message {
     font-weight: 600;
@@ -1713,9 +1722,12 @@
     border-top: none;
     border-right: 1.5px solid var(--nav-border);
   }
+  /* 文字靠左、固定左內距：朱紅直條和每個標籤的距離都一樣（置中時兩字、三字的標籤離直條遠近不同） */
   :root:root[data-template="editorial"] .tpl-nav-item {
     position: relative;
+    align-items: flex-start;
     min-height: 56px;
+    padding-left: 14px;
     font-family: var(--font-serif);
     font-size: 16px;
     font-weight: 700;
@@ -1769,5 +1781,35 @@
     background: Highlight;
     color: HighlightText;
     border-color: Highlight;
+  }
+}
+
+/* 手機：三張牌（加底牌共四個分頁籤）不用左右捲動就排得下；凱爾特十字的十一個仍可捲動 */
+@media screen and (max-width: 413.98px) {
+  :root:root[data-template="editorial"] .rd-tabs {
+    gap: 6px;
+  }
+  :root:root[data-template="editorial"] .rd-tab {
+    padding-inline: 6px;
+  }
+}
+@media screen and (max-width: 359.98px) {
+  :root:root[data-template="editorial"] .rd-tabs {
+    gap: 4px;
+  }
+  :root:root[data-template="editorial"] .rd-tab {
+    min-width: 56px;
+    padding-inline: 4px;
+  }
+  :root:root[data-template="editorial"] .rd-tab-name {
+    font-size: 13px;
+  }
+  :root:root[data-template="editorial"] .tpl-nav {
+    padding-inline: var(--space-1);
+  }
+  :root:root[data-template="editorial"] .tpl-nav-item {
+    padding-inline: 0;
+    font-size: 12px;
+    letter-spacing: 0;
   }
 }

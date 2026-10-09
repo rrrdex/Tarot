@@ -208,7 +208,7 @@ export function switchTab(tabName) {
     t.setAttribute('aria-selected', on);
     t.tabIndex = on ? 0 : -1;
   });
-  // 新版型的導覽列與「我的」分段
+  // 新版型的導覽列
   syncNav(tabName);
   document.querySelectorAll('.tab-content').forEach(tc => {
     tc.classList.toggle('hidden', tc.id !== 'tab' + tabName.charAt(0).toUpperCase() + tabName.slice(1));

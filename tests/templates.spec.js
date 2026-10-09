@@ -39,9 +39,8 @@ test.describe('選擇版型', () => {
     expect(await page.evaluate(() => localStorage.getItem('template'))).toBe('aurora');
     await expect(page.locator('.tabs')).toBeHidden();
     await expect(page.locator('.tpl-nav')).toBeVisible();
-    // 仍在設定：導覽列的「我的」是目前項目，上方出現 統計｜設定 分段
-    await expect(nav(page, 'me')).toHaveAttribute('aria-current', 'page');
-    await expect(page.locator('#meSegSettings')).toHaveAttribute('aria-selected', 'true');
+    // 仍在設定：導覽列的「設定」是目前項目
+    await expect(nav(page, 'settings')).toHaveAttribute('aria-current', 'page');
     await page.locator('input[name="templatePref"][value="minimal"]').check();
     await expect(page.locator('html')).toHaveAttribute('data-template', 'minimal');
     expect(await page.evaluate(() => localStorage.getItem('template'))).toBeNull();
@@ -83,8 +82,7 @@ test.describe('選擇版型', () => {
     await page.goto('/');
     await expect(page.locator('html')).toHaveClass(/\bdark\b/);
     await expect(page.locator('html')).not.toHaveClass(/\bneon\b/);
-    await nav(page, 'me').click();
-    await page.locator('#meSegSettings').click();
+    await nav(page, 'settings').click();
     await expect(page.locator('input[name="themePref"][value="neon"]')).toBeChecked();
     await expect(page.locator('#desc-settings-theme-neon-desc .tpl-only')).toBeVisible();
     await expect(page.locator('#desc-settings-theme-neon-desc .minimal-only')).toBeHidden();
@@ -98,8 +96,7 @@ test.describe('選擇版型', () => {
   test('匯出與匯入包含版型與觸覺回饋', async ({ page }) => {
     await seedStorage(page, { template: 'immersive', haptics: 'false' });
     await page.goto('/');
-    await nav(page, 'me').click();
-    await page.locator('#meSegSettings').click();
+    await nav(page, 'settings').click();
     const [download] = await Promise.all([
       page.waitForEvent('download'),
       page.locator('#exportData').click()
@@ -123,44 +120,33 @@ test.describe('選擇版型', () => {
   });
 });
 
-test.describe('導覽列與「我的」', () => {
+test.describe('導覽列', () => {
   for (const tpl of NEW_TEMPLATES) {
-    test(`${tpl}：五個項目切換分頁，「我的」涵蓋統計與設定，數字快捷鍵照常可用`, async ({ page }) => {
+    test(`${tpl}：六個項目各自切換分頁，個人牌在統計最上面，數字快捷鍵照常可用`, async ({ page }) => {
       await seedStorage(page, { template: tpl, birthday: '1990-05-20' });
       await page.goto('/');
       await expect(page.locator('.tabs')).toBeHidden();
       await expect(page.getByRole('navigation', { name: '主要分頁' })).toBeVisible();
+      await expect(page.locator('.tpl-nav-item')).toHaveCount(6);
+      await expect(page.locator('.tpl-nav-label')).toHaveText(['占卜', '記錄', '學習', '資料庫', '統計', '設定']);
       await expect(nav(page, 'reading')).toHaveAttribute('aria-current', 'page');
-      // 個人牌在「我的」最上面，不在占卜分頁
+      // 個人牌在統計分頁最上面，不在占卜分頁
       await expect(page.locator('#tabReading #profileCards')).toHaveCount(0);
-      await nav(page, 'history').click();
-      await expect(page.locator('#tabHistory')).toBeVisible();
-      await expect(nav(page, 'history')).toHaveAttribute('aria-current', 'page');
-      await expect(page.locator('.tpl-nav-item[aria-current]')).toHaveCount(1);
-      await nav(page, 'me').click();
-      await expect(page.locator('#tabStatistics')).toBeVisible();
-      await expect(nav(page, 'me')).toHaveAttribute('aria-current', 'page');
-      await expect(page.locator('#meSegStatistics')).toHaveAttribute('aria-selected', 'true');
+      await expect(page.locator('#meHub')).toBeHidden();
+      for (const [name, panel] of [['history', '#tabHistory'], ['learn', '#tabLearn'], ['database', '#tabDatabase'], ['statistics', '#tabStatistics'], ['settings', '#tabSettings']]) {
+        await nav(page, name).click();
+        await expect(page.locator(panel)).toBeVisible();
+        await expect(nav(page, name)).toHaveAttribute('aria-current', 'page');
+        await expect(page.locator('.tpl-nav-item[aria-current]')).toHaveCount(1);
+        await expect(page.locator('#meHub')).toBeVisible({ visible: name === 'statistics' });
+      }
+      await nav(page, 'statistics').click();
       await expect(page.locator('#meHub #profileCards .profile-chip')).toHaveCount(5);
-      await page.locator('#meSegSettings').click();
-      await expect(page.locator('#tabSettings')).toBeVisible();
-      await expect(nav(page, 'me')).toHaveAttribute('aria-current', 'page');
-      // 分段是 tablist：方向鍵在統計與設定之間切換
-      await page.keyboard.press('ArrowLeft');
-      await expect(page.locator('#tabStatistics')).toBeVisible();
-      await expect(page.locator('#meSegStatistics')).toBeFocused();
-      // 回到「我的」時記得上次看的是哪一個
-      await page.locator('#meSegSettings').click();
-      await nav(page, 'learn').click();
-      await expect(page.locator('#tabLearn')).toBeVisible();
-      await nav(page, 'me').click();
-      await expect(page.locator('#tabSettings')).toBeVisible();
       await nav(page, 'database').click();
-      await expect(page.locator('#tabDatabase')).toBeVisible();
       await page.locator('#tabDatabase .results-title').click();
       await page.keyboard.press('3');
       await expect(page.locator('#tabStatistics')).toBeVisible();
-      await expect(nav(page, 'me')).toHaveAttribute('aria-current', 'page');
+      await expect(nav(page, 'statistics')).toHaveAttribute('aria-current', 'page');
       await page.keyboard.press('1');
       await expect(page.locator('#tabReading')).toBeVisible();
       await expect(nav(page, 'reading')).toHaveAttribute('aria-current', 'page');
@@ -406,15 +392,14 @@ test.describe('沉浸手勢首頁', () => {
     await page.locator('#readButton').click();
     await expect(page.locator('#results .card').first()).toBeVisible();
     await expect.poll(() => page.evaluate(() => window.__vib.length)).toBe(1);
-    await nav(page, 'me').click();
-    await page.locator('#meSegSettings').click();
+    await nav(page, 'settings').click();
     await expect(page.locator('#hapticsToggle')).toBeVisible();
     await page.locator('#hapticsToggle').uncheck();
     await nav(page, 'reading').click();
     await page.locator('#readButton').click();
     await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('readingHistory') || '[]').length)).toBe(2);
     expect(await page.evaluate(() => window.__vib.length)).toBe(1);
-    await nav(page, 'me').click();
+    await nav(page, 'settings').click();
     await page.locator('#hapticsToggle').check();
     await page.locator('input[name="templatePref"][value="minimal"]').check();
     await expect(page.locator('#hapticsToggle')).toBeHidden();
@@ -435,12 +420,10 @@ test.describe('新版型的寬度', () => {
       await expect(page.locator('.rd-pager-nav')).toBeVisible();
       for (const width of [320, 375, 768, 1280]) {
         await page.setViewportSize({ width, height: 800 });
-        for (const tab of ['reading', 'history', 'learn', 'database', 'me']) {
+        for (const tab of ['reading', 'history', 'learn', 'database', 'statistics', 'settings']) {
           await nav(page, tab).click();
           expect(await overflowX(page), `${width}px ${tab}`).toBeLessThanOrEqual(0);
         }
-        await page.locator('#meSegSettings').click();
-        expect(await overflowX(page), `${width}px settings`).toBeLessThanOrEqual(0);
         await nav(page, 'reading').click();
       }
     });

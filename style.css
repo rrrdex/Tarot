@@ -1057,6 +1057,17 @@ select,
 .results .btn-group {
   margin-top: var(--space-10);
 }
+/* 開始占卜與分享永遠同一列：開始占卜佔滿剩下的寬度，分享維持原本的寬度 */
+#tabReading .form-section > .btn-group {
+  flex-wrap: nowrap;
+}
+#readButton {
+  flex: 1;
+  min-width: 0;
+}
+#shareButton {
+  flex: none;
+}
 @media (min-width: 640px) {
   .btn-group {
     gap: var(--space-4);
@@ -1838,9 +1849,10 @@ select,
     margin-bottom: var(--space-5);
   }
 }
+/* 牌名與正逆位不同字級：對齊文字基線，不是對齊上緣 */
 .card-content {
   display: flex;
-  align-items: flex-start;
+  align-items: baseline;
   justify-content: space-between;
   gap: var(--space-4);
   margin-bottom: auto;
@@ -2225,7 +2237,8 @@ select.btn {
 .history-open:focus-visible {
   outline: none;
 }
-.history-open:focus-visible::after {
+/* 點擊範圍是整張卡片，焦點框也畫在卡片上，跟著卡片自己的圓角 */
+.history-item:has(.history-open:focus-visible) {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
@@ -2320,11 +2333,12 @@ select.btn {
     font-size: var(--text-base);
   }
 }
+/* 按鈕是透明底：左右各往外伸一個內距，「筆記」的圖示和「刪除」的文字才分別對齊內容的左右緣（右緣和時間對齊） */
 .history-actions {
   display: flex;
   gap: var(--space-1);
   margin-top: var(--space-3);
-  margin-left: calc(var(--space-3) * -1);
+  margin-inline: calc(var(--space-3) * -1);
 }
 .history-action {
   appearance: none;
@@ -2342,10 +2356,36 @@ select.btn {
   cursor: pointer;
   white-space: nowrap;
 }
-/* 窄螢幕三個按鈕排不下：讓「刪除」換到下一行，不要每個按鈕的字一個字一行 */
-@media (max-width: 379.98px) {
+/* 依卡片的內容寬度調整（不看螢幕寬度：各版型的卡片寬度不同）：
+   三個按鈕排不下時縮小內距；再窄就只留圖示（文字只對視覺隱藏，按鈕名稱照念）。都排不下才換行 */
+.history-item {
+  container-type: inline-size;
+}
+@container (max-width: 217.98px) {
   .history-actions {
     flex-wrap: wrap;
+    margin-inline: calc(var(--space-2) * -1);
+  }
+  .history-action {
+    padding-inline: var(--space-2);
+  }
+}
+@container (max-width: 201.98px) {
+  .history-actions {
+    margin-inline: -13px;
+  }
+  .history-action {
+    justify-content: center;
+    min-width: 44px;
+    padding-inline: 0;
+  }
+  .history-action-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 }
 .history-action .icon-line {
@@ -2378,14 +2418,19 @@ select.btn {
   margin-bottom: var(--space-3);
   font-size: var(--text-sm);
   color: var(--text-secondary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 .history-note .icon-line {
   flex: none;
   width: 16px;
   height: 16px;
+}
+/* 文字要包在自己的元素裡才能縮短加「…」（flex 容器裡的裸文字不會出現刪節號） */
+.history-note-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 @media (min-width: 768px) {
   .history-empty {
@@ -2809,6 +2854,14 @@ input[type=search] {
 .card-db-item:not(:has(.card-db-art)) {
   contain-intrinsic-block-size: auto 135px;
 }
+/* 同一列的卡片等高；關鍵詞貼齊卡片底部，英文名稱一行或兩行，關鍵詞都對齊 */
+.card-db-item {
+  display: flex;
+  flex-direction: column;
+}
+.card-db-item > .card-db-keywords {
+  margin-top: auto;
+}
 @media (hover: hover) {
   .card-db-item:hover {
     transform: translateY(-3px);
@@ -2841,14 +2894,17 @@ input[type=search] {
     font-size: var(--text-xl);
   }
 }
+/* 英文名稱在兩欄的窄卡片上放不下一行（Queen of Pentacles）：最多兩行，不截斷 */
 .card-db-english {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
   font-size: var(--text-sm);
   color: var(--text-secondary);
   margin-bottom: var(--space-4);
   line-height: var(--leading-tight);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 @media (min-width: 768px) {
   .card-db-english {
@@ -2895,6 +2951,35 @@ input[type=search] {
 }
 .checkbox-item:hover {
   background: var(--bg-secondary);
+}
+/* 單選鈕的焦點框要是圓的：瀏覽器會把原生單選鈕的 border-radius 重設成 0，框只能是方的，
+   所以改由選項列在單選鈕的位置畫一個圓形的焦點框（單選鈕一律是選項列的第一個元素、垂直置中） */
+.checkbox-item {
+  position: relative;
+}
+.checkbox-item > input[type=radio]:focus-visible {
+  outline: none;
+}
+.checkbox-item:has(> input[type=radio]:focus-visible)::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: var(--space-4);
+  width: 22px;
+  height: 22px;
+  margin-top: -11px;
+  border-radius: 50%;
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+  pointer-events: none;
+}
+@media (min-width: 768px) {
+  .checkbox-item:has(> input[type=radio]:focus-visible)::before {
+    left: var(--space-5);
+    width: 24px;
+    height: 24px;
+    margin-top: -12px;
+  }
 }
 .checkbox-item input[type=checkbox],
 .checkbox-item input[type=radio] {
@@ -3315,17 +3400,22 @@ input[type=search] {
 .spread-option {
   position: relative;
 }
+/* 分隔線和滑過、選取時的底色一樣寬（都撐滿整列，和群組標題的底線也對齊）；有底色的那一列上下的線藏起來，圓角才完整 */
 .spread-option + .spread-option::before {
   content: "";
   position: absolute;
   top: 0;
-  left: var(--space-2);
-  right: var(--space-2);
+  left: 0;
+  right: 0;
   border-top: 1px solid var(--divider);
 }
 @media (hover: hover) {
   .spread-option:hover {
     background: var(--accent-light);
+  }
+  .spread-option:hover::before,
+  .spread-option:hover + .spread-option::before {
+    border-top-color: transparent;
   }
 }
 .spread-option-text {
@@ -3456,14 +3546,26 @@ input[type=search] {
     font-size: var(--text-base);
   }
 }
+/* 左側色帶：圓角卡片加粗左框會在圓角處變成一彎新月；改成貼齊外緣、順著圓角的內陰影，框線維持一樣粗 */
+.toast {
+  position: relative;
+}
+.toast::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  box-shadow: inset var(--toast-bar-w, 3px) 0 0 var(--toast-bar, transparent);
+  pointer-events: none;
+}
 .toast.success {
-  border-left: 3px solid var(--success);
+  --toast-bar: var(--success);
 }
 .toast.error {
-  border-left: 3px solid var(--danger);
+  --toast-bar: var(--danger);
 }
 .toast.warning {
-  border-left: 3px solid var(--warning);
+  --toast-bar: var(--warning);
 }
 .toast-action {
   appearance: none;
@@ -3584,9 +3686,13 @@ input[type=search] {
   background: var(--accent-light);
   color: var(--text);
 }
+/* 焦點框沿著元素自己的圓角畫，聚焦時不改變元素的形狀（膠囊按鈕不會變成方角） */
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 4px;
+}
+/* 沒有自己圓角的文字連結，焦點框給一點小圓角（:where 不加權重，有圓角的元素照用自己的） */
+:where(a, .text-link, .rd-more, .rd-toggle-all):where(:focus-visible) {
   border-radius: var(--radius-xs);
 }
 button:focus-visible,
@@ -3775,6 +3881,10 @@ button:focus-visible,
   font-size: var(--text-sm);
   color: var(--text-secondary);
   line-height: var(--leading-relaxed);
+}
+/* 「看卡片詳情」的 44px 點擊範圍會往下伸出牌名列 10px：關鍵詞留出這段距離，不和點擊範圍重疊 */
+.rd-card + .rd-kw {
+  margin-top: var(--space-3);
 }
 .rd-text {
   margin-top: var(--space-1);

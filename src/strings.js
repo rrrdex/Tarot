@@ -24,8 +24,6 @@ export const uiStrings = {
     'tab.database': '資料庫',
     'tab.learn': '學習',
     'tab.settings': '設定',
-    'nav.me': '我的',
-    'nav.me.label': '我的：統計與設定',
     'pager.label': '逐張解讀的牌位',
     'pager.prev': '上一張',
     'pager.next': '下一張',

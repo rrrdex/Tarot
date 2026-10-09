@@ -84,14 +84,11 @@ for (const [template, theme, style] of TEMPLATE_COMBOS) {
     await expectNoViolations(page, 'pager');
 
     const nav = (name) => page.locator(`.tpl-nav-item[data-nav="${name}"]`);
-    for (const tab of ['history', 'learn', 'database', 'me']) {
+    for (const tab of ['history', 'learn', 'database', 'statistics', 'settings']) {
       await nav(tab).click();
       await expect(nav(tab)).toHaveAttribute('aria-current', 'page');
       await expectNoViolations(page, tab);
     }
-    await page.locator('#meSegSettings').click();
-    await expect(page.locator('#tabSettings')).toBeVisible();
-    await expectNoViolations(page, 'settings');
 
     await nav('reading').click();
     await page.locator('#results .card').first().click();

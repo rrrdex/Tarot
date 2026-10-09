@@ -577,6 +577,31 @@
   :root[data-template="immersive"] .spread-tile-more {
     color: var(--text-secondary);
   }
+  /* 牌陣名稱一律單行（「凱爾特十字」斷成兩行會把圖示頂高，各方塊就對不齊） */
+  :root[data-template="immersive"] .spread-tile-name {
+    white-space: nowrap;
+  }
+  /* 手機：方塊間距、內距與「更多」都縮小，五個字的名稱才放得下；320px 寬再把字縮小一點 */
+  @media (max-width: 479.98px) {
+    :root[data-template="immersive"] .spread-tiles {
+      column-gap: 6px;
+    }
+    :root[data-template="immersive"] .spread-tile {
+      padding-inline: 4px;
+    }
+    :root[data-template="immersive"] .spread-tile-more {
+      min-width: 52px;
+    }
+  }
+  @media (max-width: 359.98px) {
+    :root[data-template="immersive"] .spread-tile {
+      font-size: var(--text-xs);
+      letter-spacing: -0.04em;
+    }
+    :root[data-template="immersive"] .spread-tile-more {
+      min-width: 48px;
+    }
+  }
 
   /* 主要按鈕列：開始占卜填滿，分享是旁邊的小膠囊 */
   :root[data-template="immersive"] .form-section .btn-group {
@@ -885,6 +910,20 @@
     min-height: 52px;
     border-radius: 26px;
   }
+  /* 320px 寬：「上一張」只留箭頭（文字仍是按鈕名稱），「下一張：牌名」才放得下 */
+  @media (max-width: 359.98px) {
+    :root[data-template="immersive"]:not([data-template="minimal"]) .rd-pager-prev {
+      min-width: 52px;
+      padding-inline: 0;
+    }
+    :root[data-template="immersive"]:not([data-template="minimal"]) .rd-pager-prev .rd-pager-btn-text {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+    }
+  }
   :root[data-template="immersive"]:not([data-template="minimal"]) .rd-pager-hint {
     font-weight: 600;
   }
@@ -919,6 +958,37 @@
   :root[data-template="immersive"] .history-time {
     color: var(--tpl-coral);
     font-weight: 600;
+  }
+  /* 按鈕是有底色的膠囊：左緣和內容對齊，不往外伸；少了往左伸的 12px，縮小內距、只留圖示的寬度門檻也跟著提高 */
+  :root[data-template="immersive"] .history-actions {
+    margin-left: 0;
+  }
+  @container (max-width: 225.98px) {
+    :root[data-template="immersive"] .history-actions {
+      flex-wrap: wrap;
+      margin-right: calc(var(--space-2) * -1);
+    }
+    :root[data-template="immersive"] .history-action {
+      padding-inline: var(--space-2);
+    }
+  }
+  @container (max-width: 209.98px) {
+    :root[data-template="immersive"] .history-actions {
+      margin-right: -13px;
+    }
+    :root[data-template="immersive"] .history-action {
+      justify-content: center;
+      min-width: 44px;
+      padding-inline: 0;
+    }
+    :root[data-template="immersive"] .history-action-label {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
   }
   :root[data-template="immersive"] .history-action {
     background: var(--tpl-chip);
@@ -1162,7 +1232,7 @@
     color: var(--text-body);
   }
 
-  /* ── 我的：個人牌、統計、設定 ── */
+  /* ── 統計與設定：個人牌、統計、設定 ── */
   :root[data-template="immersive"] .me-hub {
     padding-top: var(--space-5);
   }
@@ -1214,6 +1284,11 @@
   :root[data-template="immersive"] .checkbox-item:hover {
     background: var(--tpl-chip);
   }
+  /* 單選鈕的圓形焦點框（style.css 由選項列畫）用這個版型的粗細與距離 */
+  :root[data-template="immersive"] .checkbox-item:has(> input[type=radio]:focus-visible)::before {
+    outline-width: 2.5px;
+    outline-offset: 3px;
+  }
   :root[data-template="immersive"] .checkbox-item:has(input[type=radio]:checked) .checkbox-label {
     font-weight: 700;
   }
@@ -1237,6 +1312,15 @@
   }
   :root[data-template="immersive"] .settings-section .checkbox-item input[type=checkbox]:focus-visible {
     outline-offset: 2px;
+  }
+  /* 開關比勾選框寬：說明縮排到選項文字的起點（內距＋開關 46px＋間距） */
+  :root[data-template="immersive"] .settings-section .checkbox-item:has(input[type=checkbox]) + .checkbox-desc {
+    margin-left: calc(var(--space-4) + 46px + var(--space-4));
+  }
+  @media (min-width: 768px) {
+    :root[data-template="immersive"] .settings-section .checkbox-item:has(input[type=checkbox]) + .checkbox-desc {
+      margin-left: calc(var(--space-5) + 46px + var(--space-4));
+    }
   }
   :root[data-template="immersive"] .profile-preview {
     border-radius: 20px;
@@ -1413,6 +1497,10 @@
     box-shadow: var(--tpl-shadow-2);
     transform: translateY(-24px) scale(0.96);
   }
+  /* 這個版型的提示訊息不畫左側色帶（狀態看圖示） */
+  :root[data-template="immersive"] .toast::before {
+    display: none;
+  }
   :root[data-template="immersive"] .toast.show {
     transform: none;
   }
@@ -1562,17 +1650,23 @@
   }
 }
 
-/* 很窄的手機（< 360px）：dock 收緊一點 */
+/* 很窄的手機（< 360px）：六個項目加上展開的文字放不下，目前的項目也只顯示圖示（實心圓標示），兩側留一樣的空間 */
 @media screen and (max-width: 359.98px) {
   :root[data-template="immersive"]:not([data-template="minimal"]) .tpl-nav {
-    gap: 0;
-    padding: 0 4px;
+    gap: 2px;
+    padding: 0 6px;
   }
-  :root[data-template="immersive"]:not([data-template="minimal"]) .tpl-nav-item {
-    width: 44px;
-  }
+  :root[data-template="immersive"]:not([data-template="minimal"]) .tpl-nav-item,
   :root[data-template="immersive"]:not([data-template="minimal"]) .tpl-nav-item[aria-current="page"] {
-    padding: 0 12px;
+    width: 44px;
+    padding: 0;
+  }
+  :root[data-template="immersive"]:not([data-template="minimal"]) .tpl-nav-item[aria-current="page"] .tpl-nav-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
   }
 }
 

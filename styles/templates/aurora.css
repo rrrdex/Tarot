@@ -428,6 +428,10 @@
     backdrop-filter: var(--tpl-blur);
     -webkit-backdrop-filter: var(--tpl-blur);
   }
+  /* 牌卡視窗的分頁籤會黏在標題列下方：玻璃疊在抽屜的不透明底色上，捲過去的文字不會透出來 */
+  :root[data-template="aurora"] .modal > #cardModalSeg {
+    background: linear-gradient(var(--tpl-glass), var(--tpl-glass)), var(--sheet-bg);
+  }
   :root[data-template="aurora"] .seg-item.active {
     background: var(--tpl-gold);
     color: var(--tpl-on-gold);
@@ -472,34 +476,57 @@
       color: var(--text);
     }
   }
+  /* 目前的項目：照設計稿用金色字與粗體，不加底色；底下一道短線，不只靠顏色辨識 */
+  :root:root[data-template="aurora"] .tpl-nav-item {
+    position: relative;
+  }
   :root:root[data-template="aurora"] .tpl-nav-item[aria-current="page"] {
+    background: transparent;
     font-weight: var(--weight-bold);
   }
+  :root:root[data-template="aurora"] .tpl-nav-item[aria-current="page"]::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: 5px;
+    width: 16px;
+    height: 2px;
+    margin-left: -8px;
+    border-radius: 1px;
+    background: currentColor;
+  }
+  /* 焦點框跟著項目自己的圓角（窄螢幕 26px、側欄 30px），不另外指定 */
   :root:root[data-template="aurora"] .tpl-nav-item:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: -2px;
-    border-radius: 26px;
   }
 }
-/* 寬螢幕：左側浮動直欄（外框仍是整條左欄，膠囊只包住五個項目） */
+/* 寬螢幕：左側浮動直欄。外框仍是整條左欄，膠囊只包住六個項目：
+   項目固定 60×64px，膠囊四周都留 8px（左右 14px 外距＋膠囊寬 76px），圓角與項目同心 */
 @media screen and (min-width: 1024px) {
+  :root:root[data-template="aurora"] {
+    --aurora-rail-items: 6;
+  }
   :root:root[data-template="aurora"] .tpl-nav {
     padding: calc(var(--header-h) + 28px) 22px 28px;
     min-height: 0;
-    gap: var(--space-2);
+    gap: 8px;
   }
   :root:root[data-template="aurora"] .tpl-nav::before {
-    top: calc(var(--header-h) + 12px);
+    top: calc(var(--header-h) + 20px);
     bottom: auto;
     left: 14px;
     right: 14px;
-    /* 五個項目（各 64px）＋四個間距＋上下各 16px */
-    height: calc(5 * 64px + 4 * var(--space-2) + 32px);
+    height: calc(var(--aurora-rail-items) * 64px + (var(--aurora-rail-items) - 1) * 8px + 16px);
     border-radius: 38px;
   }
   :root:root[data-template="aurora"] .tpl-nav-item {
+    height: 64px;
     min-height: 64px;
-    border-radius: 24px;
+    border-radius: 30px;
+  }
+  :root:root[data-template="aurora"] .tpl-nav-item[aria-current="page"]::after {
+    bottom: 7px;
   }
 }
 
@@ -748,6 +775,30 @@
   :root:root[data-template="aurora"] .rd-pager-btn {
     min-height: 52px;
   }
+  /* 窄螢幕：抽屜的內距讓按鈕列往外伸一點，「上一張」只留箭頭（文字仍是按鈕名稱），「下一張：牌名」才放得下 */
+  @media (max-width: 639.98px) {
+    :root:root[data-template="aurora"] .rd-pager-nav {
+      gap: var(--space-2);
+      margin-inline: -10px;
+    }
+    :root:root[data-template="aurora"] .rd-pager-prev {
+      min-width: 52px;
+      padding-inline: 0;
+    }
+    :root:root[data-template="aurora"] .rd-pager-prev .rd-pager-btn-text {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+    }
+  }
+  @media (max-width: 359.98px) {
+    :root:root[data-template="aurora"] .rd-pager-next {
+      padding-inline: var(--space-4);
+      letter-spacing: normal;
+    }
+  }
 
   /* 牌位屬於建議、阻礙、結果時的「在這個位置」：左側一條金線 */
   :root[data-template="aurora"] .rd-role {
@@ -866,6 +917,10 @@
   }
   :root[data-template="aurora"] input[type=search] {
     border-radius: var(--radius-full);
+  }
+  /* 比較視窗的搜尋框就在下拉選單正上方：跟表單欄位一樣的圓角，兩個欄位才像一組 */
+  :root[data-template="aurora"] .compare-pick input[type=search] {
+    border-radius: var(--radius-lg);
   }
   /* 篩選列：各組靠下對齊（右邊有帶標籤的下拉選單時），標籤不被撐成橢圓 */
   :root[data-template="aurora"] .db-filters {
@@ -1191,6 +1246,12 @@
   :root[data-template="aurora"] .spread-option[aria-selected=true] + .spread-option::before {
     border-top-color: transparent;
   }
+  @media (hover: hover) {
+    :root[data-template="aurora"] .spread-option:hover::before,
+    :root[data-template="aurora"] .spread-option:hover + .spread-option::before {
+      border-top-color: transparent;
+    }
+  }
   :root[data-template="aurora"] .spread-option[aria-selected=true] .spread-option-name {
     color: var(--accent-text);
     font-weight: var(--weight-bold);
@@ -1235,6 +1296,10 @@
   }
   :root[data-template="aurora"] .toast.show {
     transform: none;
+  }
+  /* 這個版型的提示訊息不畫左側色帶（狀態看圖示） */
+  :root[data-template="aurora"] .toast::before {
+    display: none;
   }
   :root[data-template="aurora"] .toast.success .toast-icon {
     color: var(--success-text);

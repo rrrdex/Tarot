@@ -75,14 +75,14 @@ export function renderHistory() {
 <span class="history-time" id="${timeId}">${escapeHTML(time)}</span>
 </div>
 ${item.question ? `<p class="history-question">${escapeHTML(item.question)}</p>` : ''}
-${note ? `<p class="history-note">${icons.note}<span class="visually-hidden">${escapeHTML(t('history.item.note'))}</span>${escapeHTML(noteExcerpt(note))}</p>` : ''}
+${note ? `<p class="history-note">${icons.note}<span class="visually-hidden">${escapeHTML(t('history.item.note'))}</span><span class="history-note-text">${escapeHTML(noteExcerpt(note))}</span></p>` : ''}
 ${item.tags?.length ? `<div class="tags">${item.tags.map(t => `<span class="tag">${escapeHTML(t)}</span>`).join('')}</div>` : ''}
 <button type="button" class="history-fav" data-action="toggleFavorite" data-id="${item.id}" aria-pressed="${!!item.favorite}" aria-label="${escapeHTML(t('history.item.favorite'))}" ${desc}>${icons.star}</button>
 <span class="history-chevron">${icons.chevron}</span>
 <div class="history-actions">
-<button type="button" class="history-action" data-action="openNoteModal" data-id="${item.id}" ${desc}>${icons.note}${escapeHTML(t('btn.note'))}</button>
-<button type="button" class="history-action" data-action="openTagModal" data-id="${item.id}" ${desc}>${icons.tag}${escapeHTML(t('btn.tag'))}</button>
-<button type="button" class="history-action danger" data-action="deleteReading" data-id="${item.id}" ${desc}>${icons.trash}${escapeHTML(t('btn.delete'))}</button>
+<button type="button" class="history-action" data-action="openNoteModal" data-id="${item.id}" ${desc}>${icons.note}<span class="history-action-label">${escapeHTML(t('btn.note'))}</span></button>
+<button type="button" class="history-action" data-action="openTagModal" data-id="${item.id}" ${desc}>${icons.tag}<span class="history-action-label">${escapeHTML(t('btn.tag'))}</span></button>
+<button type="button" class="history-action danger" data-action="deleteReading" data-id="${item.id}" ${desc}>${icons.trash}<span class="history-action-label">${escapeHTML(t('btn.delete'))}</span></button>
 </div>
 </article>
 `;

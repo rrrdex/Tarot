@@ -1,13 +1,14 @@
 /* 新版型共用的版面與行為（星夜玻璃、現代編輯、沉浸手勢）
    ─────────────────────────────────────────────
-   這裡只處理結構：導覽列、「我的」分段、底部抽屜式視窗、逐張解讀的翻頁器、沉浸版型的牌堆首頁。
+   這裡只處理結構：導覽列、統計分頁上方的個人牌、底部抽屜式視窗、逐張解讀的翻頁器、沉浸版型的牌堆首頁。
    顏色一律取自 token（各版型檔定義）；造型（字型、圓角、質感、陰影）留給各版型檔的 skin。
    規則都以 :root[data-template]:not([data-template="minimal"]) 開頭（下面註解簡稱「新版型」），
    簡約版型（與 JS 尚未設定版型時）完全不受影響。新元素在簡約版型一律不顯示。
    會被 JS 改變的狀態：
    - <html data-template>：版型（index.html 的 inline script 在繪製前就設好）
    - <html data-tab>：目前分頁（main.js 的 switchTab）
-   - .tpl-nav-item[aria-current="page"]：導覽列目前的項目（「我的」涵蓋統計與設定）
+   - <html class="vt-nav">：分頁轉場進行中（template.js 的 navigateTab）
+   - .tpl-nav-item[aria-current="page"]：導覽列目前的項目
    - .modal.is-dragging、--sheet-drag：抽屜被往下拖曳中與拖曳距離（src/sheet.js）
    - .reading-detail.rd-paged、.rd-slide.rd-slide-off、.rd-slide-on：翻頁器（src/pager.js）
    - .deck-hero.is-dragging、--hero-drag：牌堆被往上拖曳中與拖曳距離（src/hero.js） */
@@ -69,7 +70,10 @@
     padding: 0 var(--space-2) env(safe-area-inset-bottom, 0px);
     background: var(--nav-bg, var(--surface));
     border-top: 1px solid var(--nav-border, var(--divider));
-    /* 切換分頁的轉場不帶著導覽列一起淡入淡出 */
+  }
+  /* 切換分頁的轉場不帶著導覽列一起淡入淡出。只在轉場期間命名（template.js 加上 .vt-nav）：
+     一直帶著 view-transition-name 會讓導覽列自成背景根，底下膠囊的 backdrop-filter 就模糊不到頁面 */
+  :root.vt-nav[data-template]:not([data-template="minimal"]) .tpl-nav {
     view-transition-name: tpl-nav;
   }
   :root[data-template]:not([data-template="minimal"]) .tpl-nav-item {
@@ -143,16 +147,14 @@
   }
 }
 
-/* ── 我的：統計｜設定 分段與個人牌（只在統計、設定分頁顯示） ── */
-:root:not([data-tab="statistics"]):not([data-tab="settings"]) .me-hub {
+/* ── 個人牌：新版型放在統計分頁最上面（沒有設定生日、個人牌隱藏時整塊不佔位） ── */
+:root:not([data-tab="statistics"]) .me-hub,
+.me-hub:not(:has(.profile-row:not(.hidden))) {
   display: none;
 }
 @media screen {
   :root[data-template]:not([data-template="minimal"]) .me-hub {
     margin-bottom: var(--space-6);
-  }
-  :root[data-template]:not([data-template="minimal"]) .me-seg {
-    margin-bottom: var(--space-5);
   }
   :root[data-template]:not([data-template="minimal"]) .me-hub .profile-row {
     margin-bottom: 0;
@@ -325,9 +327,10 @@
   :root[data-template]:not([data-template="minimal"]) .rd-tab[aria-selected="true"] .rd-tab-pos {
     color: inherit;
   }
+  /* 分頁籤列可以橫向捲動（overflow 會裁掉畫在外面的框）：焦點框畫在分頁籤內側 */
   :root[data-template]:not([data-template="minimal"]) .rd-tab:focus-visible {
     outline: 2px solid var(--accent);
-    outline-offset: 2px;
+    outline-offset: -4px;
   }
   /* 沉浸手勢：上方的限時動態進度條 + 大張牌 */
   :root[data-template]:not([data-template="minimal"]) .rd-story {
@@ -389,6 +392,7 @@
   :root[data-template]:not([data-template="minimal"]) .rd-pager-btn {
     min-height: 48px;
     min-width: 0;
+    max-width: 100%;
     padding: 0 var(--space-5);
   }
   :root[data-template]:not([data-template="minimal"]) .rd-pager-prev {
@@ -396,7 +400,16 @@
   }
   :root[data-template]:not([data-template="minimal"]) .rd-pager-next {
     flex: 1 1 auto;
-    white-space: normal;
+  }
+  /* 按鈕文字一律單行：太窄時結尾變成「…」，完整的「下一張：牌名」仍在文字節點裡，報讀照念；箭頭不跟著縮 */
+  :root[data-template]:not([data-template="minimal"]) .rd-pager-btn-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  :root[data-template]:not([data-template="minimal"]) .rd-pager-btn .icon {
+    flex: none;
   }
   :root[data-template]:not([data-template="minimal"]) .rd-pager-btn[aria-disabled="true"] {
     opacity: 0.45;
