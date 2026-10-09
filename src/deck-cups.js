@@ -335,8 +335,9 @@ export const CUPS_SCENE = {
         F(`M${x - 3} ${t - 12}C${x - 14} ${t - 22} ${x - 16} ${t - 14} ${x - 13} ${t - 8}C${x - 10} ${t - 11} ${x - 7} ${t - 10} ${x - 4} ${t - 7}Z`, '#d0613e') +
         Ln(`M${x - 3} ${t - 4}h6M${x - 4} ${t - 9}h6M${x - 2} ${t - 14}h6`, '#7a2a20', 0.7)
     };
-    const top = [[112, 'head'], [188, 'veiled']];
-    const low = [[70, 'castle'], [110, 'jewels'], [150, 'laurel'], [190, 'snake'], [230, 'dragon']];
+    // 與原牌相同：上排人頭、蒙布的發光形體、蛇；下排城堡、珠寶、桂冠、龍
+    const top = [[92, 'head'], [150, 'veiled'], [208, 'snake']];
+    const low = [[76, 'castle'], [126, 'jewels'], [176, 'laurel'], [226, 'dragon']];
     const item = (x, y, s, k) => cup(x, y, s, { fill: '#6f5a2a' }) + G(`translate(${x} ${f(y - 40 * s)}) scale(${f(s / S)})`, what[k](0, 0)) +
       G(`translate(${x} ${y}) scale(${s})`, F('M-12 -40A12 2.4 0 0 0 12 -40H10.4A10.4 1.5 0 0 1 -10.4 -40Z', '#dcb66a') + Ln('M-12 -40A12 2.4 0 0 0 12 -40', '#8a6630', 0.6));
     // 每只杯底下一團雲
@@ -347,7 +348,7 @@ export const CUPS_SCENE = {
       glow(150, 230, 110, 120, '#ffffff', 0.25),
       // 遠處的地平線與他腳下的地
       GF('M40 404C100 396 200 396 260 404V460H40Z', '#5f6a7e', '#4a5366'),
-      // 上層兩只、下層五只，全浮在雲裡
+      // 上層三只、下層四只，全浮在雲裡
       ...top.map(([x, k]) => puff(x, 205, 20) + item(x, 200, 0.9, k) + F(cloudD(x + 12, 210, 9), '#f4eff7')),
       ...low.map(([x, k]) => puff(x, 300, 16) + item(x, 296, 0.8, k) + F(cloudD(x - 9, 305, 8), '#f4eff7')),
       // 背對觀者站在最低處的人：張著雙手，還沒伸向任何一只杯

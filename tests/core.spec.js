@@ -132,7 +132,10 @@ test.describe('占卜流程與網址', () => {
     for (const sel of ['#dailyCard', '#profileCards', '#tabReading > .panel', '#spreadInfo']) {
       await expect(page.locator(sel)).toBeHidden();
     }
-    await expect(page.locator('#results .card').first()).toBeVisible();
+    // 結果改印逐張解讀：牌面版型不印，每個牌位（含底牌）連同牌義都印出來
+    await expect(page.locator('#results .card').first()).toBeHidden();
+    await expect(page.locator('#results .rd-item')).toHaveCount(4);
+    await expect(page.locator('#results .rd-text-body').first()).toBeVisible();
   });
 
   test('超過 100 筆時先刪最舊的一般紀錄，收藏與有筆記的保留', async ({ page }) => {
@@ -368,7 +371,7 @@ test.describe('儲存空間與載入失敗', () => {
     await page.locator('#readButton').click();
     await page.locator('#pickRandom').click();
     await expect(page.locator('#results .card').first()).toBeVisible();
-    await expect(toast(page).filter({ hasText: '儲存空間已滿' })).toHaveCount(1);
+    await expect(toast(page).filter({ hasText: '無法寫入瀏覽器的儲存空間' })).toHaveCount(1);
     await openTab(page, 'history');
   });
 
@@ -382,7 +385,7 @@ test.describe('儲存空間與載入失敗', () => {
     await expect(page.locator('#results .card').first()).toBeVisible();
     await expect(page.locator('#readButton')).not.toHaveAttribute('aria-disabled', 'true');
     await openTab(page, 'history');
-    await expect(toast(page).filter({ hasText: '儲存空間已滿' })).toHaveCount(1);
+    await expect(toast(page).filter({ hasText: '無法寫入瀏覽器的儲存空間' })).toHaveCount(1);
   });
 
 });

@@ -1,8 +1,8 @@
 import { t } from './i18n.js';
 import { cryptoRandom, escapeHTML, keywordList, openConfirm, showToast, shuffle } from './utils.js';
 import { fullTarotCards, suitNames } from './data.js';
-import { cardMeaningText, cardMeanings } from './meanings.js';
-import { loadLore, loadedLore } from './lazy.js';
+import { cardMeaningText, cardMeanings, keywordsFor } from './meanings.js';
+import { loadLore, loadMeaningTexts, loadedLore, loadedMeaningTexts } from './lazy.js';
 import { cardThumb, visualStyle } from './render.js';
 import * as storage from './storage.js';
 
@@ -14,6 +14,10 @@ const LEARN_MASTERED_AT = 4;
 const LEARN_MAX_LEVEL = 5;
 const LEARN_QUIZ_TOTAL = 10;
 const LEARN_QUIZ_OPTIONS = 4;
+// 看關鍵詞選牌、看牌選關鍵詞兩種題型，約四成改問逆位
+const LEARN_REVERSED_RATE = 0.4;
+// 摘要至少要有這麼長；「浪漫變了調。」這種標題句會接著下一句
+const LEARN_EXCERPT_MIN = 24;
 export const LEARN_SCOPES = ['all', 'Major Arcana', 'Wands', 'Cups', 'Swords', 'Pentacles'];
 function learnClampLevel(v) {
   const n = Number(v);
@@ -118,6 +122,55 @@ function learnCardSubHTML(card) {
     ? t('card.sub', { en: EN, suit, number: card.number })
     : t('card.sub.minor', { en: EN, suit });
   return escapeHTML(text).replace(EN, `<span lang="en">${escapeHTML(card.englishName)}</span>`);
+}
+function learnCardOf(nameKey) {
+  return fullTarotCards.find(c => c.nameKey === nameKey) || null;
+}
+function oriLabel(orientation) {
+  return t(orientation === 'reversed' ? 'orientation.reversed' : 'orientation.upright');
+}
+function learnTagsHTML(words) {
+  return `<div class="tags meaning-tags">${words.map(k => `<span class="tag">${escapeHTML(k)}</span>`).join('')}</div>`;
+}
+// 牌義拆成「開頭摘要」與「其餘內文」：在句尾斷開，引號沒閉合或摘要太短就接著下一句
+function splitExcerpt(text) {
+  const re = /[。！？]+[」』）]*/g;
+  let m;
+  while ((m = re.exec(text))) {
+    const end = m.index + m[0].length;
+    const head = text.slice(0, end);
+    const open = (head.match(/[「『]/g) || []).length;
+    const close = (head.match(/[」』]/g) || []).length;
+    if (open <= close && head.length >= LEARN_EXCERPT_MIN) return [head, text.slice(end).trim()];
+  }
+  return [text, ''];
+}
+// 完整牌義另外載入：欄位先標好要放哪張牌的哪個正逆位，已載入就直接畫，否則先顯示「載入中」
+function meaningSlotHTML(card, orientation, mode) {
+  return `<div class="learn-meaning-slot" data-slot="${mode}" data-card="${card.nameKey}" data-orientation="${orientation}">${meaningSlotInner(card, orientation, mode)}</div>`;
+}
+function meaningSlotInner(card, orientation, mode) {
+  if (!loadedMeaningTexts()) return `<p class="meaning-text learn-loading">${escapeHTML(t('card.loading'))}</p>`;
+  const [head, rest] = splitExcerpt(cardMeaningText(card, orientation));
+  if (!head) return '';
+  if (mode === 'excerpt' || !rest) return `<p class="meaning-text">${escapeHTML(head)}</p>`;
+  return `<p class="meaning-text">${escapeHTML(head)}</p>
+<details class="flash-more">
+<summary><span class="flash-more-open">${escapeHTML(t('learn.flash.more'))}</span><span class="flash-more-close">${escapeHTML(t('learn.flash.less'))}</span></summary>
+<p class="meaning-text">${escapeHTML(rest)}</p>
+</details>`;
+}
+// 舞台每一步都整個重畫，舊的欄位會脫離文件；資料到了只補還在畫面上的欄位
+function fillMeaningSlots() {
+  if (loadedMeaningTexts()) return;
+  const slots = [...document.querySelectorAll('#learnStage .learn-meaning-slot')];
+  if (!slots.length) return;
+  const fill = (html) => slots.forEach(el => {
+    if (!el.isConnected) return;
+    const card = learnCardOf(el.dataset.card);
+    el.innerHTML = html || (card ? meaningSlotInner(card, el.dataset.orientation, el.dataset.slot) : '');
+  });
+  loadMeaningTexts().then(() => fill(''), () => fill(`<div class="lore-empty load-failed">${escapeHTML(t('error.chunkOffline'))}</div>`));
 }
 function learnDateKey(d = new Date()) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -228,21 +281,20 @@ function renderLearnFlash() {
     learnFlipped = false;
   }
   const card = learnCurrentCard;
-  const m = cardMeanings[card.nameKey];
   const flashArt = cardThumb(card);
   const sub = learnCardSubHTML(card);
+  // 背面先給兩個正逆位的關鍵詞與開頭摘要，其餘內文收在「繼續閱讀」裡，評分按鈕不必捲很遠才找得到
   const face = learnFlipped ? `
 <div class="flash-back">
 <div class="flash-name">${escapeHTML(card.name)}</div>
 <div class="flash-sub">${sub}</div>
-<div class="tags">${m.keywords.map(k => `<span class="tag">${escapeHTML(k)}</span>`).join('')}</div>
+<div class="flash-meanings">
+${['upright', 'reversed'].map(ori => `
 <div class="meaning-block">
-<div class="meaning-title">${escapeHTML(t('orientation.upright'))}</div>
-<p class="meaning-text">${escapeHTML(cardMeaningText(card, 'upright'))}</p>
-</div>
-<div class="meaning-block">
-<div class="meaning-title">${escapeHTML(t('orientation.reversed'))}</div>
-<p class="meaning-text">${escapeHTML(cardMeaningText(card, 'reversed'))}</p>
+<div class="meaning-title">${escapeHTML(oriLabel(ori))}</div>
+${learnTagsHTML(keywordsFor(card.nameKey, ori))}
+${meaningSlotHTML(card, ori, 'flash')}
+</div>`).join('')}
 </div>
 </div>
 ` : `
@@ -281,6 +333,7 @@ ${learnFlipped ? `
   if (hardBtn) hardBtn.addEventListener('click', () => learnRate(false));
   const easyBtn = document.getElementById('flashEasy');
   if (easyBtn) easyBtn.addEventListener('click', () => learnRate(true));
+  if (learnFlipped) fillMeaningSlots();
 }
 function learnFlip() {
   if (learnFlipped) return;
@@ -308,6 +361,12 @@ function learnCandidates(target, pool) {
   );
   return shuffle(inPool).concat(shuffle(extra));
 }
+// 兩組關鍵詞只要共用一個詞就不能同時出現在題目裡：不同牌（甚至同一張牌的正逆位）偶有相同關鍵詞，
+// 否則會出現兩個說得通的答案
+function kwOverlap(a, b) {
+  return a.some(w => b.includes(w));
+}
+// 每個選項記下它屬於哪張牌、哪個正逆位，作答後才說得出「你選的是哪張牌」
 function buildLearnQuestion(target, pool, type) {
   const m = cardMeanings[target.nameKey];
   if (!m) return null;
@@ -316,54 +375,53 @@ function buildLearnQuestion(target, pool, type) {
   // 出題時只決定題型；牌面在顯示時才畫，中途換了牌面風格也會跟著換
   // 依牌面風格決定能不能出看圖題；線稿牌組還在下載時題目先顯示文字，到齊後重畫成圖
   if (type === 'C' && visualStyle === 'text') type = 'A';
+  // 看圖題問的是牌面本身，只問正位；文字模式換成看牌題時題目才對得上
+  const orientation = type !== 'C' && m.keywordsReversed && m.keywordsReversed.length && cryptoRandom() < LEARN_REVERSED_RATE
+    ? 'reversed'
+    : 'upright';
+  const reversed = orientation === 'reversed';
+  const answer = keywordsFor(target.nameKey, orientation);
+  const base = { nameKey: target.nameKey, orientation, answered: false, chosen: -1, correct: false };
   if (type === 'A') {
-    options.push({ text: target.name, correct: true });
+    options.push({ text: target.name, nameKey: target.nameKey, orientation, correct: true });
     for (const c of candidates) {
       if (options.length >= LEARN_QUIZ_OPTIONS) break;
       if (options.some(o => o.text === c.name)) continue;
-      options.push({ text: c.name, correct: false });
+      // 干擾牌的正逆位關鍵詞都不能和題目重疊，免得題目同時描述得到兩張牌
+      if (kwOverlap(keywordsFor(c.nameKey, 'upright'), answer) || kwOverlap(keywordsFor(c.nameKey, 'reversed'), answer)) continue;
+      options.push({ text: c.name, nameKey: c.nameKey, orientation, correct: false });
     }
     return {
+      ...base,
       type: 'A',
-      nameKey: target.nameKey,
-      prompt: t('learn.quiz.promptKeywords'),
-      subject: m.keywords.join('・'),
-      options: shuffle(options),
-      answered: false,
-      chosen: -1,
-      correct: false
+      prompt: t(reversed ? 'learn.quiz.promptKeywordsReversed' : 'learn.quiz.promptKeywords'),
+      subject: answer.join('・'),
+      options: shuffle(options)
     };
   }
-  options.push({ text: m.keywords.join('・'), correct: true });
+  options.push({ text: answer.join('・'), nameKey: target.nameKey, orientation, correct: true });
+  const addSet = (nameKey, ori) => {
+    const words = keywordsFor(nameKey, ori);
+    const text = words.join('・');
+    if (!words.length || kwOverlap(words, answer) || options.some(o => o.text === text)) return;
+    options.push({ text, nameKey, orientation: ori, correct: false });
+  };
+  // 一半的題目把同一張牌另一個正逆位的關鍵詞放進選項，練習分辨正逆位
+  if (cryptoRandom() < 0.5) addSet(target.nameKey, reversed ? 'upright' : 'reversed');
   for (const c of candidates) {
     if (options.length >= LEARN_QUIZ_OPTIONS) break;
-    const cm = cardMeanings[c.nameKey];
-    if (!cm) continue;
-    const text = cm.keywords.join('・');
-    if (options.some(o => o.text === text)) continue;
-    options.push({ text, correct: false });
+    if (!cardMeanings[c.nameKey]) continue;
+    addSet(c.nameKey, orientation);
   }
   if (type === 'C') {
-    return {
-      type: 'C',
-      nameKey: target.nameKey,
-      prompt: t('learn.quiz.promptArt'),
-      subject: '',
-      options: shuffle(options),
-      answered: false,
-      chosen: -1,
-      correct: false
-    };
+    return { ...base, type: 'C', prompt: t('learn.quiz.promptArt'), subject: '', options: shuffle(options) };
   }
   return {
+    ...base,
     type: 'B',
-    nameKey: target.nameKey,
-    prompt: t('learn.quiz.promptCard', { name: target.name }),
+    prompt: t(reversed ? 'learn.quiz.promptCardReversed' : 'learn.quiz.promptCard', { name: target.name }),
     subject: '',
-    options: shuffle(options),
-    answered: false,
-    chosen: -1,
-    correct: false
+    options: shuffle(options)
   };
 }
 function buildLearnQuiz() {
@@ -420,6 +478,26 @@ function quizFeedbackText(q) {
   const right = q.options.find(o => o.correct);
   return t('learn.quiz.feedback.wrong', { answer: right ? right.text : '' });
 }
+// 作答後的解說：題目那張牌的正逆位、關鍵詞與牌義開頭；選錯時再說明選到的是哪張牌
+function quizExplainHTML(q) {
+  const card = learnCardOf(q.nameKey);
+  if (!card) return '';
+  const pick = q.correct ? null : q.options[q.chosen];
+  const pickCard = pick && pick.nameKey ? learnCardOf(pick.nameKey) : null;
+  let pickLine = '';
+  if (pickCard) {
+    pickLine = q.type === 'A'
+      ? t('learn.quiz.explain.pickCard', { name: pickCard.name, ori: oriLabel(pick.orientation), keywords: keywordsFor(pickCard.nameKey, pick.orientation).join('・') })
+      : t('learn.quiz.explain.pickSet', { name: pickCard.name, ori: oriLabel(pick.orientation) });
+  }
+  return `
+<div class="quiz-explain">
+<div class="quiz-explain-head"><span class="quiz-explain-name">${escapeHTML(card.name)}</span><span class="quiz-explain-ori">${escapeHTML(oriLabel(q.orientation))}</span></div>
+${learnTagsHTML(keywordsFor(card.nameKey, q.orientation))}
+${meaningSlotHTML(card, q.orientation, 'excerpt')}
+${pickLine ? `<p class="quiz-explain-pick">${escapeHTML(pickLine)}</p>` : ''}
+</div>`;
+}
 function renderLearnQuiz() {
   const stage = document.getElementById('learnStage');
   if (!stage) return;
@@ -466,7 +544,9 @@ ${q.options.map((o, i) => {
 </div>
 ${q.answered ? `
 <p class="quiz-feedback">${escapeHTML(quizFeedbackText(q))}</p>
+${quizExplainHTML(q)}
 <div class="quiz-actions">
+<button class="btn btn-tertiary btn-sm" data-action="openCardModal" data-card="${q.nameKey}" data-orientation="${q.orientation || 'upright'}">${escapeHTML(t('learn.quiz.viewCard'))}</button>
 <button class="btn btn-primary btn-sm" id="quizNext">${escapeHTML(t(isLast ? 'learn.quiz.toResult' : 'learn.quiz.next'))}</button>
 </div>
 ` : ''}
@@ -482,6 +562,7 @@ ${q.answered ? `
   const nextBtn = document.getElementById('quizNext');
   if (nextBtn) nextBtn.addEventListener('click', learnQuizNext);
   labelQuizArt();
+  if (q.answered) fillMeaningSlots();
 }
 function learnAnswer(i) {
   if (!learnQuiz) return;
@@ -519,8 +600,13 @@ function renderLearnQuizResult() {
   const total = learnQuiz.questions.length;
   const correct = learnQuiz.correctCount;
   const pct = total ? Math.round((correct / total) * 100) : 0;
+  // 複習清單打開的是答錯那題問的正逆位
   const wrongItems = learnQuiz.wrongKeys
-  .map(k => fullTarotCards.find(c => c.nameKey === k))
+  .map(k => {
+    const c = learnCardOf(k);
+    const q = learnQuiz.questions.find(x => x.nameKey === k);
+    return c ? { ...c, orientation: (q && q.orientation) || 'upright' } : null;
+  })
   .filter(Boolean);
   stage.innerHTML = `
 <div class="quiz-result">
@@ -530,7 +616,7 @@ ${wrongItems.length ? `
 <div class="quiz-result-wrong">
 <div class="quiz-result-wrong-title">${escapeHTML(t('learn.quiz.reviewTitle'))}</div>
 <div class="tags" data-keynav="grid">
-${wrongItems.map((c, i) => `<span class="tag" role="button" tabindex="${i === 0 ? 0 : -1}" data-keynav-item data-action="openCardModal" data-card="${c.nameKey}" data-orientation="upright">${escapeHTML(c.name)}</span>`).join('')}
+${wrongItems.map((c, i) => `<span class="tag" role="button" tabindex="${i === 0 ? 0 : -1}" data-keynav-item data-action="openCardModal" data-card="${c.nameKey}" data-orientation="${c.orientation}">${escapeHTML(c.orientation === 'reversed' ? t('learn.quiz.reviewReversed', { name: c.name }) : c.name)}</span>`).join('')}
 </div>
 </div>
 ` : `<div class="quiz-result-perfect">${escapeHTML(t('learn.quiz.perfect'))}</div>`}
@@ -574,6 +660,8 @@ export function renderLearnStage() {
   else renderLearnFlash();
   // 源流資料只用在看圖題的讀屏說明：不必等它，到了再補；載入失敗也照常作答
   if (!loadedLore()) loadLore().then(labelQuizArt).catch(() => {});
+  // 翻牌與作答解說會用到完整牌義：一進學習分頁就先載，翻牌時多半已經到了
+  if (!loadedMeaningTexts()) loadMeaningTexts().catch(() => {});
 }
 function setLearnMode(mode) {
   if (mode !== 'flash' && mode !== 'quiz') return;

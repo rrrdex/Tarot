@@ -18,7 +18,10 @@ function loader(load, onLoad) {
 }
 let lore = null;
 let deck = null;
+let meaningTexts = null;
 
+// 正逆位的完整牌義（關鍵詞在 meanings.js，首頁就有）
+export const loadMeaningTexts = loader(() => import('./meaning-texts.js'), (m) => { meaningTexts = m; });
 export const loadLore = loader(() => import('./lore.js'), (m) => { lore = m; });
 export const loadContexts = loader(() => import('./contexts.js'), () => {});
 export const loadChangelog = loader(() => import('./changelog.js'), () => {});
@@ -28,10 +31,12 @@ export const loadDeck = loader(() => import('./deck.js'), (m) => { deck = m; });
 // 已載入才有值，給只能同步取用的地方使用
 export const loadedLore = () => lore;
 export const loadedDeck = () => deck;
+export const loadedMeaningTexts = () => meaningTexts;
 
 // 第一次畫面完成後，趁空檔預先載入卡片詳情會用到的資料；失敗就算了，打開卡片詳情時會再試並顯示狀態
 export function prefetchWhenIdle() {
   const run = () => {
+    loadMeaningTexts().catch(() => {});
     loadLore().catch(() => {});
     loadContexts().catch(() => {});
   };

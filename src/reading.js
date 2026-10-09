@@ -4,6 +4,7 @@ import {
   escapeHTML,
   formatDate,
   isValidSeed,
+  keywordList,
   newSeed,
   randomInt,
   readNeonSuitColors,
@@ -37,7 +38,8 @@ import {
 } from './state.js';
 import { readBtn, readBtnText, resultsEl, spreadTypeEl } from './dom.js';
 import { LAYOUT_IMG_SIZES, renderCard, visualStyle } from './render.js';
-import { loadDeck } from './lazy.js';
+import { loadDeck, loadMeaningTexts, loadedMeaningTexts } from './lazy.js';
+import { cardMeaningText, keywordsFor } from './meanings.js';
 import { generateInsight } from './insight.js';
 import * as storage from './storage.js';
 
@@ -340,6 +342,7 @@ ${question ? `<span>${escapeHTML(question)}</span>` : ''}
 </div>
 ${note ? `<div class="card-notes">${escapeHTML(note)}</div>` : ''}
 ${cardsHTML}
+${readingDetailHTML(drawnCards, bottomCard)}
 ${insightHTML}
 <div class="btn-group">
 <button class="btn btn-tertiary btn-sm" data-action="copyResults">${escapeHTML(t('btn.copyResults'))}</button>
@@ -348,9 +351,119 @@ ${insightHTML}
 </div>
 </div>
 `;
+  bindReadingDetail();
 }
+function oriLabel(c) {
+  return t(orientationNames[c.orientation] || c.orientation);
+}
+// 逐張解讀：一個牌位一段，依序是牌位與它的讀法、抽到的牌與方向、這個方向的關鍵詞、這個方向的牌義。
+// 牌多（凱爾特十字、十二宮）時牌義先收合，掃過牌位與關鍵詞就能看出全貌，想細讀再點開
+const DETAIL_OPEN_MAX = 4;
+function positionDesc(pos) {
+  const key = `${pos}.desc`;
+  const desc = t(key);
+  return desc !== key ? desc : '';
+}
+function detailItemHTML(c, num, open) {
+  const ori = oriLabel(c);
+  const keywords = keywordsFor(c.nameKey, c.orientation);
+  const desc = num ? positionDesc(c.position) : t('spread.bottom.desc');
+  // 完整牌義另外打包；還沒載入就先寫「載入中」，載入後由 fillDetailTexts 補上
+  const texts = loadedMeaningTexts();
+  const text = texts ? cardMeaningText(c, c.orientation) : '';
+  const pending = !texts;
+  return `
+<article class="rd-item${num ? '' : ' rd-bottom'}">
+<div class="rd-pos">
+${num ? `<span class="rd-num" aria-hidden="true">${num}</span>` : ''}
+<div class="rd-pos-text">
+<h4 class="rd-pos-name">${escapeHTML(t(c.position))}</h4>
+${desc ? `<p class="rd-pos-desc">${escapeHTML(desc)}</p>` : ''}
+</div>
+</div>
+<div class="rd-body">
+<div class="rd-card">
+<p class="rd-card-name">${escapeHTML(c.name)}<span class="rd-ori"><span class="ori-icon ${c.orientation === 'reversed' ? 'reversed' : ''}" aria-hidden="true"></span>${escapeHTML(ori)}</span></p>
+<button type="button" class="rd-more" data-action="openCardModal" data-card="${escapeHTML(c.nameKey)}" data-orientation="${escapeHTML(c.orientation)}" aria-label="${escapeHTML(t('reading.detail.more.label', { name: c.name, ori }))}">${escapeHTML(t('reading.detail.more'))}</button>
+</div>
+${keywords.length ? `<p class="rd-kw">${keywordList(keywords)}</p>` : ''}
+${(text || pending) ? `
+<details class="rd-text"${open ? ' open' : ''}>
+<summary class="rd-text-title">${escapeHTML(t('reading.detail.text', { ori }))}</summary>
+<p class="rd-text-body"${pending ? ` data-rd-text="${escapeHTML(c.nameKey)}" data-orientation="${escapeHTML(c.orientation)}"` : ''}>${escapeHTML(pending ? t('card.loading') : text)}</p>
+</details>
+` : ''}
+</div>
+</article>
+`;
+}
+function readingDetailHTML(drawnCards, bottomCard) {
+  const total = drawnCards.length + (bottomCard ? 1 : 0);
+  const open = total <= DETAIL_OPEN_MAX;
+  return `
+<section class="reading-detail" aria-labelledby="readingDetailTitle">
+<div class="rd-header">
+<h3 class="insight-title rd-title" id="readingDetailTitle">${escapeHTML(t('reading.detail.title'))}</h3>
+${open ? '' : `<button type="button" class="rd-toggle-all" aria-controls="readingDetailList">${escapeHTML(t('reading.detail.expandAll'))}</button>`}
+</div>
+<div id="readingDetailList">
+<ol class="rd-list">
+${drawnCards.map((c, i) => `<li>${detailItemHTML(c, i + 1, open)}</li>`).join('')}
+</ol>
+${bottomCard ? detailItemHTML(bottomCard, 0, open) : ''}
+</div>
+</section>
+`;
+}
+// 牌義載入後補進目前畫面上還在等的段落；每段自己帶著牌與方向，重畫過的結果不會被舊的資料蓋掉
+function fillDetailTexts() {
+  if (!resultsEl.querySelector('[data-rd-text]')) return;
+  const fill = (ok) => {
+    resultsEl.querySelectorAll('[data-rd-text]').forEach(p => {
+      const text = ok ? cardMeaningText({ nameKey: p.dataset.rdText }, p.dataset.orientation) : '';
+      p.removeAttribute('data-rd-text');
+      if (ok && !text) {
+        p.closest('details').remove();
+        return;
+      }
+      p.textContent = ok ? text : t('error.chunkOffline');
+      p.classList.toggle('load-failed', !ok);
+    });
+  };
+  loadMeaningTexts().then(() => fill(true), () => fill(false));
+}
+function syncToggleAll(btn, list) {
+  const allOpen = Array.from(list.querySelectorAll('details')).every(d => d.open);
+  btn.textContent = t(allOpen ? 'reading.detail.collapseAll' : 'reading.detail.expandAll');
+}
+function bindReadingDetail() {
+  fillDetailTexts();
+  const btn = resultsEl.querySelector('.rd-toggle-all');
+  const list = document.getElementById('readingDetailList');
+  if (!btn || !list) return;
+  btn.addEventListener('click', () => {
+    const details = Array.from(list.querySelectorAll('details'));
+    const open = !details.every(d => d.open);
+    details.forEach(d => { d.open = open; });
+    syncToggleAll(btn, list);
+  });
+  // toggle 事件不會冒泡，用捕捉階段收到每一段的開合
+  list.addEventListener('toggle', () => syncToggleAll(btn, list), true);
+}
+// 列印時展開所有牌義，印完恢復原本的開合
+let printOpened = [];
+window.addEventListener('beforeprint', () => {
+  printOpened = Array.from(resultsEl.querySelectorAll('.reading-detail details:not([open])'));
+  printOpened.forEach(d => { d.open = true; });
+});
+window.addEventListener('afterprint', () => {
+  printOpened.forEach(d => { d.open = false; });
+  printOpened = [];
+});
 function cardLine(c) {
-  return `${t(c.position)}：${c.name}（${t(orientationNames[c.orientation] || c.orientation)}）`;
+  const line = `${t(c.position)}：${c.name}（${oriLabel(c)}）`;
+  const keywords = keywordsFor(c.nameKey, c.orientation);
+  return keywords.length ? `${line}\n${t('reading.copy.keywords', { kw: keywords.join('、') })}` : line;
 }
 export function copyResults() {
   const { spreadName, question, drawnCards, bottomCard } = lastReadingData;
@@ -358,8 +471,7 @@ export function copyResults() {
   const text = [
     `${t(spreadName)}${question ? `—${question}` : ''}`,
     '---',
-    ...drawnCards.map(cardLine),
-    cardLine(bottomCard),
+    [...drawnCards, bottomCard].filter(Boolean).map(cardLine).join('\n\n'),
     '',
     location.href
   ].join('\n');
@@ -487,7 +599,8 @@ async function drawShareImage({ spreadName, question, drawnCards, bottomCard, ti
   const withFaces = faces.some(Boolean);
   const width = 800;
   const pad = 64;
-  const rowH = withFaces ? 104 : 72;
+  // 每列：牌位、牌名與正逆位、這次抽到的方向的關鍵詞
+  const rowH = withFaces ? 108 : 96;
   // 牌面縮圖的高度與文字欄的左緣
   const faceH = 88;
   const textX = withFaces ? pad + 70 : pad + 44;
@@ -556,6 +669,12 @@ async function drawShareImage({ spreadName, question, drawnCards, bottomCard, ti
     ctx.fillStyle = card.orientation === 'reversed' ? P.rev : P.up;
     const oriLabel = t(orientationNames[card.orientation] || card.orientation);
     ctx.fillText(oriLabel, width - pad - ctx.measureText(oriLabel).width, y + 44 + dy);
+    const keywords = keywordsFor(card.nameKey, card.orientation);
+    if (keywords.length) {
+      ctx.fillStyle = P.sub;
+      ctx.font = `400 15px ${font}`;
+      ctx.fillText(truncate(keywords.join('・'), width - textX - pad), textX, y + 72 + dy);
+    }
   });
   ctx.fillStyle = P.sub;
   ctx.font = `400 14px ${font}`;

@@ -79,6 +79,27 @@ test.describe('學習：測驗', () => {
     expect(sawWrong).toBe(true);
   });
 
+  test('作答後顯示解說：牌名、正逆位、關鍵詞、牌義開頭，選錯時說明選到哪張牌', async ({ page }) => {
+    await page.goto('/');
+    await openQuiz(page);
+    for (let i = 0; i < 10; i++) {
+      await page.locator('#learnStage .quiz-option').first().click();
+      const explain = page.locator('.quiz-explain');
+      await expect(explain.locator('.quiz-explain-ori')).toHaveText(/^(正位|逆位)$/);
+      await expect(explain.locator('.tag')).not.toHaveCount(0);
+      await expect(explain.locator('.learn-meaning-slot .meaning-text')).toHaveText(/[。！？」』）]$/);
+      await expect(page.locator('.quiz-actions [data-action="openCardModal"]')).toHaveText('看卡片詳情');
+      if (await page.locator('.quiz-option.wrong').count()) {
+        await expect(explain.locator('.quiz-explain-pick')).toHaveText(/^你選的/);
+        await page.locator('.quiz-actions [data-action="openCardModal"]').click();
+        await expect(page.locator('#cardModal')).toHaveClass(/show/);
+        return;
+      }
+      await expect(explain.locator('.quiz-explain-pick')).toHaveCount(0);
+      await page.locator('#quizNext').click();
+    }
+  });
+
   test('高對比模式下，正確與選錯的框線樣式不同', async ({ page }) => {
     await page.emulateMedia({ forcedColors: 'active' });
     await page.goto('/');
@@ -109,14 +130,14 @@ test.describe('學習：測驗', () => {
     await page.locator('input[name="visualStyle"][value="text"]').check();
     await openTab(page, 'learn');
     await expect(page.locator('#learnStage .quiz-art')).toHaveCount(0);
-    await expect(page.locator('#learnStage .quiz-prompt')).toHaveText(/^「.+」的關鍵詞是？$/);
+    await expect(page.locator('#learnStage .quiz-prompt')).toHaveText(/^「.+」正位的關鍵詞是？$/);
   });
 });
 
 test('分段標籤都有對應的 tabpanel，主要分頁列有名稱', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('#tabsContainer')).toHaveAttribute('aria-label', /.+/);
-  for (const seg of ['#learnModeSeg', '#cardModalSeg']) {
+  for (const seg of ['#learnModeSeg', '#cardModalSeg', '#dbSeg']) {
     await expect(page.locator(seg)).toHaveAttribute('aria-label', /.+/);
     const tabs = page.locator(`${seg} [role="tab"]`);
     for (let i = 0; i < await tabs.count(); i++) {
@@ -184,7 +205,7 @@ test.describe('資料庫搜尋', () => {
     await openTab(page, 'database');
     await expect(page.locator('#cardSearchCount')).toHaveAttribute('role', 'status');
     await expect(page.locator('#cardSearchCount')).toHaveText('');
-    await expect(page.locator('#cardSearch')).toHaveAttribute('placeholder', '搜尋牌名、英文名或關鍵詞…');
+    await expect(page.locator('#cardSearch')).toHaveAttribute('placeholder', '搜尋牌名、關鍵詞或牌義…');
     await expect(page.locator('.card-db-english').first()).toHaveAttribute('lang', 'en');
   });
 
@@ -202,6 +223,45 @@ test.describe('資料庫搜尋', () => {
     await expect(first).not.toHaveAttribute('data-marker', 'kept');
     await expect(first.locator('picture')).toHaveCount(1);
   });
+
+  test('全文搜尋：內文、星座與英文元素名都找得到，並列出命中的片段', async ({ page }) => {
+    await page.goto('/');
+    await openTab(page, 'database');
+    await page.locator('#cardSearch').fill('分手');
+    await expect(page.locator('.card-db-item .card-db-hit mark').first()).toHaveText('分手');
+    await page.locator('#cardSearch').fill('Aries');
+    await expect(page.locator('.card-db-item[data-card="emperor"] .card-db-hit')).toContainText('牡羊座');
+    await page.locator('#cardSearch').fill('權杖王牌');
+    await expect(page.locator('.card-db-item')).toHaveCount(1);
+    await expect(page.locator('.card-db-item .card-db-name')).toHaveText('權杖一');
+  });
+
+  test('篩選：類別與花色可以組合，大阿卡納與花色互斥', async ({ page }) => {
+    await page.goto('/');
+    await openTab(page, 'database');
+    const chip = (filter, value) => page.locator(`#dbFilters [data-filter="${filter}"][data-value="${value}"]`);
+    await chip('suit', 'Cups').click();
+    await chip('kind', 'court').click();
+    await expect(page.locator('#cardSearchCount')).toHaveText('找到 4 張牌');
+    await expect(chip('suit', 'Cups')).toHaveAttribute('aria-pressed', 'true');
+    await chip('kind', 'major').click();
+    await expect(chip('suit', 'all')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('.card-db-item')).toHaveCount(22);
+  });
+});
+
+test('卡片詳情的延伸閱讀前往知識庫：關閉視窗、展開該段並把焦點放在段落標題', async ({ page }) => {
+  await page.goto('/');
+  await openTab(page, 'database');
+  await page.locator('.card-db-item[data-card="three_of_cups"]').click();
+  await page.locator('#cardModalSeg [data-seg="lore"]').click();
+  const link = page.locator('#cardModalLoreList .lore-link[data-lib="suit-cups"]');
+  await link.click();
+  await expect(page.locator('#cardModal')).not.toHaveClass(/show/);
+  await expect(page.locator('#dbSegTabLibrary')).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator('#lib-suit-cups')).toHaveAttribute('open', '');
+  await expect(page.locator('#lib-suit-cups > summary')).toBeFocused();
+  await expect(page.locator('#lib-suit-cups h4').first()).toBeVisible();
 });
 
 test.describe('源流資料載不到時', () => {

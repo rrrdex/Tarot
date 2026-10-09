@@ -1,12 +1,23 @@
 import { t } from './i18n.js';
 import { escapeHTML } from './utils.js';
-import { suitNames } from './data.js';
+import { orientationNames, suitNames } from './data.js';
 import { deckComposition, suitSystem } from './systems.js';
-import { cardMeanings } from './meanings.js';
+import { keywordsFor } from './meanings.js';
 import { readingHistory } from './state.js';
 import { insightChoose, insightProb, insightSuitHint } from './insight.js';
 
 const patternMinorSuits = ['Wands', 'Cups', 'Swords', 'Pentacles'];
+// 常客牌的關鍵詞跟著它出現時的方向：只出現過一種方向就用那一面，正逆位都出現過就兩面都列，次數多的在前
+function patternCardKeywords(nameKey, e) {
+  const part = (ori) => {
+    const kw = keywordsFor(nameKey, ori).slice(0, 2).join('、');
+    return kw && t('pattern.regular.kw', { kw, ori: t(orientationNames[ori]) });
+  };
+  const up = e.count - e.reversed;
+  if (!e.reversed) return keywordsFor(nameKey, 'upright').slice(0, 2).join('、');
+  if (!up) return part('reversed');
+  return (e.reversed > up ? [part('reversed'), part('upright')] : [part('upright'), part('reversed')]).filter(Boolean).join('；');
+}
 // 機率分布以陣列表示：dist[j] = 計數恰為 j 的機率。每次占卜各自的牌組不同，
 // 所以逐筆把該次的分布捲積進來，得到的是精確分布，不是二項近似
 function patternHyperPmf(N, K, n) {
@@ -208,10 +219,11 @@ export function generatePatterns(history) {
     if (!c.nameKey) return;
     let e = cardCounts.get(c.nameKey);
     if (!e) {
-      e = { name: typeof c.name === 'string' ? c.name : c.nameKey, count: 0 };
+      e = { name: typeof c.name === 'string' ? c.name : c.nameKey, count: 0, reversed: 0 };
       cardCounts.set(c.nameKey, e);
     }
     e.count++;
+    if (c.orientation === 'reversed') e.reversed++;
   });
   // 任何一張牌在某次占卜裡至多出現一次，機率是 抽牌數／牌組張數（不在牌組裡就是 0）；
   // 挑機率最小的那張，再乘上「用過的牌組裡一共有幾種牌」做多重比較校正
@@ -238,9 +250,7 @@ export function generatePatterns(history) {
   if (topCard && total) {
     const p = Math.min(1, possible.size * topRaw);
     if (p < PATTERN_ALPHA) {
-      const meaning = cardMeanings[topCardKey] || null;
-      const keywords = (meaning && Array.isArray(meaning.keywords)) ? meaning.keywords : [];
-      const kw = keywords.slice(0, 2).join('、');
+      const kw = patternCardKeywords(topCardKey, topCard);
       out.push({
         tag: t('pattern.regular.tag'),
         text: t(kw ? 'pattern.regular.text' : 'pattern.regular.text.noKeywords',

@@ -12,8 +12,8 @@ import { waiteAdditional, waiteTerms } from './waite.js';
 import { mofaTerms } from './mofa.js';
 import { waiteTermZh } from './waite-zh.js';
 import { cardClass, cardSystems, waiteCourtLooks } from './systems.js';
-import { cardMeaningText, cardMeanings } from './meanings.js';
-import { loadContexts, loadDeck, loadLore, loadedDeck } from './lazy.js';
+import { cardMeaningText, cardMeanings, keywordsFor } from './meanings.js';
+import { loadContexts, loadDeck, loadLore, loadMeaningTexts, loadedDeck, loadedMeaningTexts } from './lazy.js';
 import { currentTab, lastReadingData } from './state.js';
 import { renderResults, shownReading } from './reading.js';
 import { renderCardDatabase } from './database.js';
@@ -152,7 +152,8 @@ document.addEventListener('error', (e) => {
 // 1024 以上排成牌陣、最寬 130px；以下是一或兩欄，牌面最寬 260px，單欄的窄螢幕約為螢幕寬的六成
 export const LAYOUT_IMG_SIZES = '(min-width: 1024px) 130px, (min-width: 434px) 260px, 60vw';
 export function renderCard(card, isBottom = false, anim = 'slide-in', idx = 0, imgSizes = '260px') {
-  const meaning = cardMeanings[card.nameKey];
+  // 關鍵詞跟著這次抽到的方向：逆位牌顯示逆位關鍵詞
+  const keywords = keywordsFor(card.nameKey, card.orientation);
   const photo = visualStyle === 'api' ? cardPhotoSrc(card) : null;
   const lineArt = visualStyle === 'line'
   ? deckArt(card, card.orientation === 'reversed' ? 'reversed' : '')
@@ -190,7 +191,7 @@ ${lineArt ? `
 ${escapeHTML(t(orientationNames[card.orientation] || card.orientation))}
 </div>
 </div>
-${meaning ? `<div class="card-keywords">${keywordList(meaning.keywords)}</div>` : ''}
+${keywords.length ? `<div class="card-keywords">${keywordList(keywords)}</div>` : ''}
 <div class="card-footer">
 <span>${escapeHTML(card.suit === 'Major Arcana' ? card.number : t(suitNames[card.suit]))}</span>
 <span>${escapeHTML(card.englishName)}</span>
@@ -199,15 +200,16 @@ ${(photo || lineArt) ? '</div>' : ''}
 </div>
 `;
 }
-// 抽到的是正位或逆位：對應的牌義區塊標題加上看得見的「（本次抽到）」與 aria-current，不只靠框線顏色
-function markDrawnBlock(blockId, on) {
+// 抽到的是正位或逆位：對應的牌義區塊標題加上看得見的「（本次抽到）」與 aria-current，不只靠框線顏色。
+// drawn 為 false（從測驗、生日牌等處指定正逆位打開）時只突顯那一段，不說「本次抽到」
+function markDrawnBlock(blockId, on, drawn = true) {
   const block = document.getElementById(blockId);
   if (!block) return;
   block.classList.toggle('active', on);
   const title = block.querySelector('.meaning-title');
   if (!title) return;
   title.querySelector('.meaning-drawn')?.remove();
-  if (on) {
+  if (on && drawn) {
     title.setAttribute('aria-current', 'true');
     title.insertAdjacentHTML('beforeend', `<span class="meaning-drawn">${escapeHTML(t('card.meaning.drawn'))}</span>`);
   } else {
@@ -229,8 +231,9 @@ function setIconSegOffline(on) {
   }
 }
 let cardModalKey = null;
-// fromReading：從占卜結果點開時，副標題也寫出這次抽到的正逆位
-export function openCardModal(nameKey, orientation, { fromReading = false } = {}) {
+// fromReading：從占卜結果點開時，副標題也寫出這次抽到的正逆位。
+// drawn：這個正逆位是真的抽到的（占卜結果、每日一牌）；測驗與生日牌只是指定要看哪一面
+export function openCardModal(nameKey, orientation, { fromReading = false, drawn = fromReading } = {}) {
   const card = fullTarotCards.find(c => c.nameKey === nameKey);
   const m = cardMeanings[nameKey];
   if (!card || !m) return;
@@ -244,14 +247,27 @@ export function openCardModal(nameKey, orientation, { fromReading = false } = {}
   document.getElementById('cardModalSub').textContent = drawnOri ? t('card.sub.drawn', { sub, ori: drawnOri }) : sub;
   cardViewerTarget = { card, orientation };
   renderCardModalArt();
-  document.getElementById('cardModalKeywords').innerHTML = m.keywords.map(k => `<span class="tag">${escapeHTML(k)}</span>`).join('');
-  document.getElementById('cardModalUpright').textContent = cardMeaningText(card, 'upright');
-  document.getElementById('cardModalReversed').textContent = cardMeaningText(card, 'reversed');
-  markDrawnBlock('meaningUpright', orientation === 'upright');
-  markDrawnBlock('meaningReversed', orientation === 'reversed');
-  markDrawnBlock('imageUpright', orientation === 'upright');
-  markDrawnBlock('imageReversed', orientation === 'reversed');
+  // 正位與逆位各有一組關鍵詞，分別放在對應的牌義段落裡
+  const tagList = (list) => (list || []).map(k => `<span class="tag">${escapeHTML(k)}</span>`).join('');
+  document.getElementById('cardModalKeywords').innerHTML = tagList(m.keywords);
+  document.getElementById('cardModalKeywordsReversed').innerHTML = tagList(m.keywordsReversed);
+  markDrawnBlock('meaningUpright', orientation === 'upright', drawn);
+  markDrawnBlock('meaningReversed', orientation === 'reversed', drawn);
+  markDrawnBlock('imageUpright', orientation === 'upright', drawn);
+  markDrawnBlock('imageReversed', orientation === 'reversed', drawn);
+  // 抽到逆位時，逆位的段落排在前面，打開就看得到，不必往下捲
+  drawnBlockFirst('meaningUpright', 'meaningReversed', orientation === 'reversed');
+  drawnBlockFirst('imageUpright', 'imageReversed', orientation === 'reversed');
   cardModalKey = nameKey;
+  // 完整牌義另外載入：先顯示「載入中」，到了再填；視窗已換成別張牌就不覆蓋
+  if (loadedMeaningTexts()) {
+    fillCardModalTexts(card);
+  } else {
+    setCardModalTexts(t('card.loading'));
+    loadMeaningTexts()
+      .then(() => { if (cardModalKey === nameKey) fillCardModalTexts(card); })
+      .catch(() => { if (cardModalKey === nameKey) setCardModalTexts(t('error.chunkOffline'), true); });
+  }
   // 資料晚到時，若視窗已換成別張牌就不要覆蓋；下載失敗時不依賴源流資料的部分照畫，其餘顯示「需要網路」
   loadContexts()
     .then(m => { if (cardModalKey === nameKey) renderCardModalContext(m, nameKey); })
@@ -270,9 +286,41 @@ export function openCardModal(nameKey, orientation, { fromReading = false } = {}
       if (list) list.innerHTML = chunkFailedHTML();
     });
   setCardModalSeg('meaning');
-  document.getElementById('cardModal').classList.add('show');
+  const overlay = document.getElementById('cardModal');
+  const wasOpen = overlay.classList.contains('show');
+  // 每次換牌都從頂端看起；在視窗裡點了另一張牌（延伸閱讀的相關牌）時，焦點移到新的牌名上
+  overlay.querySelector('.modal').scrollTop = 0;
+  overlay.classList.add('show');
+  if (wasOpen) {
+    const title = document.getElementById('cardModalTitle');
+    title.tabIndex = -1;
+    title.focus({ preventScroll: true });
+  }
 }
-function renderCardModalLore({ cardLore, getCardLore }, card, nameKey) {
+function setCardModalTexts(text, failed = false) {
+  ['cardModalUpright', 'cardModalReversed'].forEach(id => {
+    const el = document.getElementById(id);
+    el.textContent = text;
+    el.classList.toggle('load-failed', failed);
+  });
+}
+function fillCardModalTexts(card) {
+  setCardModalTexts('');
+  document.getElementById('cardModalUpright').textContent = cardMeaningText(card, 'upright');
+  document.getElementById('cardModalReversed').textContent = cardMeaningText(card, 'reversed');
+}
+function drawnBlockFirst(upId, rvId, reversedFirst) {
+  const up = document.getElementById(upId);
+  const rv = document.getElementById(rvId);
+  if (!up || !rv) return;
+  if (reversedFirst) up.before(rv);
+  else up.after(rv);
+}
+// 前往資料庫知識庫某一段的按鈕（main.js 的 openLibrary 動作）
+function libraryLinkHTML(id, label, extraClass = 'text-link') {
+  return `<button type="button" class="${extraClass}" data-action="openLibrary" data-lib="${escapeHTML(id)}">${label}</button>`;
+}
+function renderCardModalLore({ cardLore, getCardLore, loreLibrary = [] }, card, nameKey) {
   const lore = cardLore[nameKey];
   const fillLoreBlock = (blockId, textId, text) => {
     const block = document.getElementById(blockId);
@@ -358,33 +406,48 @@ function renderCardModalLore({ cardLore, getCardLore }, card, nameKey) {
   const sysList = document.getElementById('cardModalSystemsList');
   if (sysBlock && sysList) {
     const groups = cardSystems(card) || [];
+    // 每套系統一個小標題，欄位與值排成兩欄的 <dl>；各欄怎麼讀只在最後連一次到知識庫
     sysList.innerHTML = groups.map(g => `
 <div class="systems-group">
-<div class="systems-source">${escapeHTML(t(g.source))}</div>
-${g.rows.map(r => `
-<div class="icon-row">
-<span class="icon-element">${escapeHTML(t(r.label))}</span>
-<p class="icon-meaning">${escapeHTML(t(r.value, systemsRowVars(r)))}</p>
-</div>`).join('')}
+<h4 class="systems-source">${escapeHTML(t(g.source))}</h4>
+<dl class="systems-rows">
+${g.rows.map(r => `<div class="systems-row"><dt>${escapeHTML(t(r.label))}</dt><dd>${escapeHTML(t(r.value, systemsRowVars(r)))}</dd></div>`).join('')}
+</dl>
 ${g.note ? `<p class="waite-terms-note">${escapeHTML(t(g.note))}</p>` : ''}
 </div>
-`).join('');
+`).join('') + (groups.length ? `<p class="lore-link-line">${escapeHTML(t('systems.guide.lead'))}${libraryLinkHTML('systems-guide', escapeHTML(t('systems.guide.link')))}</p>` : '');
     sysBlock.classList.toggle('hidden', !groups.length);
   }
   const list = document.getElementById('cardModalLoreList');
   if (!list) return;
-  // 花色、數字、位階與大阿卡納的共通背景每張牌都一樣，收合成「延伸閱讀」，想看再展開，不必每張牌重讀一次
+  // 花色、數字、位階與大阿卡納的共通背景每張牌都一樣，只寫在資料庫的知識庫裡；這裡列成連結，
+  // 共通符號另外列出畫著同一符號的其他牌，可直接換看那張
   const blocks = getCardLore(card) || [];
+  const groupTitle = (id) => (loreLibrary.find(g => g.items.some(i => i.id === id)) || {}).title || '';
+  const related = (b) => {
+    const others = (b.cards || []).filter(k => k !== nameKey).map(k => fullTarotCards.find(c => c.nameKey === k)).filter(Boolean);
+    if (!others.length) return '';
+    const labelId = `cardModalRelated-${escapeHTML(b.id)}`;
+    return `
+<div class="lore-related">
+<span class="lore-related-label" id="${labelId}">${escapeHTML(t('card.lore.related'))}</span>
+<div class="tags lore-related-cards" role="group" aria-labelledby="${labelId}">
+${others.map(c => `<button type="button" class="tag" data-action="openCardModal" data-card="${escapeHTML(c.nameKey)}">${escapeHTML(c.name)}</button>`).join('')}
+</div>
+</div>`;
+  };
   list.innerHTML = blocks.length
   ? `
 <div class="lore-entry lore-more">
 <h3 class="lore-title">${escapeHTML(t('card.lore.more'))}</h3>
 <p class="lore-more-note">${escapeHTML(t('card.lore.more.note'))}</p>
-${blocks.map(b => `
-<details class="lore-more-item">
-<summary class="lore-more-title">${escapeHTML(b.title || '')}</summary>
-<p class="lore-text">${escapeHTML(b.text || '')}</p>
-</details>`).join('')}
+<ul class="lore-links">
+${blocks.map(b => {
+    const group = groupTitle(b.id);
+    const label = `<span class="lore-link-title">${escapeHTML(b.title || '')}</span>${group ? `<span class="visually-hidden">，</span><span class="lore-link-group">${escapeHTML(group)}</span>` : ''}`;
+    return `<li class="lore-link-item">${libraryLinkHTML(b.id, label, 'lore-link')}${related(b)}</li>`;
+  }).join('')}
+</ul>
 </div>
 `
   : (lore && lore.origin ? '' : `<div class="lore-empty">${escapeHTML(t('card.lore.empty'))}</div>`);
@@ -402,6 +465,22 @@ function setCardModalSeg(name) {
     const panel = document.getElementById(cardModalSegPanels[key]);
     if (panel) panel.classList.toggle('hidden', key !== name);
   });
+  scrollCardModalPanelTop(document.getElementById(cardModalSegPanels[name]));
+}
+// 換分段時，若已往下捲過，捲回新分段的開頭：黏住的分頁籤正下方；分頁籤不黏住（矮螢幕）時捲到分頁籤本身
+function scrollCardModalPanelTop(panel) {
+  const modal = document.querySelector('#cardModal .modal');
+  const seg = document.getElementById('cardModalSeg');
+  if (!modal || !seg || !panel) return;
+  const segBox = seg.getBoundingClientRect();
+  if (getComputedStyle(seg).position === 'sticky') {
+    const gap = parseFloat(getComputedStyle(seg).marginBottom) || 0;
+    const delta = panel.getBoundingClientRect().top - (segBox.bottom + gap);
+    if (delta < 0) modal.scrollTop += delta;
+  } else {
+    const delta = segBox.top - modal.getBoundingClientRect().top;
+    if (delta < 0) modal.scrollTop += delta;
+  }
 }
 function contextReflection(cardContexts, card) {
   const ctx = cardContexts[card.nameKey];
@@ -524,18 +603,18 @@ export function renderDailyCard() {
   const rng = mulberry32(daySeed);
   const card = shuffle(fullTarotCards, rng)[0];
   const orientation = rng() > 0.5 ? 'upright' : 'reversed';
-  const m = cardMeanings[card.nameKey];
+  const keywords = keywordsFor(card.nameKey, orientation);
   const dailyArt = cardThumb(card, orientation === 'reversed' ? 'reversed' : '', 48);
   el.innerHTML = `
 ${dailyArt ? `<div class="daily-card-art" data-suit="${escapeHTML(card.suit)}">${dailyArt}</div>` : ''}
 <div class="daily-card-info">
 <div class="daily-card-label">${escapeHTML(t('reading.daily.title', { m: now.getMonth() + 1, d: now.getDate() }))}</div>
 <div class="daily-card-name">${escapeHTML(card.name)}<span class="daily-card-ori">${escapeHTML(t(orientationNames[orientation] || orientation))}</span></div>
-${m ? `<div class="daily-card-keywords">${keywordList(m.keywords)}</div>` : ''}
+${keywords.length ? `<div class="daily-card-keywords">${keywordList(keywords)}</div>` : ''}
 </div>
 <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><path fill-rule="evenodd" d="M8.72 4.72a.75.75 0 011.06 0l6.75 6.75a.75.75 0 010 1.06l-6.75 6.75a.75.75 0 11-1.06-1.06L14.94 12 8.72 5.78a.75.75 0 010-1.06z" clip-rule="evenodd"/></svg>
 `;
-  const open = () => openCardModal(card.nameKey, orientation);
+  const open = () => openCardModal(card.nameKey, orientation, { drawn: true });
   el.onclick = open;
   el.onkeydown = (e) => {
     if (e.key === 'Enter' || e.key === ' ') {

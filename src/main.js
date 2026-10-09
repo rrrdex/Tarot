@@ -54,7 +54,7 @@ import {
 } from './history.js';
 import { renderStatistics } from './stats.js';
 import { renderPatternInsights } from './patterns.js';
-import { renderCardDatabase } from './database.js';
+import { renderCardDatabase, showLibraryItem } from './database.js';
 import { renderLearn, syncLearnSeg } from './learn.js';
 import { renderProfile } from './profile.js';
 import { initTheme, toggleTheme, updateDataStats } from './settings.js';
@@ -152,8 +152,8 @@ function focusKeyNavItem(items, target) {
     target.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   }
 }
-// 資料庫分頁的搜尋列也固定在頂端：瀏覽器自己捲動焦點時（Tab）一併讓開它的高度
-function syncStickyPadding() {
+// 資料庫分頁的搜尋列也固定在頂端：瀏覽器自己捲動焦點時（Tab）一併讓開它的高度；切到知識庫分段時搜尋列不在畫面上，高度是 0
+export function syncStickyPadding() {
   const search = currentTab === 'database' && document.querySelector('#tabDatabase .search-field');
   const h = search && getComputedStyle(search).position === 'sticky' ? search.offsetHeight : 0;
   document.documentElement.style.setProperty('--sticky-extra', `${h}px`);
@@ -402,8 +402,27 @@ const clickActions = {
   goToReading: () => {
     switchTab('reading');
     document.getElementById('question').focus();
-  }
+  },
+  openLibrary: el => openLibrary(el.dataset.lib)
 };
+// 前往資料庫知識庫的某一段（卡片詳情的延伸閱讀、來源說明、網址 #lib-…）：
+// 關掉視窗時不把焦點還給原本開視窗的那張牌，焦點改由知識庫交給展開的段落標題
+function openLibrary(id) {
+  if (!id) return;
+  if (document.querySelector('.modal-overlay.show')) {
+    modalReturnFocus = null;
+    modalReturnSelector = null;
+    closeCardViewer();
+    closeCardModal();
+  }
+  if (currentTab !== 'database') switchTab('database');
+  showLibraryItem(id);
+}
+function openLibraryFromHash() {
+  const m = /^#lib-([\w-]+)$/.exec(location.hash);
+  if (m) openLibrary(m[1]);
+}
+window.addEventListener('hashchange', openLibraryFromHash);
 document.addEventListener('click', (e) => {
   const el = e.target.closest('[data-action]');
   if (el && clickActions[el.dataset.action]) clickActions[el.dataset.action](el);
@@ -613,6 +632,7 @@ function registerServiceWorker() {
   renderDailyCard();
   renderProfile();
   switchTab(share.seed ? 'reading' : currentTab);
+  if (!share.seed) openLibraryFromHash();
   if (share.seed) {
     performReading(share.seed, false, share.picks, {
       deckType: share.deckType,

@@ -12,7 +12,7 @@ import {
   thierensMajors,
   zodiacQuality
 } from './systems.js';
-import { cardMeanings } from './meanings.js';
+import { keywordsFor } from './meanings.js';
 
 const INSIGHT_RANK_KEY = {
   'Ace': 'ace', 'Two': 'two', 'Three': 'three', 'Four': 'four', 'Five': 'five',
@@ -123,17 +123,14 @@ function insightEchoShowEn(term) {
   return zh ? t('insight.echo.pair', { zh, en: term }) : term;
 }
 const INSIGHT_ECHO_SOURCES = [
-  { key: 'ours', oriented: false, short: (term) => term, show: (term) => term },
+  { key: 'ours', oriented: true, short: (term) => term, show: (term) => term },
   { key: 'mofa', oriented: true, short: (term) => term, show: (term) => term },
   { key: 'waite', oriented: true, short: (term) => insightEchoZh(term) || term, show: insightEchoShowEn },
   { key: 'add', oriented: true, short: (term) => insightEchoZh(term) || term, show: insightEchoShowEn }
 ];
 function insightEchoTerms(srcKey, card, ori) {
   const rv = ori === 'reversed';
-  if (srcKey === 'ours') {
-    const m = cardMeanings[card.nameKey];
-    return (m && Array.isArray(m.keywords)) ? m.keywords : [];
-  }
+  if (srcKey === 'ours') return keywordsFor(card.nameKey, ori);
   if (srcKey === 'mofa') {
     const m = mofaTerms[card.nameKey];
     return (m && m[rv ? 'rv' : 'up']) || [];
@@ -521,9 +518,7 @@ export function generateInsight(reading) {
     }
   }
   if (b && b.name) {
-    const meaning = cardMeanings[b.nameKey] || null;
-    const keywords = (meaning && Array.isArray(meaning.keywords)) ? meaning.keywords : [];
-    const kw = keywords.slice(0, 2).join('、');
+    const kw = keywordsFor(b.nameKey, b.orientation).slice(0, 2).join('、');
     const ori = t(orientationNames[b.orientation] || b.orientation);
     out.push({
       tag: t('insight.bottom.tag'),
