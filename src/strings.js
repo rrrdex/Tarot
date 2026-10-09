@@ -615,7 +615,7 @@ export const uiStrings = {
     'settings.template.editorial': '現代編輯',
     'settings.template.editorial.desc': '冷灰與墨黑、一抹朱紅，雜誌式大標題與方塊版面',
     'settings.template.immersive': '沉浸手勢',
-    'settings.template.immersive.desc': '鼠尾草綠，牌堆當首頁：向上滑動抽牌，左右滑動換牌',
+    'settings.template.immersive.desc': '電影裡的占卜屋：燭光、絲絨與黃銅，牌堆躺在桌布上；向上滑動抽牌，左右滑動換牌',
     'settings.visual.title': '視覺樣式',
     'settings.visual.text': '純文字模式（預設）',
     'settings.visual.text.desc': '只顯示牌名、正逆位與關鍵詞，不載入圖片。',

@@ -69,13 +69,13 @@ test.describe('選擇版型', () => {
     await seedStorage(page, { template: 'immersive' });
     await page.goto('/');
     const bg = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
-    expect(await bg()).toBe('rgb(13, 22, 19)');
-    expect(await page.locator('meta[name="theme-color"]').getAttribute('content')).toBe('#0D1613');
+    expect(await bg()).toBe('rgb(20, 10, 15)');
+    expect(await page.locator('meta[name="theme-color"]').getAttribute('content')).toBe('#140A0F');
     await page.keyboard.press('t');
     await expect(page.locator('html')).toHaveClass(/\blight\b/);
     // body 的底色有轉場，等它走完
-    await expect.poll(bg).toBe('rgb(228, 236, 232)');
-    expect(await page.locator('meta[name="theme-color"]').getAttribute('content')).toBe('#E4ECE8');
+    await expect.poll(bg).toBe('rgb(238, 226, 206)');
+    expect(await page.locator('meta[name="theme-color"]').getAttribute('content')).toBe('#EEE2CE');
   });
 
   test.describe('沒選過版型', () => {
@@ -190,7 +190,8 @@ test.describe('導覽列', () => {
     await page.goto('/');
     await nav(page, 'database').click();
     await expect(page.locator('#tabDatabase')).toBeVisible();
-    await page.evaluate(() => window.scrollTo(0, 2000));
+    // 頁面設了平滑捲動：直接跳過去，才量得到捲動後的位置
+    await page.evaluate(() => window.scrollTo({ top: 2000, behavior: 'instant' }));
     expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(500);
     await nav(page, 'history').click();
     await expect(page.locator('#tabHistory')).toBeVisible();
