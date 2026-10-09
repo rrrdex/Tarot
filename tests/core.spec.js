@@ -390,7 +390,10 @@ test.describe('儲存空間與載入失敗', () => {
     await page.locator('#pickRandom').click();
     await expect(page.locator('#results .card').first()).toBeVisible();
     await expect(toast(page).filter({ hasText: '無法寫入瀏覽器的儲存空間' })).toHaveCount(1);
-    await openTab(page, 'history');
+    // 讀不到設定時是預設版型（星夜玻璃）：用底部導覽列換分頁
+    await page.locator('.tpl-nav-item[data-nav="history"]').click();
+    await expect(page.locator('.tpl-nav-item[data-nav="history"]')).toHaveAttribute('aria-current', 'page');
+    await expect(page.locator('#tabHistory')).toBeVisible();
   });
 
   test('寫入超過容量時結果照樣顯示、按鈕不卡在轉圈，只提示一次', async ({ page }) => {

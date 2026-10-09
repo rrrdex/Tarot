@@ -286,7 +286,9 @@ test('網站資料被封鎖時，學習分頁照常翻牌、評分、換模式�
     Object.defineProperty(window, 'localStorage', { get() { throw new DOMException('The operation is insecure.', 'SecurityError'); } });
   });
   await page.goto('/');
-  await openTab(page, 'learn');
+  // 讀不到設定時是預設版型（星夜玻璃）：用底部導覽列換分頁
+  await page.locator('.tpl-nav-item[data-nav="learn"]').click();
+  await expect(page.locator('.tpl-nav-item[data-nav="learn"]')).toHaveAttribute('aria-current', 'page');
   await page.locator('#flashcard').click();
   await page.locator('#flashEasy').click();
   await expect(page.locator('#learnStage .flash-progress')).toContainText('1');
