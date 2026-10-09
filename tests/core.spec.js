@@ -11,7 +11,12 @@ function record(id, extra = {}) {
     favorite: false, tags: [], note: '', ...extra
   };
 }
-const param = (page, name) => new URL(page.url()).searchParams.get(name);
+// 問題放在網址 # 後面（不會送到伺服器），其餘參數在 ? 後面
+const param = (page, name) => {
+  const url = new URL(page.url());
+  if (name !== 'q') return url.searchParams.get(name);
+  return url.hash.startsWith('#q=') ? new URLSearchParams(url.hash.slice(1)).get('q') : null;
+};
 const toast = (page) => page.locator('#toastContainer .toast-message');
 
 test.describe('占卜流程與網址', () => {
@@ -42,6 +47,19 @@ test.describe('占卜流程與網址', () => {
     await openTab(page, 'history');
     await openTab(page, 'reading');
     expect(param(page, 'seed')).toBe('123456789');
+  });
+
+  test('問題只放在網址 # 後面；舊版 ?q= 連結照樣讀得到，並改放到 # 後面', async ({ page }) => {
+    await page.goto(`${THREE_URL}#q=${encodeURIComponent('我該換工作嗎')}`);
+    await expect(page.locator('#question')).toHaveValue('我該換工作嗎');
+    expect(new URL(page.url()).search).not.toContain('q=');
+    await page.goto(`${THREE_URL}&q=${encodeURIComponent('舊連結的問題')}`);
+    await expect(page.locator('#question')).toHaveValue('舊連結的問題');
+    await expect(page.locator('#results .card')).toHaveCount(4);
+    expect(new URL(page.url()).searchParams.has('q')).toBe(false);
+    expect(param(page, 'q')).toBe('舊連結的問題');
+    // canonical 不帶問題
+    expect(await page.locator('link[rel="canonical"]').getAttribute('href')).not.toContain('q=');
   });
 
   test('分享連結的參數有誤：清掉網址並提示一次', async ({ page }) => {

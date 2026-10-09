@@ -95,10 +95,25 @@ export function syncCanonical() {
   }
   el.href = url.toString();
 }
+// 占卜問題是私人內容，放在網址 # 後面：瀏覽器不會把 # 之後送到任何伺服器，也不會出現在 Referer 或連結預覽的請求裡。
+// 其餘參數（seed、牌陣等）不涉及隱私，照常放在 ? 後面
+const QUESTION_HASH = /^#q=/;
+export function questionFromURL(url) {
+  if (QUESTION_HASH.test(url.hash)) return new URLSearchParams(url.hash.slice(1)).get('q');
+  // 舊版分享連結把問題放在 ?q=，照樣讀得到；之後寫回網址時會改放到 # 後面
+  return url.searchParams.get('q');
+}
 export function updateURL(params) {
   const url = new URL(location.href);
   Object.entries(params).forEach(([k, v]) => {
-    if (v === undefined || v === null || v === '') url.searchParams.delete(k);
+    const empty = v === undefined || v === null || v === '';
+    if (k === 'q') {
+      url.searchParams.delete('q');
+      if (!empty) url.hash = new URLSearchParams({ q: String(v) }).toString();
+      else if (QUESTION_HASH.test(url.hash)) url.hash = '';
+      return;
+    }
+    if (empty) url.searchParams.delete(k);
     else url.searchParams.set(k, String(v));
   });
   history.replaceState(null, '', url.toString());

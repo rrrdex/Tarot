@@ -674,6 +674,7 @@ export const uiStrings = {
     'privacy.noCollect': '不收集任何個人資料，也不需要帳號',
     'privacy.noTracking': '不使用任何分析或追蹤工具',
     'privacy.localOnly': '占卜記錄、筆記、生日與學習進度只存在這台裝置的瀏覽器裡；清除網站資料會一併刪除，需要時請先在設定裡匯出備份',
+    'privacy.shareLink': '分享連結裡的問題放在網址 # 後面：瀏覽器開啟連結時只在本機讀取，不會傳到網站的伺服器；不過收到連結的人看得到你的問題',
     'insight.panel.title': '綜合觀察',
     'insight.panel.note': '標題後的百分比，是「完全隨機抽牌時，出現這種或更極端情況」的機率（有些項目要同時比較多種可能，列的是校正後的上限），低於 5% 才會列出；後面附的是常見的塔羅讀法，僅供參考。',
     'insight.prob.is': '是 {p}',

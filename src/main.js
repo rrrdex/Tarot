@@ -4,6 +4,7 @@ import {
   escapeHTML,
   isValidSeed,
   offerReload,
+  questionFromURL,
   showToast,
   syncCanonical,
   updateURL
@@ -581,7 +582,7 @@ function readShareParams(url) {
   const seed = p.get('seed');
   const deck = p.get('deck');
   const spread = p.get('spread');
-  const q = p.get('q');
+  const q = questionFromURL(url);
   const picksParam = p.get('picks');
   let bad = false;
   const deckType = deck && isDeckType(deck) ? deck : 'full';
@@ -626,6 +627,8 @@ function registerServiceWorker() {
   if (share.deck) deckEl.value = share.deckType;
   if (share.spread) spreadTypeEl.value = share.spreadType;
   if (share.question) document.getElementById('question').value = share.question;
+  // 舊版連結的 ?q= 搬到 # 後面，之後的重新整理與分享都不再把問題送到伺服器
+  if (new URL(location.href).searchParams.has('q')) updateURL({ q: share.question || null });
   updateSpreadInfo();
   initVisualStyle();
   // 不等線稿牌組：分頁、每日一牌、我的牌與分享的占卜先畫出來，牌組到了再補上插畫
