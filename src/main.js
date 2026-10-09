@@ -55,11 +55,15 @@ import {
 } from './history.js';
 import { renderStatistics } from './stats.js';
 import { renderPatternInsights } from './patterns.js';
-import { renderCardDatabase, showLibraryItem } from './database.js';
+import { renderCardDatabase, showLibraryItem, showSymbol } from './database.js';
+import { closeCompareModal, openCompare } from './compare.js';
 import { renderLearn, syncLearnSeg } from './learn.js';
 import { renderProfile } from './profile.js';
 import { initTheme, toggleTheme, updateDataStats } from './settings.js';
 import { loadChangelog, prefetchWhenIdle } from './lazy.js';
+import { initTemplate, navigateTab, syncNav } from './template.js';
+import { initSheetGestures } from './sheet.js';
+import { syncSpreadTiles } from './hero.js';
 import * as storage from './storage.js';
 
 const KEYNAV_ITEM = '[data-keynav-item]';
@@ -204,6 +208,8 @@ export function switchTab(tabName) {
     t.setAttribute('aria-selected', on);
     t.tabIndex = on ? 0 : -1;
   });
+  // 新版型的導覽列與「我的」分段
+  syncNav(tabName);
   document.querySelectorAll('.tab-content').forEach(tc => {
     tc.classList.toggle('hidden', tc.id !== 'tab' + tabName.charAt(0).toUpperCase() + tabName.slice(1));
   });
@@ -259,6 +265,8 @@ const SPREAD_CHECK_ICON = '<svg class="spread-option-check" xmlns="http://www.w3
 function syncSpreadTrigger() {
   const opt = spreadTypeEl.options[spreadTypeEl.selectedIndex];
   spreadTriggerEl.textContent = opt ? opt.textContent : '';
+  // 沉浸手勢的牌陣方塊與牌堆提示
+  syncSpreadTiles();
 }
 function spreadOptionHTML(opt) {
   const spread = spreads[opt.value];
@@ -379,6 +387,8 @@ function onModalOpen(overlay) {
 function onModalClose() {
   if (document.querySelector('.modal-overlay.show')) return;
   setModalOpen(false);
+  // 從 #card= 連結打開的卡片關掉後，拿掉網址上的 #card=，重新整理才不會又打開
+  if (/^#card=/.test(location.hash)) history.replaceState(history.state, '', location.pathname + location.search);
   document.removeEventListener('keydown', trapModalTab, true);
   let target = modalReturnFocus && document.contains(modalReturnFocus) ? modalReturnFocus : null;
   if (!target && modalReturnSelector) target = document.querySelector(modalReturnSelector);
@@ -388,12 +398,12 @@ function onModalClose() {
 }
 const modalActions = {
   closeNoteModal, saveNote, closeTagModal, saveTag, dismissPendingConfirm,
-  closeSpreadPicker, closeCardModal, closeCardViewer, closeAboutModal, closePrivacyModal
+  closeSpreadPicker, closeCardModal, closeCardViewer, closeAboutModal, closePrivacyModal, closeCompareModal
 };
 const clickActions = {
   ...modalActions,
   copyResults, generateShareImage, printReading, openCardViewer,
-  openCardModal: el => openCardModal(el.dataset.card, el.dataset.orientation, { fromReading: !!el.closest('#results') }),
+  openCardModal: el => openCardModal(el.dataset.card, el.dataset.orientation, { fromReading: !!el.closest('#results'), seg: el.dataset.seg }),
   viewReading: el => viewReading(Number(el.dataset.id)),
   toggleFavorite: el => toggleFavorite(Number(el.dataset.id)),
   openNoteModal: el => openNoteModal(Number(el.dataset.id)),
@@ -404,26 +414,44 @@ const clickActions = {
     switchTab('reading');
     document.getElementById('question').focus();
   },
-  openLibrary: el => openLibrary(el.dataset.lib)
+  openLibrary: el => openLibrary(el.dataset.lib),
+  openSymbol: el => openSymbol(el.dataset.sym),
+  openCompare: el => openCompare(el.dataset.card)
 };
 // 前往資料庫知識庫的某一段（卡片詳情的延伸閱讀、來源說明、網址 #lib-…）：
 // 關掉視窗時不把焦點還給原本開視窗的那張牌，焦點改由知識庫交給展開的段落標題
-function openLibrary(id) {
-  if (!id) return;
+function leaveModalsForDatabase() {
   if (document.querySelector('.modal-overlay.show')) {
     modalReturnFocus = null;
     modalReturnSelector = null;
     closeCardViewer();
     closeCardModal();
+    closeCompareModal();
   }
   if (currentTab !== 'database') switchTab('database');
+}
+function openLibrary(id) {
+  if (!id) return;
+  leaveModalsForDatabase();
   showLibraryItem(id);
 }
-function openLibraryFromHash() {
-  const m = /^#lib-([\w-]+)$/.exec(location.hash);
-  if (m) openLibrary(m[1]);
+// 前往資料庫的符號分段（卡片詳情「畫面上的符號」、網址 #sym-…），做法與知識庫相同
+function openSymbol(id) {
+  if (!id) return;
+  leaveModalsForDatabase();
+  showSymbol(id);
 }
-window.addEventListener('hashchange', openLibraryFromHash);
+// 網址的 # 部分：#lib-… 知識庫的一段、#sym-… 一個符號、#card=… 直接打開那張牌的卡片詳情
+function openFromHash() {
+  const hash = location.hash;
+  let m = /^#lib-([\w-]+)$/.exec(hash);
+  if (m) return openLibrary(m[1]);
+  m = /^#sym-([\w-]+)$/.exec(hash);
+  if (m) return openSymbol(m[1]);
+  m = /^#card=([\w-]+)$/.exec(hash);
+  if (m) openCardModal(m[1], 'upright');
+}
+window.addEventListener('hashchange', openFromHash);
 document.addEventListener('click', (e) => {
   const el = e.target.closest('[data-action]');
   if (el && clickActions[el.dataset.action]) clickActions[el.dataset.action](el);
@@ -477,7 +505,7 @@ document.addEventListener('keydown', (e) => {
   }
   if (!e.shiftKey && TAB_KEYS[e.key]) {
     e.preventDefault();
-    switchTab(TAB_KEYS[e.key]);
+    navigateTab(TAB_KEYS[e.key]);
   }
 });
 document.addEventListener('keydown', (e) => {
@@ -620,6 +648,7 @@ function registerServiceWorker() {
   applyLangToDocument();
   applyStaticStrings();
   initTheme();
+  initTemplate();
   buildLangSwitch();
   syncCanonical();
   const share = readShareParams(new URL(location.href));
@@ -635,7 +664,6 @@ function registerServiceWorker() {
   renderDailyCard();
   renderProfile();
   switchTab(share.seed ? 'reading' : currentTab);
-  if (!share.seed) openLibraryFromHash();
   if (share.seed) {
     performReading(share.seed, false, share.picks, {
       deckType: share.deckType,
@@ -665,4 +693,8 @@ function registerServiceWorker() {
   document.querySelectorAll('.modal-overlay').forEach(el => {
     observer.observe(el, { attributes: true, attributeFilter: ['class'] });
   });
+  // 新版型的底部抽屜：往下拖標題列關閉，走與 Esc、點遮罩相同的關閉流程
+  initSheetGestures(dismissModal);
+  // 網址帶 #card=、#sym-、#lib- 時直接打開；放在視窗的焦點處理接上之後，焦點才會移進視窗
+  if (!share.seed) openFromHash();
 })();

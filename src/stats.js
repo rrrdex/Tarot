@@ -156,10 +156,17 @@ function watchPieChart(canvas, redraw) {
   };
   watchDpr();
 }
+// 圓餅圖的配色來自 CSS 變數 --chart-1 … --chart-5（各版型可以自己定義）；讀不到就用原本的顏色。
+// 每次重畫都重新讀：換主題、換版型時 settings.js／template.js 會重畫統計分頁
+const CHART_FALLBACK = ['#007aff', '#34c759', '#ff9500', '#ff3b30', '#af52de', '#5ac8fa'];
+function chartColors() {
+  const cs = getComputedStyle(document.documentElement);
+  return CHART_FALLBACK.map((c, i) => (i < 5 && cs.getPropertyValue(`--chart-${i + 1}`).trim()) || c);
+}
 function drawPieChart(canvasId, data, legendId) {
   const canvas = document.getElementById(canvasId);
   if (!canvas) return;
-  const colors = ['#007aff', '#34c759', '#ff9500', '#ff3b30', '#af52de', '#5ac8fa'];
+  const colors = chartColors();
   const total = Object.values(data).reduce((a, b) => a + b, 0);
   const entries = Object.entries(data);
   const neonColors = readNeonSuitColors(entries.map(([key]) => key));

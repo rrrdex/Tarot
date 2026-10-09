@@ -1,0 +1,1773 @@
+/* 現代編輯（editorial）：冷灰白／炭黑、墨線、單一朱紅、大號襯線標題、方塊（bento）版面、橫線底部導覽列
+   本檔目前只有色彩 token（淺色、深色）：把設計稿的色票對應到網站共用的 token（style.css :root），
+   再加上新版型共用的語意 token（shared.css 使用）與本版型專用的原始色票（--tpl-*，給 skin 用）。
+   之後的完整外觀（skin）規則接在檔案最後的「外觀」段落，一律以 :root[data-template="editorial"] 開頭。
+   色票都包在 @media screen 裡：列印時退回 style.css 的白紙配色，版型不影響列印。
+   深色的判斷與 style.css 相同：明確選深色（.dark；霓虹在新版型由 JS 換成 .dark，保險起見一併列 .neon），
+   或跟隨系統且系統是深色（prefers-color-scheme: dark 且沒有 .light）。
+   對比（已驗證）：--text、--text-secondary、--text-tertiary、--accent、--accent-text、狀態色
+   在 --bg、--bg-secondary、--surface、--surface-elevated 上都 ≥ 4.5:1；--accent-contrast 在 --accent 上 ≥ 4.5:1；
+   --nav-fg 在 --nav-bg 上 ≥ 4.5:1；--control-border 與 --pager-fill（相對 --pager-track）≥ 3:1。
+   注意：--accent（朱紅）當文字在 --surface 上 5.4:1、在 --bg 上 4.7:1；小字優先用 --accent-text。 */
+
+@media screen {
+  /* ── 淺色 ── */
+  :root[data-template="editorial"] {
+    /* 網站共用 token */
+    --bg: #EEF0F2;
+    --bg-secondary: #F3F4F6;
+    --bg-tertiary: #FFFFFF;
+    --surface: #FFFFFF;
+    --surface-elevated: #FFFFFF;
+    --text: #15161A;
+    --text-secondary: #4F525A;
+    --text-tertiary: #5B5E66;
+    --divider: #D6D9DE;
+    --control-border: #7C7F87;
+    --accent: #C2381F;
+    --accent-hover: #A82F19;
+    --accent-active: #8F2714;
+    --accent-contrast: #FFFFFF;
+    --accent-light: rgba(194, 56, 31, 0.08);
+    --danger-text: #c4001a;
+    --success-text: #1e7a34;
+    --warning-text: #b52f00;
+    --yesno-yes: #1e7a34;
+    --yesno-no: #c4001a;
+    /* 新版型共用的語意 token */
+    --accent-text: #B5321A;
+    --accent-soft: #FBE3DD;
+    --text-body: #2D3036;
+    --nav-bg: #EEF0F2;
+    --nav-fg: #5B5E66;
+    --nav-fg-active: #15161A;
+    --nav-active-bg: transparent;
+    --nav-border: #15161A;
+    --sheet-bg: #FFFFFF;
+    --sheet-handle: #9A9DA4;
+    --scrim: rgba(21, 22, 26, 0.5);
+    --pager-track: #C4C7CD;
+    --pager-fill: #15161A;
+    --card-back: #15161A;
+    --card-back-edge: #15161A;
+    --card-back-mark: #F08A74;
+    --card-lift: 0 12px 28px rgba(21, 22, 26, 0.18);
+    /* 本版型的原始色票（skin 用） */
+    --tpl-rule: #15161A;
+    --tpl-tile: #FFFFFF;
+    --tpl-muted: #5B5E66;
+    --tpl-inverse: #15161A;
+    --tpl-on-inverse: #FFFFFF;
+    --tpl-inverse-accent: #F08A74;
+    --tpl-inverse-muted: #C9CBD1;
+    /* 統計圓餅圖（依序）：朱紅、墨黑、赭黃、鋼藍、石灰；在白色方塊（--tpl-tile）上都 ≥ 4:1，彼此色相或明度分得開 */
+    --chart-1: #C2381F;
+    --chart-2: #15161A;
+    --chart-3: #A86A12;
+    --chart-4: #2F6E8C;
+    --chart-5: #7C7F87;
+  }
+
+  /* ── 深色（明確選擇；霓虹在新版型也以深色顯示）── */
+  :root[data-template="editorial"]:is(.dark, .neon) {
+    --bg: #121316;
+    --bg-secondary: #17181C;
+    --bg-tertiary: #1E2026;
+    --surface: #1E2026;
+    --surface-elevated: #262830;
+    --text: #F2F3F5;
+    --text-secondary: #A3A6AE;
+    --text-tertiary: #9C9FA7;
+    --divider: #30323A;
+    --control-border: #6C6F78;
+    --accent: #F06A4F;
+    --accent-hover: #F58B74;
+    --accent-active: #D9573D;
+    --accent-contrast: #121316;
+    --accent-light: rgba(240, 106, 79, 0.12);
+    --danger-text: #ff5449;
+    --success-text: #30d158;
+    --warning-text: #ff9f0a;
+    --yesno-yes: #30d158;
+    --yesno-no: #ff453a;
+    --accent-text: #F58B74;
+    --accent-soft: #3A211B;
+    --text-body: #C4C6CC;
+    --nav-bg: #121316;
+    --nav-fg: #A3A6AE;
+    --nav-fg-active: #F2F3F5;
+    --nav-active-bg: transparent;
+    --nav-border: #F2F3F5;
+    --sheet-bg: #1E2026;
+    --sheet-handle: #6C6F78;
+    --scrim: rgba(0, 0, 0, 0.6);
+    --pager-track: #3A3D46;
+    --pager-fill: #F2F3F5;
+    --card-back: #F2F3F5;
+    --card-back-edge: #F2F3F5;
+    --card-back-mark: #B5321A;
+    --card-lift: 0 12px 28px rgba(0, 0, 0, 0.5);
+    --tpl-rule: #F2F3F5;
+    --tpl-tile: #1E2026;
+    --tpl-muted: #A3A6AE;
+    --tpl-inverse: #F2F3F5;
+    --tpl-on-inverse: #121316;
+    --tpl-inverse-accent: #B5321A;
+    --tpl-inverse-muted: #4A4D55;
+    /* 統計圓餅圖：在深色方塊（#1E2026）上都 ≥ 5:1 */
+    --chart-1: #F06A4F;
+    --chart-2: #F2F3F5;
+    --chart-3: #E0A43A;
+    --chart-4: #6FA8C8;
+    --chart-5: #8E9199;
+  }
+}
+
+/* ── 深色（跟隨系統）：與上面的深色區塊相同 ── */
+@media screen and (prefers-color-scheme: dark) {
+  :root[data-template="editorial"]:not(.light) {
+    --bg: #121316;
+    --bg-secondary: #17181C;
+    --bg-tertiary: #1E2026;
+    --surface: #1E2026;
+    --surface-elevated: #262830;
+    --text: #F2F3F5;
+    --text-secondary: #A3A6AE;
+    --text-tertiary: #9C9FA7;
+    --divider: #30323A;
+    --control-border: #6C6F78;
+    --accent: #F06A4F;
+    --accent-hover: #F58B74;
+    --accent-active: #D9573D;
+    --accent-contrast: #121316;
+    --accent-light: rgba(240, 106, 79, 0.12);
+    --danger-text: #ff5449;
+    --success-text: #30d158;
+    --warning-text: #ff9f0a;
+    --yesno-yes: #30d158;
+    --yesno-no: #ff453a;
+    --accent-text: #F58B74;
+    --accent-soft: #3A211B;
+    --text-body: #C4C6CC;
+    --nav-bg: #121316;
+    --nav-fg: #A3A6AE;
+    --nav-fg-active: #F2F3F5;
+    --nav-active-bg: transparent;
+    --nav-border: #F2F3F5;
+    --sheet-bg: #1E2026;
+    --sheet-handle: #6C6F78;
+    --scrim: rgba(0, 0, 0, 0.6);
+    --pager-track: #3A3D46;
+    --pager-fill: #F2F3F5;
+    --card-back: #F2F3F5;
+    --card-back-edge: #F2F3F5;
+    --card-back-mark: #B5321A;
+    --card-lift: 0 12px 28px rgba(0, 0, 0, 0.5);
+    --tpl-rule: #F2F3F5;
+    --tpl-tile: #1E2026;
+    --tpl-muted: #A3A6AE;
+    --tpl-inverse: #F2F3F5;
+    --tpl-on-inverse: #121316;
+    --tpl-inverse-accent: #B5321A;
+    --tpl-inverse-muted: #4A4D55;
+    /* 統計圓餅圖：在深色方塊（#1E2026）上都 ≥ 5:1 */
+    --chart-1: #F06A4F;
+    --chart-2: #F2F3F5;
+    --chart-3: #E0A43A;
+    --chart-4: #6FA8C8;
+    --chart-5: #8E9199;
+  }
+}
+
+/* ── 外觀（skin）──
+   設計語言（全站一致）：
+   - 冷灰底（--bg）上放白色方塊（--tpl-tile，圓角 14–20px、無陰影）：bento 版面；
+   - 墨線（--tpl-rule，1.5px 炭黑；深色主題是近白）用在：頁首下緣、導覽列上緣／側欄右緣、段落標題下緣、
+     外框按鈕、輸入框的底線；
+   - 「選取」一律是反白方塊（--tpl-inverse），「目前位置」一律是朱紅短橫條（導覽列、分段標籤）；
+   - 朱紅（--accent）只用在主要按鈕、目前位置的短橫條、小標（--accent-text）與焦點框；
+   - 標題、牌名、統計數字用大號襯線（--font-serif，900），小標是 12px 粗體加字距。
+   方塊去掉框線時改成透明框線（不是 none）：Windows 高對比模式會把透明框線畫出來，方塊的邊界還在。
+   全部包在 @media screen 裡，列印維持 style.css 的白紙樣式。
+   選擇器以 :root:root[data-template="editorial"] 開頭：權重與 shared.css 的
+   :root[data-template]:not([data-template="minimal"]) 相同，本檔載入在後，同一個元素的造型由本檔決定。 */
+@media screen {
+  /* ── 全站基礎 ── */
+  :root:root[data-template="editorial"] body {
+    background: var(--bg);
+    color: var(--text);
+  }
+  :root:root[data-template="editorial"] ::selection {
+    background: var(--accent-soft);
+    color: var(--text);
+  }
+  :root:root[data-template="editorial"] * {
+    scrollbar-color: var(--control-border) transparent;
+  }
+  :root:root[data-template="editorial"] ::-webkit-scrollbar-thumb {
+    background: var(--control-border);
+    border-color: var(--bg);
+  }
+
+  /* ── 頁首：襯線站名、墨線下緣、外框圖示鈕 ── */
+  :root:root[data-template="editorial"] .app-header {
+    border-bottom: 1.5px solid var(--tpl-rule);
+  }
+  :root:root[data-template="editorial"] .title h1 {
+    font-family: var(--font-serif);
+    font-weight: 900;
+    font-size: 22px;
+    letter-spacing: 0.04em;
+  }
+  :root:root[data-template="editorial"] .icon-btn {
+    width: 44px;
+    height: 44px;
+    border: 1.5px solid var(--tpl-rule);
+    border-radius: 12px;
+    color: var(--text);
+  }
+  :root:root[data-template="editorial"] .icon-btn .icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  /* ── 首頁大標：靠左的大號襯線，上方一條朱紅短橫線當刊頭 ── */
+  :root:root[data-template="editorial"] .hero {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 28px 20px 20px;
+    background: transparent;
+    text-align: left;
+  }
+  :root:root[data-template="editorial"] .hero::before {
+    content: "";
+    display: block;
+    width: 32px;
+    height: 4px;
+    margin-bottom: 16px;
+    background: var(--accent);
+  }
+  :root:root[data-template="editorial"] .hero-title {
+    margin-bottom: 10px;
+    font-family: var(--font-serif);
+    font-size: 40px;
+    font-weight: 900;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+  }
+  :root:root[data-template="editorial"] .hero-subtitle {
+    max-width: 34em;
+    margin: 0;
+    font-size: 15px;
+    color: var(--text-body);
+  }
+
+  /* ── 底部導覽列：只有文字，上緣一條墨線，目前的項目上方一條朱紅短橫條（設計稿 B） ── */
+  :root:root[data-template="editorial"] .tpl-nav {
+    padding-inline: var(--space-2);
+    border-top: 1.5px solid var(--nav-border);
+  }
+  :root:root[data-template="editorial"] .tpl-nav-icon {
+    display: none;
+  }
+  :root:root[data-template="editorial"] .tpl-nav-item {
+    gap: 7px;
+    border-radius: 0;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+  }
+  :root:root[data-template="editorial"] .tpl-nav-item::before {
+    content: "";
+    width: 24px;
+    height: 3px;
+    background: transparent;
+  }
+  :root:root[data-template="editorial"] .tpl-nav-item[aria-current="page"] {
+    font-weight: 900;
+  }
+  :root:root[data-template="editorial"] .tpl-nav-item[aria-current="page"]::before {
+    background: var(--accent);
+  }
+
+  /* ── 版面容器：所有分頁的大面板拿掉底色，內容直接放在灰底上，小區塊各自成為白色方塊 ── */
+  :root:root[data-template="editorial"] .tab-content > .panel,
+  :root:root[data-template="editorial"] #results > .panel {
+    padding: 0;
+    border-color: transparent;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  /* 分頁大標：襯線、下方一條墨線 */
+  :root:root[data-template="editorial"] .results-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--space-2) var(--space-4);
+    margin-bottom: var(--space-5);
+    padding-bottom: 14px;
+    border-bottom: 1.5px solid var(--tpl-rule);
+  }
+  :root:root[data-template="editorial"] .results-title {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-size: 32px;
+    font-weight: 900;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+  }
+
+  /* ── 占卜首頁：bento 方塊。表單的面板與格線改成 display: contents，
+     每日一牌、問題、牌組、牌陣、按鈕、牌陣說明、結果都直接排進同一張格線 ── */
+  :root:root[data-template="editorial"] #tabReading {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "daily"
+      "q"
+      "deck"
+      "spread"
+      "go"
+      "info"
+      "res";
+    gap: 10px;
+  }
+  :root:root[data-template="editorial"] #tabReading > .panel,
+  :root:root[data-template="editorial"] #tabReading > .panel > .form-section,
+  :root:root[data-template="editorial"] #tabReading .form-grid {
+    display: contents;
+  }
+  :root:root[data-template="editorial"] #dailyCard {
+    grid-area: daily;
+  }
+  :root:root[data-template="editorial"] #tabReading .form-field.full {
+    grid-area: q;
+  }
+  :root:root[data-template="editorial"] #tabReading .form-field:has(#deckType) {
+    grid-area: deck;
+  }
+  :root:root[data-template="editorial"] #tabReading .spread-field {
+    grid-area: spread;
+  }
+  :root:root[data-template="editorial"] #tabReading .form-section > .btn-group {
+    grid-area: go;
+    margin-top: 6px;
+  }
+  :root:root[data-template="editorial"] #spreadInfo {
+    grid-area: info;
+  }
+  :root:root[data-template="editorial"] #results {
+    grid-area: res;
+    min-width: 0;
+    margin-top: 0;
+  }
+  :root:root[data-template="editorial"] #results:not(:empty) {
+    margin-top: var(--space-6);
+  }
+  /* 表單欄位：白色方塊、小標、底線輸入框 */
+  :root:root[data-template="editorial"] #tabReading .form-field {
+    gap: var(--space-2);
+    padding: 14px 16px 16px;
+    border: 1px solid transparent;
+    border-radius: 18px;
+    background: var(--tpl-tile);
+  }
+  :root:root[data-template="editorial"] #tabReading .form-field > label,
+  :root:root[data-template="editorial"] .settings-section .form-field > label {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--tpl-muted);
+  }
+  :root:root[data-template="editorial"] #question {
+    font-size: 17px;
+  }
+  :root:root[data-template="editorial"] #deckType {
+    font-weight: 700;
+  }
+  /* 牌陣：牌陣名稱是大號襯線字，整塊可點，右側朱紅箭頭 */
+  :root:root[data-template="editorial"] .spread-field .select-trigger {
+    flex: 1;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--space-3);
+    min-height: 48px;
+    padding: 4px 0 2px;
+    border: none;
+    border-radius: 0;
+    background: none;
+    font-family: var(--font-serif);
+    font-size: 24px;
+    font-weight: 900;
+    line-height: 1.2;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    box-shadow: none;
+  }
+  :root:root[data-template="editorial"] .spread-field .select-trigger::after {
+    content: "→";
+    content: "→" / "";
+    flex: none;
+    font-family: var(--font-sans-tpl);
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--accent-text);
+    transition: transform var(--duration-fast) var(--ease-out);
+  }
+  :root:root[data-template="editorial"] .spread-field .select-trigger:focus {
+    background: none;
+    box-shadow: none;
+  }
+  @media (hover: hover) {
+    :root:root[data-template="editorial"] .spread-field:has(.select-trigger:hover) {
+      border-color: var(--tpl-rule);
+    }
+    :root:root[data-template="editorial"] .spread-field .select-trigger:hover::after {
+      transform: translateX(3px);
+    }
+  }
+  /* 每日一牌：反白方塊，小標朱紅、牌名大號襯線 */
+  :root:root[data-template="editorial"] .daily-card {
+    position: relative;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 14px;
+    min-height: 128px;
+    margin: 0;
+    padding: 16px;
+    border: 1px solid transparent;
+    border-radius: 18px;
+    background: var(--tpl-inverse);
+    color: var(--tpl-on-inverse);
+  }
+  :root:root[data-template="editorial"] .daily-card:empty {
+    min-height: 128px;
+  }
+  @media (hover: hover) {
+    :root:root[data-template="editorial"] .daily-card:hover {
+      border-color: transparent;
+      background: color-mix(in srgb, var(--tpl-inverse) 90%, var(--accent));
+    }
+  }
+  :root:root[data-template="editorial"] .daily-card-info {
+    display: flex;
+    flex-direction: column;
+    padding-right: 24px;
+  }
+  :root:root[data-template="editorial"] .daily-card-label {
+    margin-bottom: auto;
+    padding-bottom: 14px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    line-height: 1.4;
+    color: var(--tpl-inverse-accent);
+  }
+  :root:root[data-template="editorial"] .daily-card-name {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 2px 10px;
+    font-family: var(--font-serif);
+    font-size: 30px;
+    font-weight: 900;
+    line-height: 1.15;
+    color: var(--tpl-on-inverse);
+  }
+  :root:root[data-template="editorial"] .daily-card-ori {
+    margin: 0;
+    font-family: var(--font-sans-tpl);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--tpl-inverse-muted);
+  }
+  :root:root[data-template="editorial"] .daily-card-keywords {
+    margin-top: 6px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--tpl-inverse-muted);
+  }
+  :root:root[data-template="editorial"] .daily-card .icon {
+    position: absolute;
+    top: 14px;
+    right: 12px;
+    width: 20px;
+    height: 20px;
+    color: var(--tpl-inverse-muted);
+  }
+  :root:root[data-template="editorial"] .daily-card-art :is(svg, img) {
+    border-color: color-mix(in srgb, var(--tpl-on-inverse) 25%, transparent);
+  }
+  /* 開始占卜（主要按鈕）與分享 */
+  :root:root[data-template="editorial"] #tabReading .form-section > .btn-group .btn {
+    min-height: 60px;
+    border-radius: 16px;
+  }
+  :root:root[data-template="editorial"] #readButton {
+    font-size: 17px;
+    font-weight: 900;
+    letter-spacing: 0.12em;
+  }
+  /* 牌陣說明 */
+  :root:root[data-template="editorial"] .spread-info {
+    margin-top: 0;
+    padding: 18px 20px 20px;
+    border-color: transparent;
+    border-radius: 18px;
+    background: var(--tpl-tile);
+  }
+  :root:root[data-template="editorial"] .spread-info-title {
+    font-family: var(--font-serif);
+    font-size: 19px;
+    font-weight: 900;
+  }
+  :root:root[data-template="editorial"] .spread-info-title .icon {
+    color: var(--accent-text);
+  }
+  :root:root[data-template="editorial"] .spread-positions-title {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--tpl-muted);
+  }
+  :root:root[data-template="editorial"] .spread-position-num {
+    font-family: var(--font-serif);
+    font-weight: 900;
+    color: var(--accent-text);
+  }
+  :root:root[data-template="editorial"] .spread-info-content,
+  :root:root[data-template="editorial"] .spread-position-item {
+    color: var(--text-body);
+  }
+
+  /* ── 按鈕：主要＝朱紅實心；其他＝墨線外框 ── */
+  :root:root[data-template="editorial"] .btn {
+    border-radius: 14px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+  }
+  :root:root[data-template="editorial"] .btn-sm {
+    border-radius: 12px;
+  }
+  :root:root[data-template="editorial"] .btn-primary {
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    box-shadow: none;
+  }
+  :root:root[data-template="editorial"] :is(.btn-secondary, .btn-tertiary) {
+    /* 只換底色：select.btn 的下拉箭頭是背景圖，不能用 background 簡寫蓋掉 */
+    background-color: transparent;
+    color: var(--text);
+    border: 1.5px solid var(--tpl-rule);
+  }
+  :root:root[data-template="editorial"] .btn-tertiary.danger {
+    color: var(--danger-text);
+  }
+  :root:root[data-template="editorial"] #filterFavorite[aria-pressed="true"] {
+    background-color: var(--tpl-inverse);
+    border-color: var(--tpl-inverse);
+    color: var(--tpl-on-inverse);
+  }
+  @media (hover: hover) {
+    :root:root[data-template="editorial"] .btn-primary:hover {
+      background: var(--accent-hover);
+      box-shadow: none;
+      transform: none;
+    }
+    :root:root[data-template="editorial"] :is(.btn-secondary, .btn-tertiary):hover {
+      background-color: color-mix(in srgb, var(--text) 6%, transparent);
+      border-color: var(--tpl-rule);
+    }
+    :root:root[data-template="editorial"] #filterFavorite[aria-pressed="true"]:hover {
+      background-color: var(--tpl-inverse);
+    }
+  }
+
+  /* ── 輸入框：沒有外框，只有一條墨線底線；聚焦時底線變粗變朱紅 ── */
+  :root:root[data-template="editorial"] :is(input[type=text], input[type=search], input[type=date], select:not(.btn)) {
+    min-height: 48px;
+    padding: 10px 2px;
+    border: none;
+    border-bottom: 2px solid var(--tpl-rule);
+    border-radius: 0;
+    background-color: transparent;
+  }
+  :root:root[data-template="editorial"] select:not(.btn) {
+    padding-right: 32px;
+    background-position: right 2px center;
+  }
+  :root:root[data-template="editorial"] input[type=search] {
+    padding-left: 32px;
+  }
+  :root:root[data-template="editorial"] .search-icon {
+    left: 2px;
+    color: var(--tpl-muted);
+  }
+  :root:root[data-template="editorial"] :is(input[type=text], input[type=search], input[type=date], select:not(.btn)):focus {
+    border-bottom-color: var(--accent);
+    background-color: transparent;
+    box-shadow: 0 2px 0 var(--accent);
+  }
+  :root:root[data-template="editorial"] textarea {
+    border: 1.5px solid var(--tpl-rule);
+    border-radius: 12px;
+    background: transparent;
+  }
+  :root:root[data-template="editorial"] textarea:focus {
+    border-color: var(--accent);
+    background: transparent;
+    box-shadow: none;
+  }
+
+  /* ── 分段標籤（資料庫、學習、我的、牌卡視窗）：文字分頁，底下一條細線，目前的分頁下方朱紅橫條 ── */
+  :root:root[data-template="editorial"] .segmented {
+    justify-content: flex-start;
+    gap: var(--space-5);
+    width: 100%;
+    margin: 0 0 var(--space-5);
+    padding: 0;
+    border: none;
+    border-bottom: 1px solid var(--divider);
+    border-radius: 0;
+    background: transparent;
+  }
+  :root:root[data-template="editorial"] .seg-item {
+    flex: 0 0 auto;
+    min-height: 44px;
+    padding: 0 2px;
+    border-radius: 0;
+    background: transparent;
+    color: var(--tpl-muted);
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+  :root:root[data-template="editorial"] .seg-item.active {
+    background: transparent;
+    color: var(--text);
+    font-weight: 900;
+    box-shadow: inset 0 -3px 0 var(--accent);
+  }
+  :root:root[data-template="editorial"] .seg-item:focus-visible {
+    outline-offset: -2px;
+  }
+  @media (hover: hover) {
+    :root:root[data-template="editorial"] .seg-item:hover {
+      color: var(--text);
+    }
+  }
+  /* 牌卡視窗的四個分頁平均分配寬度 */
+  /* 牌卡視窗的分段標籤會黏在標題列下方：要有底色，捲過去的內容才不會透出來 */
+  :root:root[data-template="editorial"] #cardModalSeg {
+    gap: 0;
+    margin-top: 0;
+    padding-top: var(--space-2);
+    background: var(--surface);
+  }
+  :root:root[data-template="editorial"] #cardModalSeg .seg-item {
+    flex: 1 1 0;
+    padding-inline: var(--space-1);
+  }
+
+  /* ── 標籤（篩選、關鍵詞）：方角；可點的在灰底上是白塊、在白塊裡是灰塊，選取時反白 ── */
+  :root:root[data-template="editorial"] .tag {
+    border-radius: 8px;
+    background: var(--bg);
+    color: var(--text-body);
+  }
+  :root:root[data-template="editorial"] .tag:is([role=button], button) {
+    min-height: 36px;
+    background: var(--tpl-tile);
+    font-weight: 600;
+  }
+  :root:root[data-template="editorial"] :is(.modal, .history-item, .quiz-card, .quiz-result, .settings-section, .deck-history-group, .card-db-item) .tag:is([role=button], button) {
+    background: var(--bg);
+  }
+  :root:root[data-template="editorial"] .tag.active,
+  :root:root[data-template="editorial"] .tag:is([role=button], button).active {
+    background: var(--tpl-inverse);
+    border-color: var(--tpl-inverse);
+    color: var(--tpl-on-inverse);
+  }
+  @media (hover: hover) {
+    :root:root[data-template="editorial"] .tag:is([role=button], button):not(.active):hover {
+      border-color: var(--tpl-rule);
+      background: var(--tpl-tile);
+      color: var(--text);
+    }
+  }
+  :root:root[data-template="editorial"] .badge {
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    color: var(--accent-text);
+  }
+  :root:root[data-template="editorial"] .badge.favorite {
+    background: none;
+    color: var(--accent-text);
+  }
+
+  /* ── 結果：小標（牌陣）→ 大標 → 以襯線字引出的問題 ── */
+  :root:root[data-template="editorial"] #results .results-header {
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: 6px;
+  }
+  :root:root[data-template="editorial"] #results .results-meta {
+    display: contents;
+  }
+  :root:root[data-template="editorial"] #results .results-meta > .badge {
+    order: -1;
+  }
+  :root:root[data-template="editorial"] #results .results-meta > span:not(.badge) {
+    font-family: var(--font-serif);
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.35;
+    color: var(--text);
+  }
+  :root:root[data-template="editorial"] #results .results-meta > span:not(.badge)::before {
+    content: "「";
+    content: "「" / "";
+  }
+  :root:root[data-template="editorial"] #results .results-meta > span:not(.badge)::after {
+    content: "」";
+    content: "」" / "";
+  }
+  :root:root[data-template="editorial"] .card-notes {
+    margin: 0 0 var(--space-5);
+    border-radius: 0 12px 12px 0;
+    background: var(--tpl-tile);
+    color: var(--text-body);
+  }
+  /* 牌：白色方塊；滑過時畫一圈墨線，不浮起 */
+  :root:root[data-template="editorial"] .cards-grid {
+    gap: 10px;
+  }
+  :root:root[data-template="editorial"] .card {
+    border-color: transparent;
+    border-radius: 18px;
+    background: var(--tpl-tile);
+  }
+  :root:root[data-template="editorial"] .card.bottom {
+    border: 1.5px dashed var(--control-border);
+    background: transparent;
+  }
+  :root:root[data-template="editorial"] .card-position {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--accent-text);
+  }
+  :root:root[data-template="editorial"] .card-name {
+    font-family: var(--font-serif);
+    font-weight: 900;
+    letter-spacing: 0;
+  }
+  :root:root[data-template="editorial"] .card-keywords {
+    color: var(--text-secondary);
+  }
+  @media (hover: hover) {
+    :root:root[data-template="editorial"] .card:hover {
+      transform: none;
+      border-color: transparent;
+      box-shadow: inset 0 0 0 1.5px var(--tpl-rule);
+    }
+    :root:root[data-template="editorial"] .card.bottom:hover {
+      border-color: var(--tpl-rule);
+      box-shadow: none;
+    }
+  }
+  /* 段落標題（逐張解讀、綜合觀察、熟練度）：襯線 */
+  :root:root[data-template="editorial"] :is(.insight-title, .learn-mastery-title) {
+    font-family: var(--font-serif);
+    font-size: 22px;
+    font-weight: 900;
+    letter-spacing: -0.005em;
+  }
+  :root:root[data-template="editorial"] .insight-sub {
+    color: var(--text-secondary);
+  }
+
+  /* ── 逐張解讀：牌位分頁籤（反白＝目前這張）＋ 一張白色大方塊 ── */
+  :root:root[data-template="editorial"] .reading-detail {
+    margin-top: var(--space-8);
+    padding-top: 0;
+    border-top: none;
+  }
+  :root:root[data-template="editorial"] .rd-header {
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1.5px solid var(--tpl-rule);
+  }
+  :root:root[data-template="editorial"] .rd-paged .rd-pager-ind {
+    margin-bottom: 10px;
+  }
+  :root:root[data-template="editorial"] .rd-tabs {
+    gap: 8px;
+  }
+  :root:root[data-template="editorial"] .rd-tab {
+    min-height: 64px;
+    border-color: transparent;
+    border-radius: 14px;
+    background: var(--tpl-tile);
+  }
+  :root:root[data-template="editorial"] .rd-tab-pos {
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    color: var(--tpl-muted);
+  }
+  :root:root[data-template="editorial"] .rd-tab-name {
+    font-size: 15px;
+    font-weight: 700;
+  }
+  :root:root[data-template="editorial"] .rd-tab[aria-selected="true"] {
+    border-color: var(--tpl-inverse);
+    background: var(--tpl-inverse);
+    color: var(--tpl-on-inverse);
+  }
+  :root:root[data-template="editorial"] .rd-tab[aria-selected="true"] .rd-tab-pos {
+    color: var(--tpl-inverse-accent);
+  }
+  @media (hover: hover) {
+    :root:root[data-template="editorial"] .rd-tab[aria-selected="false"]:hover {
+      border-color: var(--tpl-rule);
+    }
+  }
+  :root:root[data-template="editorial"] .rd-paged .rd-item {
+    gap: 14px;
+    padding: 22px 20px;
+    border: 1px solid transparent;
+    border-radius: 20px;
+    background: var(--tpl-tile);
+  }
+  :root:root[data-template="editorial"] .rd-paged .rd-num {
+    display: none;
+  }
+  :root:root[data-template="editorial"] .rd-paged :is(.rd-body, .rd-bottom .rd-pos) {
+    padding-left: 0;
+  }
+  :root:root[data-template="editorial"] .rd-paged .rd-pos-name {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--accent-text);
+  }
+  :root:root[data-template="editorial"] .rd-paged .rd-pos-desc {
+    margin-top: 6px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text-body);
+  }
+  :root:root[data-template="editorial"] .rd-paged .rd-card {
+    align-items: flex-start;
+  }
+  :root:root[data-template="editorial"] .rd-paged .rd-card-name {
+    column-gap: 10px;
+    font-family: var(--font-serif);
+    font-size: 32px;
+    font-weight: 900;
+    line-height: 1.15;
+  }
+  :root:root[data-template="editorial"] .rd-paged .rd-ori {
+    font-family: var(--font-sans-tpl);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--accent-text);
+  }
+  :root:root[data-template="editorial"] .rd-more {
+    margin-block: -4px;
+    font-weight: 700;
+    color: var(--accent-text);
+    text-decoration: none;
+  }
+  :root:root[data-template="editorial"] .rd-more::after {
+    content: " →";
+    content: " →" / "";
+  }
+  @media (hover: hover) {
+    :root:root[data-template="editorial"] .rd-more:hover {
+      color: var(--accent-text);
+      text-decoration: underline;
+    }
+  }
+  :root:root[data-template="editorial"] .rd-paged .rd-kw {
+    margin-top: 6px;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  :root:root[data-template="editorial"] .rd-text-title {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--tpl-muted);
+  }
+  :root:root[data-template="editorial"] .rd-paged .rd-text-body {
+    font-size: 15px;
+    line-height: 1.85;
+    color: var(--text-body);
+  }
+  /* 上一張（外框）＋ 下一張（朱紅、填滿） */
+  :root:root[data-template="editorial"] .rd-pager-nav {
+    gap: 10px;
+    margin-top: 12px;
+  }
+  :root:root[data-template="editorial"] .rd-pager-btn {
+    min-height: 56px;
+    border-radius: 14px;
+  }
+  :root:root[data-template="editorial"] .rd-pager-prev {
+    min-width: 60px;
+    padding-inline: 16px;
+  }
+  :root:root[data-template="editorial"] .rd-pager-next {
+    font-size: 16px;
+    font-weight: 900;
+    letter-spacing: 0.04em;
+  }
+  :root:root[data-template="editorial"] .rd-pager-hint {
+    color: var(--tpl-muted);
+  }
+  /* 綜合觀察、模式洞察：白色方塊 */
+  :root:root[data-template="editorial"] .insight-panel {
+    margin: var(--space-8) 0 0;
+    padding: 20px;
+    border: 1px solid transparent;
+    border-radius: 18px;
+    background: var(--tpl-tile);
+  }
+  :root:root[data-template="editorial"] #patternInsights .insight-panel {
+    margin: 0 0 var(--space-4);
+  }
+  :root:root[data-template="editorial"] .insight-tag {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: var(--accent-text);
+  }
+  :root:root[data-template="editorial"] .insight-text {
+    font-size: 15px;
+    line-height: 1.75;
+    color: var(--text-body);
+  }
+  :root:root[data-template="editorial"] .results .btn-group {
+    margin-top: var(--space-6);
+  }
+
+  /* ── 互動抽牌：炭黑牌背、朱紅細框與圓點；已選的牌是朱紅實心 ── */
+  :root:root[data-template="editorial"] .pick-header {
+    margin-bottom: var(--space-5);
+    padding-bottom: 14px;
+    border-bottom: 1.5px solid var(--tpl-rule);
+    text-align: left;
+  }
+  :root:root[data-template="editorial"] .pick-hint {
+    color: var(--text-body);
+  }
+  :root:root[data-template="editorial"] .pick-progress {
+    border-radius: 8px;
+    background: var(--tpl-inverse);
+    color: var(--tpl-on-inverse);
+    letter-spacing: 0.08em;
+  }
+  :root:root[data-template="editorial"] .pick-card {
+    border-radius: 5px;
+    background-color: var(--card-back);
+    background-image: radial-gradient(circle, var(--card-back-mark) 0 3px, transparent 3.5px);
+    background-size: auto;
+    box-shadow: inset 0 0 0 3px var(--card-back), inset 0 0 0 5px var(--card-back-mark);
+  }
+  @media (hover: hover) {
+    :root:root[data-template="editorial"] .pick-card:hover:not(:disabled) {
+      transform: translateY(-4px);
+      box-shadow: inset 0 0 0 3px var(--card-back), inset 0 0 0 5px var(--card-back-mark), var(--card-lift);
+    }
+  }
+  :root:root[data-template="editorial"] .pick-card.selected {
+    background-color: var(--accent);
+    background-image: none;
+    box-shadow: none;
+    color: var(--accent-contrast);
+  }
+
+  /* ── 記錄 ── */
+  :root:root[data-template="editorial"] .history-controls {
+    gap: var(--space-2);
+  }
+  :root:root[data-template="editorial"] .history-list {
+    gap: 10px;
+    padding: 0;
+  }
+  :root:root[data-template="editorial"] .history-item {
+    border-color: transparent;
+    border-radius: 18px;
+    background: var(--tpl-tile);
+  }
+  :root:root[data-template="editorial"] .history-spread {
+    font-family: var(--font-serif);
+    font-size: 19px;
+    font-weight: 900;
+  }
+  :root:root[data-template="editorial"] .history-time {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.04em;
+    color: var(--text-secondary);
+  }
+  :root:root[data-template="editorial"] .history-question {
+    color: var(--text-body);
+  }
+  :root:root[data-template="editorial"] .history-action {
+    border-radius: 10px;
+  }
+  @media (hover: hover) {
+    :root:root[data-template="editorial"] .history-item:hover {
+      transform: none;
+      border-color: transparent;
+      box-shadow: inset 0 0 0 1.5px var(--tpl-rule);
+    }
+    :root:root[data-template="editorial"] :is(.history-fav, .history-action):hover {
+      background: var(--bg);
+    }
+  }
+  /* 空的狀態（記錄、統計、資料庫搜尋沒結果）：虛線框，襯線字 */
+  :root:root[data-template="editorial"] :is(.history-empty, .learn-empty) {
+    border: 1.5px dashed var(--control-border);
+    border-radius: 18px;
+    background: transparent;
+    font-family: var(--font-serif);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-secondary);
+  }
+  :root:root[data-template="editorial"] :is(.history-empty, .learn-empty) .btn {
+    font-family: var(--font-sans-tpl);
+  }
+
+  /* ── 我的：個人牌排成方塊格、統計方塊、設定方塊 ── */
+  :root:root[data-template="editorial"] .me-hub .profile-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(150px, 100%), 1fr));
+    gap: 10px;
+  }
+  :root:root[data-template="editorial"] .profile-chip {
+    padding: 12px 14px;
+    border-color: transparent;
+    border-radius: 14px;
+    background: var(--tpl-tile);
+  }
+  :root:root[data-template="editorial"] .profile-chip-label {
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--accent-text);
+  }
+  :root:root[data-template="editorial"] .profile-chip-name {
+    font-family: var(--font-serif);
+    font-size: 16px;
+    font-weight: 900;
+  }
+  @media (hover: hover) {
+    :root:root[data-template="editorial"] .profile-chip:hover {
+      transform: none;
+      border-color: var(--tpl-rule);
+    }
+  }
+  :root:root[data-template="editorial"] .stats-grid {
+    gap: 10px;
+  }
+  :root:root[data-template="editorial"] .stat-card {
+    border-color: transparent;
+    border-radius: 18px;
+    background: var(--tpl-tile);
+  }
+  @media (hover: hover) {
+    :root:root[data-template="editorial"] .stat-card:hover {
+      transform: none;
+      box-shadow: none;
+    }
+  }
+  :root:root[data-template="editorial"] .stat-title {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--tpl-muted);
+  }
+  :root:root[data-template="editorial"] .stat-value {
+    font-family: var(--font-serif);
+    font-weight: 900;
+    letter-spacing: -0.02em;
+  }
+  :root:root[data-template="editorial"] .stat-label {
+    color: var(--text-secondary);
+  }
+  /* 趨勢圖：炭黑長條站在一條墨線上，這個月是朱紅 */
+  :root:root[data-template="editorial"] .trend-chart {
+    padding: 0;
+    border: none;
+    border-bottom: 1.5px solid var(--tpl-rule);
+    border-radius: 0;
+    background: transparent;
+  }
+  :root:root[data-template="editorial"] .trend-bar {
+    border-radius: 2px 2px 0 0;
+    background: var(--text);
+    opacity: 0.85;
+  }
+  :root:root[data-template="editorial"] .trend-bar:last-child {
+    background: var(--accent);
+    opacity: 1;
+  }
+  :root:root[data-template="editorial"] .stat-item {
+    border-radius: 10px;
+    background: var(--bg);
+  }
+  :root:root[data-template="editorial"] .stat-item:hover {
+    background: var(--bg);
+  }
+  :root:root[data-template="editorial"] .stat-item-count {
+    color: var(--accent-text);
+    font-variant-numeric: tabular-nums;
+  }
+  /* 設定：每一組是白色方塊，組名用襯線 */
+  :root:root[data-template="editorial"] .settings-section {
+    margin-bottom: 10px;
+    padding: 20px 16px 16px;
+    border: 1px solid transparent;
+    border-radius: 18px;
+    background: var(--tpl-tile);
+  }
+  :root:root[data-template="editorial"] .settings-title {
+    margin-bottom: var(--space-3);
+    padding-inline: 4px;
+    font-family: var(--font-serif);
+    font-size: 20px;
+    font-weight: 900;
+  }
+  :root:root[data-template="editorial"] .settings-section > :is(.form-field, .checkbox-desc, .profile-preview, .profile-note, .data-stats) {
+    margin-inline: 4px;
+  }
+  :root:root[data-template="editorial"] .settings-section > .btn,
+  :root:root[data-template="editorial"] .settings-section > .btn-group {
+    margin-inline: 4px;
+  }
+  :root:root[data-template="editorial"] .checkbox-item {
+    border-radius: 12px;
+  }
+  :root:root[data-template="editorial"] .checkbox-item:hover {
+    background: var(--bg);
+  }
+  :root:root[data-template="editorial"] .checkbox-label {
+    font-weight: 600;
+  }
+  :root:root[data-template="editorial"] .profile-note {
+    border-top-color: var(--divider);
+  }
+
+  /* ── 學習：字卡與測驗都是白色方塊，牌名用襯線 ── */
+  :root:root[data-template="editorial"] .learn-toolbar {
+    justify-content: flex-start;
+  }
+  :root:root[data-template="editorial"] :is(.flashcard, .quiz-card, .quiz-result) {
+    border-color: transparent;
+    border-radius: 20px;
+    background: var(--tpl-tile);
+  }
+  @media (hover: hover) {
+    :root:root[data-template="editorial"] .flashcard:not(.flipped):hover {
+      transform: none;
+      border-color: var(--tpl-rule);
+    }
+  }
+  :root:root[data-template="editorial"] :is(.flash-name, .quiz-prompt, .quiz-result-score) {
+    font-family: var(--font-serif);
+    font-weight: 900;
+    letter-spacing: 0;
+  }
+  :root:root[data-template="editorial"] .flash-name {
+    font-size: 32px;
+  }
+  :root:root[data-template="editorial"] .quiz-prompt {
+    font-size: 22px;
+  }
+  :root:root[data-template="editorial"] .quiz-result-score {
+    font-size: 40px;
+  }
+  :root:root[data-template="editorial"] :is(.flash-hint, .flash-progress, .quiz-progress, .quiz-result-wrong-title) {
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--tpl-muted);
+  }
+  :root:root[data-template="editorial"] .flash-hint {
+    color: var(--accent-text);
+  }
+  :root:root[data-template="editorial"] .flash-more > summary {
+    font-weight: 700;
+    color: var(--accent-text);
+  }
+  :root:root[data-template="editorial"] .flash-actions {
+    background: var(--tpl-tile);
+  }
+  :root:root[data-template="editorial"] .quiz-option {
+    border-width: 1.5px;
+    border-radius: 12px;
+    font-weight: 600;
+  }
+  :root:root[data-template="editorial"] .quiz-explain {
+    border-color: var(--divider);
+    border-radius: 12px;
+    background: var(--bg-secondary);
+  }
+  :root:root[data-template="editorial"] .learn-mastery-section {
+    border-top: 1.5px solid var(--tpl-rule);
+  }
+  :root:root[data-template="editorial"] .learn-streak {
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+
+  /* ── 資料庫：搜尋列貼著灰底；每張牌是白色方塊 ── */
+  :root:root[data-template="editorial"] .search-field {
+    padding-block: var(--space-2) var(--space-3);
+    border-bottom: none;
+    background: var(--bg);
+  }
+  :root:root[data-template="editorial"] .db-filter-group + .db-filter-group {
+    border-left-color: var(--control-border);
+  }
+  :root:root[data-template="editorial"] .card-db-grid {
+    gap: 10px;
+    padding: 0;
+  }
+  :root:root[data-template="editorial"] .card-db-item {
+    padding: 14px;
+    border: 1px solid transparent;
+    border-radius: 16px;
+    background: var(--tpl-tile);
+  }
+  @media (hover: hover) {
+    :root:root[data-template="editorial"] .card-db-item:hover {
+      transform: none;
+      border-color: var(--tpl-rule);
+    }
+  }
+  :root:root[data-template="editorial"] .card-db-number {
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--accent-text);
+  }
+  :root:root[data-template="editorial"] .card-db-name {
+    font-family: var(--font-serif);
+    font-weight: 900;
+  }
+  :root:root[data-template="editorial"] .card-db-hit mark {
+    background: var(--accent-soft);
+    box-shadow: inset 0 -2px 0 var(--accent);
+  }
+  /* 知識庫：每一組是白色方塊，組名是襯線大字加墨線 */
+  :root:root[data-template="editorial"] .deck-history {
+    gap: 10px;
+  }
+  :root:root[data-template="editorial"] .deck-history-group {
+    padding: 18px 20px 4px;
+    border: 1px solid transparent;
+    border-radius: 18px;
+    background: var(--tpl-tile);
+  }
+  :root:root[data-template="editorial"] .deck-history-heading {
+    padding-bottom: 10px;
+    border-bottom: 1.5px solid var(--tpl-rule);
+    font-family: var(--font-serif);
+    font-size: 22px;
+    font-weight: 900;
+  }
+  :root:root[data-template="editorial"] .deck-history-item:last-child {
+    border-bottom: none;
+  }
+  :root:root[data-template="editorial"] .deck-history-title {
+    font-weight: 700;
+  }
+  :root:root[data-template="editorial"] .deck-history-title::after {
+    border-color: var(--accent-text);
+  }
+  :root:root[data-template="editorial"] .deck-history-text {
+    color: var(--text-body);
+  }
+
+  /* ── 視窗（抽屜／面板）：襯線標題、墨線分隔、外框關閉鈕 ── */
+  :root:root[data-template="editorial"] .modal-overlay:not(.card-viewer) .modal[role="dialog"] {
+    border-color: transparent;
+    box-shadow: none;
+  }
+  /* 標題列黏在頂端：與內容的間距放在內容那一側，標題列下方不留透明縫（捲動的內容不會從縫裡透出來） */
+  :root:root[data-template="editorial"] .modal-header {
+    padding-bottom: 14px;
+    border-bottom: 1.5px solid var(--tpl-rule);
+  }
+  :root:root[data-template="editorial"] .modal-header + .modal-body {
+    margin-top: var(--space-5);
+  }
+  :root:root[data-template="editorial"] .modal-title {
+    font-family: var(--font-serif);
+    font-size: 24px;
+    font-weight: 900;
+    letter-spacing: -0.005em;
+  }
+  :root:root[data-template="editorial"] .modal-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 1.5px solid var(--tpl-rule);
+    border-radius: 12px;
+    color: var(--text);
+  }
+  :root:root[data-template="editorial"] .modal-close .icon {
+    width: 20px;
+    height: 20px;
+  }
+  :root:root[data-template="editorial"] .modal-close:hover {
+    background: color-mix(in srgb, var(--text) 6%, transparent);
+    color: var(--text);
+  }
+  /* 牌面放大檢視不是抽屜：關閉鈕用反白方塊，深色遮罩上也看得到 */
+  :root:root[data-template="editorial"] .card-viewer .card-viewer-close,
+  :root:root[data-template="editorial"] .card-viewer .card-viewer-close:hover {
+    border-color: var(--tpl-inverse);
+    border-radius: 12px;
+    background: var(--tpl-inverse);
+    color: var(--tpl-on-inverse);
+  }
+  :root:root[data-template="editorial"] .card-viewer-art :is(svg, img) {
+    border-radius: 10px;
+  }
+  :root:root[data-template="editorial"] .card-modal-sub {
+    color: var(--text-secondary);
+  }
+  /* 牌義：一條墨線開頭；這次抽到的方向改成粗朱紅線 */
+  :root:root[data-template="editorial"] .meaning-block {
+    margin-top: var(--space-5);
+    padding: 14px 0 0;
+    border: 1px solid transparent;
+    border-top: 1.5px solid var(--tpl-rule);
+    border-radius: 0;
+    background: transparent;
+  }
+  /* 每段第一塊不畫線（上面已經有分段標籤的底線） */
+  :root:root[data-template="editorial"] .card-seg-panel > .meaning-block:first-child,
+  :root:root[data-template="editorial"] .flash-meanings > .meaning-block {
+    margin-top: 0;
+    border-top-color: transparent;
+  }
+  :root:root[data-template="editorial"] .card-seg-panel > .meaning-block:first-child {
+    padding-top: 0;
+  }
+  /* 這次抽到的方向：左側一條朱紅直條＋朱紅小標 */
+  :root:root[data-template="editorial"] .meaning-block.active {
+    padding-left: 14px;
+    background: transparent;
+    box-shadow: inset 3px 0 0 var(--accent);
+  }
+  :root:root[data-template="editorial"] .meaning-title {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--tpl-muted);
+  }
+  :root:root[data-template="editorial"] .meaning-block.active .meaning-title {
+    color: var(--accent-text);
+  }
+  :root:root[data-template="editorial"] .meaning-text {
+    font-size: 15px;
+    line-height: 1.8;
+    color: var(--text-body);
+  }
+  :root:root[data-template="editorial"] .meaning-block.active .meaning-text {
+    color: var(--text);
+  }
+  :root:root[data-template="editorial"] .flash-meanings .meaning-block {
+    padding: 12px 0 0;
+  }
+  :root:root[data-template="editorial"] .flash-meanings .meaning-text {
+    font-size: 14px;
+  }
+  :root:root[data-template="editorial"] :is(.lore-title, .context-title, .changelog-title) {
+    font-family: var(--font-serif);
+    font-size: 18px;
+    font-weight: 900;
+  }
+  :root:root[data-template="editorial"] :is(.lore-text, .context-text, .reflection-text, .icon-meaning, .about-intro, .changelog-changes) {
+    color: var(--text-body);
+  }
+  :root:root[data-template="editorial"] .reflection-block {
+    border-left: 3px solid var(--accent);
+  }
+  :root:root[data-template="editorial"] :is(.reflection-label, .icon-element, .context-label) {
+    font-weight: 700;
+    letter-spacing: 0.1em;
+  }
+  :root:root[data-template="editorial"] .changelog-version {
+    color: var(--accent-text);
+  }
+  :root:root[data-template="editorial"] .changelog-entry {
+    border-top: 1.5px solid var(--tpl-rule);
+  }
+  /* 牌陣選單 */
+  :root:root[data-template="editorial"] .spread-picker-group-title {
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--tpl-muted);
+    border-bottom: 1.5px solid var(--tpl-rule);
+  }
+  :root:root[data-template="editorial"] .spread-option {
+    border-radius: 10px;
+  }
+  :root:root[data-template="editorial"] .spread-option-name {
+    font-weight: 600;
+  }
+  :root:root[data-template="editorial"] .spread-option[aria-selected=true] .spread-option-name {
+    color: var(--accent-text);
+    font-weight: 900;
+  }
+  :root:root[data-template="editorial"] .spread-option-check {
+    color: var(--accent-text);
+  }
+  @media (hover: hover) {
+    :root:root[data-template="editorial"] .spread-option:hover {
+      background: var(--bg);
+    }
+  }
+  :root:root[data-template="editorial"] .confirm-message {
+    font-size: 15px;
+    color: var(--text-body);
+  }
+
+  /* ── 提示訊息：反白方塊，左側一條色帶 ── */
+  :root:root[data-template="editorial"] .toast {
+    border: 1px solid transparent;
+    border-left: 4px solid var(--tpl-inverse-accent);
+    border-radius: 12px;
+    background: var(--tpl-inverse);
+    color: var(--tpl-on-inverse);
+    box-shadow: var(--card-lift);
+    backdrop-filter: none;
+  }
+  :root:root[data-template="editorial"] .toast.success {
+    border-left-color: var(--success);
+  }
+  :root:root[data-template="editorial"] .toast.error {
+    border-left-color: var(--danger);
+  }
+  :root:root[data-template="editorial"] .toast.warning {
+    border-left-color: var(--warning);
+  }
+  :root:root[data-template="editorial"] .toast-message {
+    font-weight: 600;
+    color: var(--tpl-on-inverse);
+  }
+  :root:root[data-template="editorial"] .toast-action {
+    border-color: var(--tpl-inverse-muted);
+    color: var(--tpl-on-inverse);
+  }
+
+  /* ── 資料庫的新元件：對應篩選、符號分段、比較兩張牌、卡片的相關牌與符號、逐張解讀的「在這個位置」 ── */
+  :root:root[data-template="editorial"] .db-filter-label {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--tpl-muted);
+  }
+  :root:root[data-template="editorial"] .sym-list-title {
+    font-family: var(--font-serif);
+    font-size: 19px;
+    font-weight: 900;
+  }
+  :root:root[data-template="editorial"] .sym-where {
+    color: var(--text-body);
+  }
+  :root:root[data-template="editorial"] .rd-role {
+    padding-left: 14px;
+    border-left: 3px solid var(--accent);
+    color: var(--text-body);
+  }
+  :root:root[data-template="editorial"] .rd-role-label {
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--accent-text);
+  }
+  :root:root[data-template="editorial"] .card-modal-actions {
+    border-top: 1.5px solid var(--tpl-rule);
+  }
+  :root:root[data-template="editorial"] .refs-rel {
+    border-top-color: var(--divider);
+  }
+  :root:root[data-template="editorial"] .tag.refs-kind {
+    border-color: var(--control-border);
+    background: transparent;
+    color: var(--text-secondary);
+    font-weight: 700;
+  }
+  :root:root[data-template="editorial"] :is(.refs-rel-note, .refs-sym-where, .cmp-row dd) {
+    color: var(--text-body);
+  }
+  :root:root[data-template="editorial"] .compare-pick input[type=search] {
+    padding-left: 2px;
+  }
+  :root:root[data-template="editorial"] .cmp-head {
+    padding-bottom: 12px;
+    border-bottom: 1.5px solid var(--tpl-rule);
+  }
+  :root:root[data-template="editorial"] .cmp-name {
+    font-family: var(--font-serif);
+    font-size: 22px;
+    font-weight: 900;
+  }
+  :root:root[data-template="editorial"] .cmp-en {
+    color: var(--text-secondary);
+  }
+  :root:root[data-template="editorial"] .cmp-row dt {
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--accent-text);
+  }
+  :root:root[data-template="editorial"] .cmp-sub {
+    font-weight: 700;
+    color: var(--tpl-muted);
+  }
+  :root:root[data-template="editorial"] .cmp-empty {
+    font-family: var(--font-serif);
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--text-secondary);
+  }
+  :root:root[data-template="editorial"] .ctx-pos-ori {
+    color: var(--text-secondary);
+  }
+
+  /* ── 頁尾：墨線上緣、灰底 ── */
+  :root:root[data-template="editorial"] .app-footer {
+    border-top: 1.5px solid var(--tpl-rule);
+    background: transparent;
+  }
+  :root:root[data-template="editorial"] .footer-section-title {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--tpl-muted);
+  }
+  :root:root[data-template="editorial"] .footer-desc {
+    color: var(--text-body);
+  }
+  :root:root[data-template="editorial"] .footer-version {
+    border-radius: 6px;
+    background: var(--tpl-inverse);
+    color: var(--tpl-on-inverse);
+  }
+  :root:root[data-template="editorial"] .footer-link:hover {
+    color: var(--accent-text);
+  }
+}
+
+/* ── 外觀：寬度斷點 ── */
+@media screen and (max-width: 767.98px) {
+  /* 窄螢幕的「上一張」只留箭頭（文字仍是按鈕名稱，報讀不受影響） */
+  :root:root[data-template="editorial"] .rd-pager-prev .rd-pager-btn-text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+@media screen and (max-width: 1023.98px) {
+  /* 字卡的評分列黏在底部時，要停在底部導覽列上方 */
+  :root:root[data-template="editorial"] .flash-actions {
+    bottom: var(--tpl-nav-space);
+  }
+}
+@media screen and (min-width: 560px) {
+  :root:root[data-template="editorial"] #tabReading {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      "daily daily"
+      "q q"
+      "deck spread"
+      "go go"
+      "info info"
+      "res res";
+  }
+}
+@media screen and (min-width: 640px) {
+  :root:root[data-template="editorial"] .hero {
+    padding-inline: var(--space-6);
+  }
+}
+@media screen and (min-width: 768px) {
+  :root:root[data-template="editorial"] .hero {
+    padding: 44px var(--space-8) 28px;
+  }
+  :root:root[data-template="editorial"] .hero-title {
+    font-size: 52px;
+  }
+  :root:root[data-template="editorial"] .hero-subtitle {
+    font-size: 16px;
+  }
+  :root:root[data-template="editorial"] .results-title {
+    font-size: 40px;
+  }
+  :root:root[data-template="editorial"] .title h1 {
+    font-size: 24px;
+  }
+  /* 平板以上：每日一牌是左邊一塊直立的反白方塊，跨兩列 */
+  :root:root[data-template="editorial"] #tabReading {
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+      "daily q q"
+      "daily deck spread"
+      "go go go"
+      "info info info"
+      "res res res";
+    gap: 12px;
+  }
+  :root:root[data-template="editorial"] #tabReading:has(> #dailyCard.hidden) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      "q q"
+      "deck spread"
+      "go go"
+      "info info"
+      "res res";
+  }
+  :root:root[data-template="editorial"] #tabReading .form-field {
+    padding: 18px 20px 20px;
+  }
+  :root:root[data-template="editorial"] .daily-card {
+    flex-direction: column;
+    min-height: 200px;
+    padding: 20px;
+  }
+  :root:root[data-template="editorial"] .daily-card-info {
+    flex: 1;
+  }
+  :root:root[data-template="editorial"] .daily-card-name {
+    font-size: 34px;
+  }
+  :root:root[data-template="editorial"] .daily-card-art {
+    width: 56px;
+  }
+  :root:root[data-template="editorial"] .spread-info {
+    padding: 24px 28px 26px;
+  }
+  :root:root[data-template="editorial"] .cards-grid,
+  :root:root[data-template="editorial"] .stats-grid,
+  :root:root[data-template="editorial"] .card-db-grid {
+    gap: 12px;
+  }
+  :root:root[data-template="editorial"] .rd-paged .rd-item {
+    padding: 28px 28px;
+    column-gap: var(--space-8);
+  }
+  :root:root[data-template="editorial"] .rd-paged .rd-card-name {
+    font-size: 36px;
+  }
+  :root:root[data-template="editorial"] .insight-panel {
+    padding: 24px 28px;
+  }
+  :root:root[data-template="editorial"] .settings-section {
+    padding: 24px 24px 20px;
+    margin-bottom: 12px;
+  }
+  :root:root[data-template="editorial"] .deck-history-group {
+    padding: 22px 28px 6px;
+  }
+  /* 平板（768–1023）的視窗是置中的方塊：一圈墨線取代陰影 */
+  :root:root[data-template="editorial"] .modal-overlay:not(.card-viewer) .modal[role="dialog"] {
+    border-color: var(--tpl-rule);
+    border-width: 1.5px;
+  }
+}
+@media screen and (min-width: 1024px) {
+  :root:root[data-template="editorial"] .hero {
+    padding: 56px var(--space-12) 32px;
+  }
+  :root:root[data-template="editorial"] .hero-title {
+    font-size: 64px;
+  }
+  :root:root[data-template="editorial"] #tabReading {
+    gap: 16px;
+  }
+  /* 側欄：右緣一條墨線，項目用襯線字，目前的項目左側一條朱紅直條 */
+  :root:root[data-template="editorial"] .tpl-nav {
+    gap: var(--space-1);
+    border-top: none;
+    border-right: 1.5px solid var(--nav-border);
+  }
+  :root:root[data-template="editorial"] .tpl-nav-item {
+    position: relative;
+    min-height: 56px;
+    font-family: var(--font-serif);
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+  }
+  :root:root[data-template="editorial"] .tpl-nav-item::before {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    width: 3px;
+    height: 24px;
+    margin-top: -12px;
+  }
+  /* 右側面板：直角，左緣一條墨線（像報紙的欄線） */
+  :root:root[data-template="editorial"] .modal-overlay:not(.card-viewer) .modal[role="dialog"] {
+    border: none;
+    border-left: 1.5px solid var(--tpl-rule);
+    border-radius: 0;
+  }
+  :root:root[data-template="editorial"] .cards-grid,
+  :root:root[data-template="editorial"] .stats-grid,
+  :root:root[data-template="editorial"] .card-db-grid {
+    gap: 16px;
+  }
+}
+
+/* ── 外觀：減少動態 ── */
+@media screen and (prefers-reduced-motion: reduce) {
+  :root:root[data-template="editorial"] .spread-field .select-trigger::after {
+    transition: none;
+  }
+}
+
+/* ── 外觀：高對比模式（Windows）──
+   方塊靠底色區分，高對比模式會把底色拿掉：透明框線會被畫出來；
+   「目前位置」的朱紅橫條是背景色或陰影，改用系統反白色標出 */
+@media (forced-colors: active) {
+  :root:root[data-template="editorial"] .tpl-nav-item[aria-current="page"]::before {
+    forced-color-adjust: none;
+    background: Highlight;
+  }
+  :root:root[data-template="editorial"] .seg-item.active {
+    box-shadow: none;
+  }
+  :root:root[data-template="editorial"] .meaning-block.active {
+    border: 3px solid Highlight;
+    box-shadow: none;
+  }
+  :root:root[data-template="editorial"] .rd-tab[aria-selected="true"] {
+    forced-color-adjust: none;
+    background: Highlight;
+    color: HighlightText;
+    border-color: Highlight;
+  }
+}

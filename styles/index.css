@@ -1,0 +1,7 @@
+/* 樣式表入口：基礎 → 新版型共用 → 各版型。
+   開發時瀏覽器直接依序載入這些 @import；正式建置由 esbuild 依同樣順序打包成一個檔案 */
+@import "../style.css";
+@import "./templates/shared.css";
+@import "./templates/aurora.css";
+@import "./templates/editorial.css";
+@import "./templates/immersive.css";

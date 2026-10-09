@@ -1,0 +1,1737 @@
+/* 沉浸手勢（immersive）：鼠尾草綠／深綠黑、薄荷與珊瑚、牌堆當首頁、限時動態式逐張解讀、浮動圖示 dock
+   本檔目前只有色彩 token（淺色、深色）：把設計稿的色票對應到網站共用的 token（style.css :root），
+   再加上新版型共用的語意 token（shared.css 使用）與本版型專用的原始色票（--tpl-*，給 skin 用）。
+   之後的完整外觀（skin）規則接在檔案最後的「外觀」段落，一律以 :root[data-template="immersive"] 開頭。
+   色票都包在 @media screen 裡：列印時退回 style.css 的白紙配色，版型不影響列印。
+   深色的判斷與 style.css 相同：明確選深色（.dark；霓虹在新版型由 JS 換成 .dark，保險起見一併列 .neon），
+   或跟隨系統且系統是深色（prefers-color-scheme: dark 且沒有 .light）。
+   對比（已驗證）：--text、--text-secondary、--text-tertiary、--accent、--accent-text、狀態色
+   在 --bg、--bg-secondary、--surface、--surface-elevated 上都 ≥ 4.5:1；--accent-contrast 在 --accent 上 ≥ 4.5:1；
+   --nav-fg 在 --nav-bg 上 ≥ 4.5:1；--control-border 與 --pager-fill（相對 --pager-track）≥ 3:1。
+   導覽 dock 是反色的（淺色模式深底、深色模式淺底）：目前分頁用 --nav-fg-active 配 --nav-active-bg。
+   --tpl-coral 可當文字（≥ 4.5:1）；--tpl-coral-deco 只用於裝飾（箭頭、選中牌框）。 */
+
+@media screen {
+  /* ── 淺色 ── */
+  :root[data-template="immersive"] {
+    /* 網站共用 token */
+    --bg: #E4ECE8;
+    --bg-secondary: #EDF3F0;
+    --bg-tertiary: #FFFFFF;
+    --surface: #F6FAF8;
+    --surface-elevated: #FFFFFF;
+    --text: #14231E;
+    --text-secondary: #455850;
+    --text-tertiary: #4C5F57;
+    --divider: #C5D4CD;
+    --control-border: #6B8077;
+    --accent: #1F6F5C;
+    --accent-hover: #185A4A;
+    --accent-active: #134A3D;
+    --accent-contrast: #FFFFFF;
+    --accent-light: rgba(31, 111, 92, 0.1);
+    --danger-text: #b8001a;
+    --success-text: #1a6b2e;
+    --warning-text: #a32a00;
+    --yesno-yes: #1a6b2e;
+    --yesno-no: #b8001a;
+    /* 新版型共用的語意 token */
+    --accent-text: #1B6352;
+    --accent-soft: #CFE3DB;
+    --text-body: #2C3D37;
+    --nav-bg: #14231E;
+    --nav-fg: #C9D8D1;
+    --nav-fg-active: #14231E;
+    --nav-active-bg: #F6FAF8;
+    --nav-border: transparent;
+    --sheet-bg: #F6FAF8;
+    --sheet-handle: #B9CBC3;
+    --scrim: rgba(20, 35, 30, 0.45);
+    --pager-track: #B9CBC3;
+    --pager-fill: #1F6F5C;
+    --card-back: #1F6F5C;
+    --card-back-edge: rgba(255, 255, 255, 0.45);
+    --card-back-mark: rgba(255, 255, 255, 0.45);
+    --card-lift: 0 18px 36px rgba(20, 35, 30, 0.28);
+    /* 本版型的原始色票（skin 用） */
+    --tpl-coral: #B4462A;
+    --tpl-coral-deco: #C4502F;
+    --tpl-glyph: #9FB3AA;
+    --tpl-peek: #BFD2C9;
+    --tpl-card-face: #FFFFFF;
+    --tpl-card-ink: #1F6F5C;
+    --tpl-card-edge: #1F6F5C;
+    --tpl-card-active-edge: #C4502F;
+    --tpl-lift-strong: 0 22px 44px rgba(20, 35, 30, 0.25);
+    /* skin 用：柔和景深、浮動 dock 的陰影、頁首的薄荷光暈、表面上的小膠囊底色、翻牌背面上的文字 */
+    --tpl-shadow-1: 0 1px 2px rgba(20, 35, 30, 0.05), 0 6px 20px rgba(20, 35, 30, 0.07);
+    --tpl-shadow-2: 0 2px 6px rgba(20, 35, 30, 0.07), 0 18px 40px rgba(20, 35, 30, 0.14);
+    --tpl-dock-shadow: 0 2px 6px rgba(20, 35, 30, 0.18), 0 14px 34px rgba(20, 35, 30, 0.3);
+    --tpl-glow: rgba(143, 224, 200, 0.5);
+    --tpl-chip: #E4ECE8;
+    --tpl-chip-hover: #D6E2DC;
+    --tpl-hairline: transparent;
+    --tpl-on-back: #FFFFFF;
+    --tpl-on-back-muted: #DCEDE6;
+    --tpl-knob-off: #FFFFFF;
+    /* 圖表（統計圓餅圖）：松綠、珊瑚、石板藍、赭黃、梅紫；在表面色、白色與底色上都 ≥ 3:1 */
+    --chart-1: #1F6F5C;
+    --chart-2: #C4502F;
+    --chart-3: #3D6E99;
+    --chart-4: #9A6A10;
+    --chart-5: #8B4D86;
+    /* 字型：圓潤的無襯線黑體，標題用粗體（不用襯線，和另外兩個版型區隔） */
+    --font-sans: system-ui, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+    /* 形狀：大圓角 */
+    --tpl-r-xl: 28px;
+    --tpl-r-lg: 22px;
+    --tpl-r-md: 16px;
+  }
+
+  /* ── 深色（明確選擇；霓虹在新版型也以深色顯示）── */
+  :root[data-template="immersive"]:is(.dark, .neon) {
+    --bg: #0D1613;
+    --bg-secondary: #111C18;
+    --bg-tertiary: #16231E;
+    --surface: #16231E;
+    --surface-elevated: #1C2C26;
+    --text: #E3EEE9;
+    --text-secondary: #97ADA4;
+    --text-tertiary: #93A9A0;
+    --divider: #273A33;
+    --control-border: #5E776D;
+    --accent: #5FC2A6;
+    --accent-hover: #7DD3BA;
+    --accent-active: #4AA88E;
+    --accent-contrast: #0D1613;
+    --accent-light: rgba(95, 194, 166, 0.12);
+    --danger-text: #ff6b61;
+    --success-text: #30d158;
+    --warning-text: #ff9f0a;
+    --yesno-yes: #30d158;
+    --yesno-no: #ff6b61;
+    --accent-text: #6FCDB2;
+    --accent-soft: #1E3A31;
+    --text-body: #C8D7D1;
+    --nav-bg: #E3EEE9;
+    --nav-fg: #2B3E37;
+    --nav-fg-active: #E3EEE9;
+    --nav-active-bg: #0D1613;
+    --nav-border: transparent;
+    --sheet-bg: #16231E;
+    --sheet-handle: #2E4640;
+    --scrim: rgba(0, 0, 0, 0.6);
+    --pager-track: #2E4640;
+    --pager-fill: #5FC2A6;
+    --card-back: #23453A;
+    --card-back-edge: rgba(255, 255, 255, 0.28);
+    --card-back-mark: rgba(255, 255, 255, 0.28);
+    --card-lift: 0 18px 40px rgba(0, 0, 0, 0.55);
+    --tpl-coral: #F08A6A;
+    --tpl-coral-deco: #F08A6A;
+    --tpl-glyph: #4E6A5F;
+    --tpl-peek: #1E322B;
+    --tpl-card-face: #1A2C26;
+    --tpl-card-ink: #8FE0C8;
+    --tpl-card-edge: #5FC2A6;
+    --tpl-card-active-edge: #F08A6A;
+    --tpl-lift-strong: 0 22px 48px rgba(0, 0, 0, 0.6);
+    --tpl-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.35), 0 8px 24px rgba(0, 0, 0, 0.3);
+    --tpl-shadow-2: 0 2px 6px rgba(0, 0, 0, 0.4), 0 20px 44px rgba(0, 0, 0, 0.5);
+    --tpl-dock-shadow: 0 2px 6px rgba(0, 0, 0, 0.4), 0 14px 34px rgba(0, 0, 0, 0.55);
+    --tpl-glow: rgba(95, 194, 166, 0.16);
+    --tpl-chip: #1E322B;
+    --tpl-chip-hover: #253D35;
+    --tpl-hairline: rgba(255, 255, 255, 0.05);
+    --tpl-on-back: #E3EEE9;
+    --tpl-on-back-muted: #BCD0C7;
+    --tpl-knob-off: #E3EEE9;
+    --chart-1: #5FC2A6;
+    --chart-2: #F08A6A;
+    --chart-3: #7FB0E0;
+    --chart-4: #E0B85A;
+    --chart-5: #D08CC8;
+  }
+}
+
+/* ── 深色（跟隨系統）：與上面的深色區塊相同 ── */
+@media screen and (prefers-color-scheme: dark) {
+  :root[data-template="immersive"]:not(.light) {
+    --bg: #0D1613;
+    --bg-secondary: #111C18;
+    --bg-tertiary: #16231E;
+    --surface: #16231E;
+    --surface-elevated: #1C2C26;
+    --text: #E3EEE9;
+    --text-secondary: #97ADA4;
+    --text-tertiary: #93A9A0;
+    --divider: #273A33;
+    --control-border: #5E776D;
+    --accent: #5FC2A6;
+    --accent-hover: #7DD3BA;
+    --accent-active: #4AA88E;
+    --accent-contrast: #0D1613;
+    --accent-light: rgba(95, 194, 166, 0.12);
+    --danger-text: #ff6b61;
+    --success-text: #30d158;
+    --warning-text: #ff9f0a;
+    --yesno-yes: #30d158;
+    --yesno-no: #ff6b61;
+    --accent-text: #6FCDB2;
+    --accent-soft: #1E3A31;
+    --text-body: #C8D7D1;
+    --nav-bg: #E3EEE9;
+    --nav-fg: #2B3E37;
+    --nav-fg-active: #E3EEE9;
+    --nav-active-bg: #0D1613;
+    --nav-border: transparent;
+    --sheet-bg: #16231E;
+    --sheet-handle: #2E4640;
+    --scrim: rgba(0, 0, 0, 0.6);
+    --pager-track: #2E4640;
+    --pager-fill: #5FC2A6;
+    --card-back: #23453A;
+    --card-back-edge: rgba(255, 255, 255, 0.28);
+    --card-back-mark: rgba(255, 255, 255, 0.28);
+    --card-lift: 0 18px 40px rgba(0, 0, 0, 0.55);
+    --tpl-coral: #F08A6A;
+    --tpl-coral-deco: #F08A6A;
+    --tpl-glyph: #4E6A5F;
+    --tpl-peek: #1E322B;
+    --tpl-card-face: #1A2C26;
+    --tpl-card-ink: #8FE0C8;
+    --tpl-card-edge: #5FC2A6;
+    --tpl-card-active-edge: #F08A6A;
+    --tpl-lift-strong: 0 22px 48px rgba(0, 0, 0, 0.6);
+    --tpl-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.35), 0 8px 24px rgba(0, 0, 0, 0.3);
+    --tpl-shadow-2: 0 2px 6px rgba(0, 0, 0, 0.4), 0 20px 44px rgba(0, 0, 0, 0.5);
+    --tpl-dock-shadow: 0 2px 6px rgba(0, 0, 0, 0.4), 0 14px 34px rgba(0, 0, 0, 0.55);
+    --tpl-glow: rgba(95, 194, 166, 0.16);
+    --tpl-chip: #1E322B;
+    --tpl-chip-hover: #253D35;
+    --tpl-hairline: rgba(255, 255, 255, 0.05);
+    --tpl-on-back: #E3EEE9;
+    --tpl-on-back-muted: #BCD0C7;
+    --tpl-knob-off: #E3EEE9;
+    --chart-1: #5FC2A6;
+    --chart-2: #F08A6A;
+    --chart-3: #7FB0E0;
+    --chart-4: #E0B85A;
+    --chart-5: #D08CC8;
+  }
+}
+
+/* ── 外觀（skin）──
+   設計語言：內容不裝在大面板裡，而是一張張大圓角的「牌」浮在鼠尾草綠的底色上，靠柔和的陰影分出層次（沒有分隔線、沒有方塊格）。
+   標題用粗黑體；珊瑚色只標「位置與時間」（牌位、每日一牌的日期）；薄荷綠是可以按的東西。
+   按鈕與牌都有按壓回饋（縮一點），可以滑動的地方露出線索：牌堆的上滑箭頭、翻頁器兩側露出的鄰張牌、記錄卡左右可拖的個人牌列。
+   選擇器分兩級：P2＝:root[data-template="immersive"]（蓋過 style.css）；
+   P3＝:root[data-template="immersive"]:not([data-template="minimal"])（和 shared.css 同權重、較晚載入，用來覆寫導覽列、抽屜、翻頁器）。
+   全部包在 @media screen 裡，列印不受影響；動態都放在 prefers-reduced-motion: no-preference 裡。 */
+
+/* 形狀相關的共用 token：shared.css 用較高權重定義，這裡用同權重覆寫 */
+:root[data-template="immersive"]:not([data-template="minimal"]) {
+  --sheet-radius: 32px;
+  --tpl-nav-h: 60px;
+  --tpl-nav-gap: 14px;
+  --tpl-rail-w: 104px;
+}
+
+@media screen {
+  /* ── 全站底色：上方一抹薄荷光暈 ── */
+  :root[data-template="immersive"] {
+    scrollbar-color: var(--control-border) transparent;
+  }
+  :root[data-template="immersive"] body {
+    background:
+      radial-gradient(120% 520px at 50% -120px, var(--tpl-glow), transparent 70%) no-repeat,
+      var(--bg);
+  }
+  :root[data-template="immersive"] ::selection {
+    background: var(--accent-soft);
+    color: var(--text);
+  }
+  :root[data-template="immersive"] :focus-visible {
+    outline: 2.5px solid var(--accent);
+    outline-offset: 3px;
+  }
+
+  /* ── 頁首：透明、沒有底線；主題切換是圓形的實心按鈕 ── */
+  :root[data-template="immersive"] .app-header {
+    border-bottom-color: transparent;
+    background: color-mix(in srgb, var(--bg) 82%, transparent);
+  }
+  :root[data-template="immersive"] .app-header h1 {
+    font-weight: 900;
+    letter-spacing: 0.04em;
+  }
+  :root[data-template="immersive"] .header-actions .icon-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: var(--tpl-shadow-1);
+  }
+  :root[data-template="immersive"] .header-actions .icon-btn:hover {
+    background: var(--surface-elevated);
+  }
+  :root[data-template="immersive"] .header-actions .icon-btn:active {
+    transform: scale(0.92);
+  }
+
+  /* ── 首頁標語：小一點，讓牌堆當主角 ── */
+  :root[data-template="immersive"] .hero {
+    background: transparent;
+    padding: var(--space-4) var(--space-5) var(--space-3);
+  }
+  :root[data-template="immersive"] .hero-title {
+    margin-bottom: var(--space-2);
+  }
+  :root[data-template="immersive"] #tabReading > .panel {
+    padding-top: var(--space-2);
+  }
+  :root[data-template="immersive"] #tabReading .form-grid {
+    gap: var(--space-4);
+    margin-bottom: var(--space-4);
+  }
+  :root[data-template="immersive"] .hero-title {
+    font-size: 1.625rem;
+    font-weight: 900;
+    letter-spacing: 0.02em;
+  }
+
+  /* ── 面板：拿掉外框，內容直接浮在底色上；每個內容區塊各自是一張圓角牌 ── */
+  :root[data-template="immersive"] :is(.tab-content > .panel, #results > .panel) {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    padding: var(--space-6) 0 0;
+  }
+  :root[data-template="immersive"] #results > .panel {
+    padding-top: 0;
+  }
+  :root[data-template="immersive"] .results-title {
+    font-size: 1.75rem;
+    font-weight: 900;
+    letter-spacing: 0.01em;
+  }
+  :root[data-template="immersive"] .results-header {
+    margin-bottom: var(--space-6);
+  }
+  :root[data-template="immersive"] :is(.insight-title, .spread-info-title, .settings-title, .learn-mastery-title, .deck-history-heading) {
+    font-weight: 800;
+  }
+
+  /* 共用的「牌」：圓角、表面色、柔和陰影（深色模式多一道頂端細光） */
+  :root[data-template="immersive"] :is(
+    .daily-card, .spread-info, .card, .insight-panel, .history-item, .flashcard, .quiz-card,
+    .learn-mastery-section, .card-db-item, .deck-history-item, .stat-card, .settings-section,
+    .profile-chip, .profile-preview, .learn-empty
+  ) {
+    background: var(--surface);
+    border: none;
+    box-shadow: var(--tpl-shadow-1), inset 0 1px 0 var(--tpl-hairline);
+  }
+
+  /* ── 每日一牌：前面一張小牌背 ── */
+  :root[data-template="immersive"] .daily-card {
+    margin-bottom: var(--space-4);
+    border-radius: var(--tpl-r-lg);
+    padding: var(--space-4) var(--space-5);
+    gap: var(--space-4);
+    justify-content: flex-start;
+    transition: transform var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out);
+  }
+  :root[data-template="immersive"] .daily-card:not(:has(.daily-card-art)):not(:empty)::before {
+    content: "";
+    flex: none;
+    width: 34px;
+    height: 54px;
+    border-radius: 7px;
+    background:
+      radial-gradient(circle closest-side, transparent calc(100% - 1.5px), var(--card-back-mark) calc(100% - 1.5px) 100%, transparent 100%) center / 16px 16px no-repeat,
+      var(--card-back);
+    box-shadow: inset 0 0 0 3px var(--card-back), inset 0 0 0 4px var(--card-back-mark), 3px 3px 0 -1px var(--tpl-peek);
+    transform: rotate(-6deg);
+  }
+  :root[data-template="immersive"] .daily-card-info {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  :root[data-template="immersive"] .daily-card:hover {
+    background: var(--surface-elevated);
+    transform: translateY(-2px);
+    box-shadow: var(--tpl-shadow-2);
+  }
+  :root[data-template="immersive"] .daily-card:active {
+    transform: scale(0.985);
+  }
+  :root[data-template="immersive"] .daily-card-label {
+    color: var(--tpl-coral);
+    font-weight: 700;
+  }
+  :root[data-template="immersive"] .daily-card-name {
+    font-weight: 800;
+  }
+
+  /* ── 輸入欄：大圓角、白底浮在底色上 ── */
+  :root[data-template="immersive"] :is(input[type=text], input[type=search], input[type=date], select, .select-trigger, textarea) {
+    border-radius: 20px;
+    background-color: var(--surface);
+  }
+  :root[data-template="immersive"] :is(input[type=text], input[type=search], input[type=date], select, .select-trigger, textarea):focus {
+    background-color: var(--surface-elevated);
+  }
+  :root[data-template="immersive"] .modal :is(input[type=text], input[type=search], input[type=date], select, textarea) {
+    background-color: var(--bg-secondary);
+  }
+  /* 問題欄：置中的大字，像在對牌堆說話（牌組選單也跟著單欄置中） */
+  :root[data-template="immersive"] #tabReading .form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  :root[data-template="immersive"] #tabReading .form-field {
+    align-items: center;
+  }
+  :root[data-template="immersive"] #tabReading .form-field > :is(input, select, .select-trigger) {
+    align-self: stretch;
+  }
+  :root[data-template="immersive"] #question {
+    text-align: center;
+    font-size: 1.125rem;
+    font-weight: 500;
+    border-radius: 26px;
+    min-height: 56px;
+  }
+
+  /* ── 按鈕：膠囊形、按下去會縮一下 ── */
+  :root[data-template="immersive"] .btn {
+    font-weight: 700;
+    transition: transform var(--duration-fast) var(--ease-out), background-color var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out);
+  }
+  :root[data-template="immersive"] .btn:active:not([aria-disabled="true"]):not(:disabled) {
+    transform: scale(0.96);
+  }
+  :root[data-template="immersive"] .btn-primary {
+    box-shadow: 0 10px 24px color-mix(in srgb, var(--accent) 32%, transparent);
+  }
+  :root[data-template="immersive"] .btn-secondary {
+    background-color: var(--accent-soft);
+    border-color: transparent;
+    color: var(--accent-text);
+  }
+  :root[data-template="immersive"] .btn-secondary:hover {
+    background: color-mix(in srgb, var(--accent-soft) 80%, var(--accent));
+  }
+  :root[data-template="immersive"] .btn-tertiary {
+    background-color: var(--surface);
+    border-color: transparent;
+    box-shadow: var(--tpl-shadow-1);
+  }
+  :root[data-template="immersive"] .btn-tertiary:hover {
+    background-color: var(--surface-elevated);
+    border-color: transparent;
+  }
+  /* 在表面色上（記錄卡、視窗裡）的次要按鈕改用膠囊底色，不再加陰影 */
+  :root[data-template="immersive"] :is(.modal, .history-item, .card, .settings-section, .quiz-card, .flashcard) .btn-tertiary {
+    background-color: var(--tpl-chip);
+    box-shadow: none;
+  }
+  :root[data-template="immersive"] :is(.modal, .history-item, .card, .settings-section, .quiz-card, .flashcard) .btn-tertiary:hover {
+    background-color: var(--tpl-chip-hover);
+  }
+  :root[data-template="immersive"] select.btn {
+    border-radius: var(--radius-full);
+  }
+
+  /* ── 分段控制：白色膠囊軌道，選中的是反色膠囊 ── */
+  :root[data-template="immersive"] .segmented {
+    border: none;
+    background: var(--surface);
+    padding: 4px;
+    gap: 2px;
+  }
+  :root[data-template="immersive"] :is(.tab-content, .me-hub) .segmented {
+    box-shadow: var(--tpl-shadow-1);
+  }
+  :root[data-template="immersive"] .modal .segmented {
+    background: var(--tpl-chip);
+  }
+  :root[data-template="immersive"] .seg-item {
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+  :root[data-template="immersive"] .seg-item.active {
+    background: var(--text);
+    color: var(--bg);
+    font-weight: 800;
+  }
+
+  /* ── 標籤／篩選：膠囊 ── */
+  :root[data-template="immersive"] .tag {
+    background: var(--tpl-chip);
+    color: var(--text-secondary);
+    font-weight: 600;
+  }
+  :root[data-template="immersive"] .db-filters .tag {
+    align-self: center;
+  }
+  :root[data-template="immersive"] .tab-content .db-filters .tag:not(.active) {
+    background: var(--surface);
+    box-shadow: var(--tpl-shadow-1);
+  }
+  :root[data-template="immersive"] .tag.active {
+    background: var(--accent);
+    color: var(--accent-contrast);
+  }
+  :root[data-template="immersive"] .badge {
+    background: var(--accent-soft);
+    color: var(--accent-text);
+    font-weight: 700;
+  }
+  :root[data-template="immersive"] .badge.favorite {
+    background: color-mix(in srgb, var(--tpl-coral) 14%, transparent);
+    color: var(--tpl-coral);
+  }
+
+  /* ── 牌堆首頁 ── */
+  :root[data-template="immersive"] .deck-hero {
+    margin: var(--space-2) 0 var(--space-6);
+  }
+  :root[data-template="immersive"] .deck-hero-stack {
+    --hero-card-w: clamp(84px, 28vw, 124px);
+    isolation: isolate;
+  }
+  /* 牌堆後面的柔光 */
+  :root[data-template="immersive"] .deck-hero-stack::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: 12% 0 -4%;
+    border-radius: 50%;
+    background: radial-gradient(closest-side, var(--tpl-glow), transparent);
+    pointer-events: none;
+  }
+  /* 牌背：內框一圈細線；最上面那張加上圓與十字的牌紋 */
+  :root[data-template="immersive"] .deck-hero-card {
+    border-radius: calc(var(--hero-card-w) * 0.14);
+    box-shadow: inset 0 0 0 6px var(--card-back), inset 0 0 0 7px var(--card-back-mark), 0 6px 14px rgba(0, 0, 0, 0.08);
+  }
+  :root[data-template="immersive"] .deck-hero-top {
+    --glyph: calc(var(--hero-card-w) * 0.36);
+    background:
+      radial-gradient(circle closest-side, transparent calc(100% - 1.5px), var(--card-back-edge) calc(100% - 1.5px) 100%, transparent 100%) center / var(--glyph) var(--glyph) no-repeat,
+      linear-gradient(var(--card-back-edge), var(--card-back-edge)) center / 1.5px var(--glyph) no-repeat,
+      linear-gradient(var(--card-back-edge), var(--card-back-edge)) center / var(--glyph) 1.5px no-repeat,
+      var(--card-back);
+    box-shadow: var(--card-lift), inset 0 0 0 6px var(--card-back), inset 0 0 0 7px var(--card-back-mark);
+    translate: 0 0;
+    transition: transform var(--duration-slow) var(--ease-out), opacity var(--duration-slow) var(--ease-out), translate var(--duration-normal) var(--ease-out);
+  }
+  /* 滑鼠移上牌堆：最上面那張先浮起一點，暗示可以抽 */
+  @media (hover: hover) {
+    :root[data-template="immersive"] .deck-hero-stack:hover .deck-hero-top {
+      translate: 0 -8px;
+    }
+  }
+  :root[data-template="immersive"] .deck-hero-hint {
+    gap: var(--space-2);
+    font-size: 0.9375rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    :root[data-template="immersive"] .deck-hero-chevron {
+      animation: imm-nudge-up 1.8s var(--ease-out) infinite;
+    }
+  }
+
+  /* ── 牌陣方塊 ── */
+  :root[data-template="immersive"] .spread-tiles {
+    gap: 10px;
+  }
+  :root[data-template="immersive"] .spread-tiles-label {
+    font-weight: 700;
+  }
+  :root[data-template="immersive"] .spread-tile {
+    border-color: transparent;
+    border-radius: 20px;
+    background: var(--surface);
+    box-shadow: var(--tpl-shadow-1);
+    font-weight: 600;
+    transition: transform var(--duration-fast) var(--ease-out), background-color var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out);
+  }
+  :root[data-template="immersive"] .spread-tile:hover {
+    background: var(--surface-elevated);
+  }
+  :root[data-template="immersive"] .spread-tile:active {
+    transform: scale(0.95);
+  }
+  :root[data-template="immersive"] .spread-tile[aria-pressed="true"] {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    box-shadow: none;
+    font-weight: 800;
+  }
+  :root[data-template="immersive"] .spread-tile-more {
+    color: var(--text-secondary);
+  }
+
+  /* 主要按鈕列：開始占卜填滿，分享是旁邊的小膠囊 */
+  :root[data-template="immersive"] .form-section .btn-group {
+    flex-wrap: nowrap;
+  }
+  :root[data-template="immersive"] .form-section .btn-group .btn-primary {
+    min-width: 0;
+  }
+
+  /* 關於此牌陣 */
+  :root[data-template="immersive"] .spread-info {
+    border-radius: var(--tpl-r-xl);
+    padding: var(--space-6) var(--space-5);
+  }
+  :root[data-template="immersive"] .spread-position-num {
+    color: var(--tpl-coral);
+    font-weight: 800;
+  }
+
+  /* ── 憑直覺選牌：牌背改成本版型的綠色牌背，選中的牌翻成珊瑚框 ── */
+  :root[data-template="immersive"] .pick-progress {
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: var(--tpl-shadow-1);
+    font-weight: 700;
+  }
+  :root[data-template="immersive"] .pick-grid {
+    gap: 10px;
+  }
+  :root[data-template="immersive"] .pick-card {
+    border-radius: 9px;
+    background:
+      radial-gradient(circle closest-side, transparent calc(100% - 1.5px), var(--card-back-mark) calc(100% - 1.5px) 100%, transparent 100%) center / 46% 27% no-repeat,
+      var(--card-back);
+    box-shadow: inset 0 0 0 3px var(--card-back), inset 0 0 0 4px var(--card-back-mark), 0 3px 8px rgba(0, 0, 0, 0.1);
+    color: var(--tpl-on-back);
+  }
+  @media (hover: hover) {
+    :root[data-template="immersive"] .pick-card:hover:not(:disabled) {
+      box-shadow: inset 0 0 0 3px var(--card-back), inset 0 0 0 4px var(--card-back-mark), var(--tpl-shadow-2);
+    }
+  }
+  :root[data-template="immersive"] .pick-card:active:not(:disabled) {
+    transform: scale(0.94);
+  }
+  :root[data-template="immersive"] .pick-card.selected {
+    background: var(--tpl-card-face);
+    color: var(--tpl-card-ink);
+    box-shadow: inset 0 0 0 2px var(--tpl-card-active-edge), var(--tpl-shadow-2);
+    font-weight: 800;
+  }
+
+  /* ── 占卜結果：每張牌是浮起的圓角牌，牌位用珊瑚色 ── */
+  :root[data-template="immersive"] .card {
+    border-radius: var(--tpl-r-xl);
+  }
+  @media (hover: hover) {
+    :root[data-template="immersive"] .card:hover {
+      box-shadow: var(--tpl-shadow-2);
+    }
+  }
+  :root[data-template="immersive"] .card:active {
+    transform: scale(0.98);
+  }
+  :root[data-template="immersive"] .card-position {
+    color: var(--tpl-coral);
+    font-weight: 800;
+  }
+  :root[data-template="immersive"] .card-name {
+    font-weight: 900;
+  }
+  :root[data-template="immersive"] .card.bottom {
+    background: var(--bg-secondary);
+    box-shadow: inset 0 0 0 1.5px var(--divider);
+  }
+  :root[data-template="immersive"] .insight-panel {
+    margin: var(--space-8) 0;
+    padding: var(--space-6) var(--space-5);
+    border-radius: var(--tpl-r-xl);
+  }
+  :root[data-template="immersive"] .insight-tag {
+    color: var(--accent-text);
+    font-weight: 800;
+  }
+  :root[data-template="immersive"] .results .btn-group {
+    margin-top: var(--space-6);
+  }
+
+  /* ── 逐張解讀（限時動態）：上方進度條、大張牌、兩側露出鄰張牌、下方是一張解讀「抽屜」 ── */
+  :root[data-template="immersive"]:not([data-template="minimal"]) .rd-paged {
+    margin-top: var(--space-8);
+    padding-top: 0;
+    border-top: none;
+  }
+  :root[data-template="immersive"]:not([data-template="minimal"]) .rd-paged .rd-header {
+    justify-content: center;
+    margin-bottom: var(--space-3);
+  }
+  :root[data-template="immersive"]:not([data-template="minimal"]) .rd-paged .rd-title {
+    font-size: 1.25rem;
+    font-weight: 900;
+  }
+  :root[data-template="immersive"]:not([data-template="minimal"]) .rd-story {
+    gap: 5px;
+  }
+  :root[data-template="immersive"]:not([data-template="minimal"]) .rd-story > span {
+    height: 5px;
+    border-radius: 3px;
+    transition: background-color var(--duration-normal) var(--ease-out);
+  }
+  :root[data-template="immersive"]:not([data-template="minimal"]) .rd-paged .rd-item {
+    padding-block: var(--space-2) 0;
+    gap: var(--space-4);
+  }
+  :root[data-template="immersive"]:not([data-template="minimal"]) .rd-story-card {
+    position: relative;
+    isolation: isolate;
+    margin: var(--space-3) 0 var(--space-1);
+  }
+  /* 兩側露出的鄰張牌：第一張左邊、最後一張右邊沒有 */
+  :root[data-template="immersive"]:not([data-template="minimal"]) .rd-story-card::before,
+  :root[data-template="immersive"]:not([data-template="minimal"]) .rd-story-card::after {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    top: 9%;
+    bottom: 9%;
+    width: 120px;
+    border-radius: 22px;
+    background: var(--tpl-peek);
+    opacity: 0.8;
+  }
+  :root[data-template="immersive"]:not([data-template="minimal"]) .rd-story-card::before {
+    left: max(0px, calc(50% - min(28vw, 112px) - 56px));
+  }
+  :root[data-template="immersive"]:not([data-template="minimal"]) .rd-story-card::after {
+    right: max(0px, calc(50% - min(28vw, 112px) - 56px));
+  }
+  :root[data-template="immersive"]:not([data-template="minimal"]) .rd-slide:first-child .rd-story-card::before,
+  :root[data-template="immersive"]:not([data-template="minimal"]) .rd-slide:last-child .rd-story-card::after {
+    display: none;
+  }
+  :root[data-template="immersive"]:not([data-template="minimal"]) .rd-story-card :is(svg, img) {
+    position: relative;
+    border: none;
+    border-radius: 18px;
+    box-shadow: var(--tpl-lift-strong);
+  }
+  /* 文字模式的大張牌：牌面色、粗框，牌名上方畫一個圓與十字的牌紋 */
+  :root[data-template="immersive"]:not([data-template="minimal"]) .rd-story-blank {
+    position: relative;
+    flex-direction: column;
+    gap: var(--space-4);
+    border: 2px solid var(--tpl-card-edge);
+    border-radius: 24px;
+    background: var(--tpl-card-face);
+    box-shadow: var(--tpl-lift-strong);
+    color: var(--tpl-card-ink);
+    font-size: 1.625rem;
+    font-weight: 900;
+    letter-spacing: 0.04em;
+  }
+  :root[data-template="immersive"]:not([data-template="minimal"]) .rd-story-blank::before {
+    content: "";
+    width: 72px;
+    height: 72px;
+    background:
+      radial-gradient(circle closest-side, transparent calc(100% - 1.5px), var(--tpl-card-ink) calc(100% - 1.5px) 100%, transparent 100%),
+      linear-gradient(var(--tpl-card-ink), var(--tpl-card-ink)) center / 1.5px 100% no-repeat,
+      linear-gradient(var(--tpl-card-ink), var(--tpl-card-ink)) center / 100% 1.5px no-repeat;
+    opacity: 0.55;
+  }
+  /* 牌位：大張牌下方置中，珊瑚色 */
+  :root[data-template="immersive"]:not([data-template="minimal"]) .rd-paged .rd-pos {
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding-left: 0;
+  }
+  :root[data-template="immersive"]:not([data-template="minimal"]) .rd-paged .rd-num {
+    width: 28px;
+    height: 28px;
+    border: 1.5px solid var(--tpl-coral);
+    color: var(--tpl-coral);
+    font-weight: 800;
+  }
+  :root[data-template="immersive"]:not([data-template="minimal"]) .rd-paged .rd-pos-name {
+    color: var(--tpl-coral);
+    font-size: 1rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+  }
+  :root[data-template="immersive"]:not([data-template="minimal"]) .rd-paged .rd-pos-desc {
+    max-width: 30em;
+    margin-inline: auto;
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+  }
+  /* 解讀抽屜：表面色、上方圓角大、頂端一條把手 */
+  :root[data-template="immersive"]:not([data-template="minimal"]) .rd-paged .rd-body {
+    position: relative;
+    padding: var(--space-8) var(--space-5) var(--space-5);
+    border-radius: 30px;
+    background: var(--surface);
+    box-shadow: var(--tpl-shadow-1), inset 0 1px 0 var(--tpl-hairline);
+  }
+  :root[data-template="immersive"]:not([data-template="minimal"]) .rd-paged .rd-body::before {
+    content: "";
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    width: 44px;
+    height: 5px;
+    margin-left: -22px;
+    border-radius: 3px;
+    background: var(--pager-track);
+  }
+  :root[data-template="immersive"]:not([data-template="minimal"]) .rd-paged .rd-card-name {
+    font-size: 1.375rem;
+    font-weight: 900;
+  }
+  :root[data-template="immersive"] .rd-more {
+    margin-block: 0;
+    min-height: 36px;
+    padding: 0 var(--space-4);
+    border-radius: var(--radius-full);
+    background: var(--tpl-chip);
+    color: var(--accent-text);
+    font-weight: 700;
+    text-decoration: none;
+  }
+  :root[data-template="immersive"] .rd-more:hover {
+    background: var(--tpl-chip-hover);
+    color: var(--accent-text);
+  }
+  /* 關鍵詞：薄荷色小膠囊（藏起文字分隔號，報讀與複製不受影響） */
+  :root[data-template="immersive"] .rd-kw {
+    margin-top: var(--space-3);
+  }
+  :root[data-template="immersive"] .rd-kw .kw-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    font-size: 0;
+  }
+  :root[data-template="immersive"] .rd-kw .kw {
+    padding: 6px 12px;
+    border-radius: 12px;
+    background: var(--accent-soft);
+    color: var(--text);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+  /* 「在這個位置」：這張牌放在這個牌位的讀法，薄荷底的小提示卡 */
+  :root[data-template="immersive"] .rd-role {
+    display: grid;
+    gap: var(--space-1);
+    margin-top: var(--space-4);
+    padding: var(--space-3) var(--space-4);
+    border-radius: 18px;
+    background: var(--accent-soft);
+    font-size: 0.9375rem;
+    line-height: 1.7;
+    color: var(--text);
+  }
+  :root[data-template="immersive"] .rd-role-label {
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    color: var(--accent-text);
+  }
+  /* 牌義開合鈕：像分頁的膠囊，展開時反色 */
+  :root[data-template="immersive"] .rd-text {
+    margin-top: var(--space-4);
+  }
+  :root[data-template="immersive"] .rd-text-title {
+    min-height: 40px;
+    padding: 0 var(--space-4);
+    border-radius: 20px;
+    background: var(--tpl-chip);
+    color: var(--text);
+    font-size: 0.8125rem;
+    font-weight: 700;
+  }
+  :root[data-template="immersive"] .rd-text-title:hover {
+    color: var(--text);
+    background: var(--tpl-chip-hover);
+  }
+  :root[data-template="immersive"] .rd-text[open] > .rd-text-title {
+    background: var(--text);
+    color: var(--bg);
+    margin-bottom: var(--space-3);
+  }
+  :root[data-template="immersive"] .rd-text-body {
+    font-size: 0.9375rem;
+    color: var(--text-body);
+  }
+  /* 上一張／下一張：圓潤的膠囊，下一張填滿 */
+  :root[data-template="immersive"]:not([data-template="minimal"]) .rd-pager-nav {
+    margin-top: var(--space-5);
+  }
+  :root[data-template="immersive"]:not([data-template="minimal"]) .rd-pager-btn {
+    min-height: 52px;
+    border-radius: 26px;
+  }
+  :root[data-template="immersive"]:not([data-template="minimal"]) .rd-pager-hint {
+    font-weight: 600;
+  }
+
+  /* ── 記錄 ── */
+  :root[data-template="immersive"] .history-controls .btn {
+    background-color: var(--surface);
+    border-color: transparent;
+    box-shadow: var(--tpl-shadow-1);
+  }
+  :root[data-template="immersive"] #filterFavorite[aria-pressed="true"] {
+    background: var(--accent);
+    color: var(--accent-contrast);
+  }
+  :root[data-template="immersive"] .history-list {
+    gap: var(--space-4);
+  }
+  :root[data-template="immersive"] .history-item {
+    border-radius: var(--tpl-r-lg);
+    overflow-clip-margin: 28px;
+    transition: transform var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out);
+  }
+  @media (hover: hover) {
+    :root[data-template="immersive"] .history-item:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--tpl-shadow-2);
+    }
+  }
+  :root[data-template="immersive"] .history-spread {
+    font-weight: 800;
+  }
+  :root[data-template="immersive"] .history-time {
+    color: var(--tpl-coral);
+    font-weight: 600;
+  }
+  :root[data-template="immersive"] .history-action {
+    background: var(--tpl-chip);
+    font-weight: 600;
+    color: var(--text);
+  }
+  :root[data-template="immersive"] .history-action:hover {
+    background: var(--tpl-chip-hover);
+  }
+  :root[data-template="immersive"] .history-action.danger {
+    background: transparent;
+    color: var(--danger-text);
+  }
+  :root[data-template="immersive"] .history-fav[aria-pressed="true"] {
+    color: var(--tpl-coral);
+  }
+  /* 空狀態：一小疊牌背 */
+  :root[data-template="immersive"] .history-empty {
+    padding: var(--space-12) var(--space-6);
+    border-radius: var(--tpl-r-xl);
+    background: var(--surface);
+    box-shadow: var(--tpl-shadow-1);
+  }
+  :root[data-template="immersive"] .history-empty::before {
+    content: "";
+    display: block;
+    width: 52px;
+    height: 82px;
+    margin: 0 auto var(--space-5);
+    border-radius: 10px;
+    background:
+      radial-gradient(circle closest-side, transparent calc(100% - 1.5px), var(--card-back-mark) calc(100% - 1.5px) 100%, transparent 100%) center / 22px 22px no-repeat,
+      var(--card-back);
+    box-shadow: inset 0 0 0 4px var(--card-back), inset 0 0 0 5px var(--card-back-mark), 10px 4px 0 -2px var(--tpl-peek), -10px 4px 0 -2px var(--tpl-peek);
+    transform: rotate(-4deg);
+  }
+
+  /* ── 學習 ── */
+  :root[data-template="immersive"] .learn-toolbar select {
+    background-color: var(--surface);
+    box-shadow: var(--tpl-shadow-1);
+    border-color: transparent;
+  }
+  /* 閃卡正面是一張牌背：點一下翻面 */
+  :root[data-template="immersive"] .flashcard {
+    min-height: 300px;
+    border-radius: var(--tpl-r-xl);
+    transition: transform var(--duration-normal) var(--ease-out), box-shadow var(--duration-normal) var(--ease-out), background-color var(--duration-normal) var(--ease-out);
+  }
+  /* 牌是直的：寬螢幕上閃卡不拉成橫條 */
+  :root[data-template="immersive"] .flashcard {
+    max-width: 440px;
+    margin-inline: auto;
+  }
+  :root[data-template="immersive"] .flashcard.flipped {
+    max-width: 760px;
+  }
+  :root[data-template="immersive"] .learn-toolbar select {
+    width: auto;
+    min-width: min(100%, 240px);
+  }
+  :root[data-template="immersive"] .flashcard:not(.flipped) {
+    background: var(--card-back);
+    color: var(--tpl-on-back);
+    box-shadow: var(--card-lift), inset 0 0 0 8px var(--card-back), inset 0 0 0 9.5px var(--card-back-mark);
+  }
+  :root[data-template="immersive"] .flashcard:not(.flipped) :is(.flash-name, .flash-sub, .flash-hint) {
+    color: var(--tpl-on-back);
+  }
+  :root[data-template="immersive"] .flashcard:not(.flipped) :is(.flash-sub, .flash-hint) {
+    color: var(--tpl-on-back-muted);
+  }
+  :root[data-template="immersive"] .flashcard:not(.flipped) .flash-hint {
+    display: inline-block;
+    margin-top: var(--space-6);
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-full);
+    background: rgba(0, 0, 0, 0.2);
+    color: var(--tpl-on-back);
+    font-weight: 700;
+  }
+  @media (hover: hover) {
+    :root[data-template="immersive"] .flashcard:not(.flipped):hover {
+      transform: translateY(-4px) rotate(-0.6deg);
+    }
+  }
+  :root[data-template="immersive"] .flashcard:not(.flipped):active {
+    transform: scale(0.98);
+  }
+  :root[data-template="immersive"] .flashcard:focus-visible {
+    outline: 2.5px solid var(--accent);
+    outline-offset: 4px;
+  }
+  :root[data-template="immersive"] .flash-name {
+    font-weight: 900;
+  }
+  :root[data-template="immersive"] .quiz-card {
+    border-radius: var(--tpl-r-xl);
+  }
+  :root[data-template="immersive"] .quiz-prompt {
+    font-weight: 800;
+  }
+  :root[data-template="immersive"] .quiz-option {
+    border: 1.5px solid transparent;
+    border-radius: 18px;
+    background: var(--tpl-chip);
+    font-weight: 600;
+    transition: transform var(--duration-fast) var(--ease-out), background-color var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out);
+  }
+  :root[data-template="immersive"] .quiz-option:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+  @media (hover: hover) {
+    :root[data-template="immersive"] .quiz-option:not(:disabled):hover {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+    }
+  }
+  :root[data-template="immersive"] .learn-mastery-section {
+    margin-top: var(--space-8);
+    padding: var(--space-6) var(--space-5);
+    border-top: none;
+    border-radius: var(--tpl-r-xl);
+  }
+  :root[data-template="immersive"] .mastery-cell {
+    border-radius: 6px;
+    border-color: var(--control-border);
+  }
+  :root[data-template="immersive"] .quiz-explain {
+    border: none;
+    border-radius: var(--tpl-r-lg);
+    background: var(--surface);
+    box-shadow: var(--tpl-shadow-1);
+  }
+  :root[data-template="immersive"] .learn-empty {
+    border-radius: var(--tpl-r-xl);
+  }
+
+  /* ── 資料庫 ── */
+  :root[data-template="immersive"] .search-field {
+    background: var(--bg);
+    border-bottom: none;
+  }
+  :root[data-template="immersive"] .search-field input[type=search] {
+    border-radius: var(--radius-full);
+  }
+  :root[data-template="immersive"] .card-db-grid {
+    gap: var(--space-3);
+  }
+  :root[data-template="immersive"] .card-db-item {
+    padding: var(--space-4);
+    border-radius: var(--tpl-r-lg);
+    overflow-clip-margin: 28px;
+    transition: transform var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out);
+  }
+  @media (hover: hover) {
+    :root[data-template="immersive"] .card-db-item:hover {
+      box-shadow: var(--tpl-shadow-2);
+    }
+  }
+  :root[data-template="immersive"] .card-db-item:active {
+    transform: scale(0.97);
+  }
+  :root[data-template="immersive"] .card-db-number {
+    color: var(--tpl-coral);
+    font-weight: 800;
+  }
+  :root[data-template="immersive"] .card-db-name {
+    font-weight: 900;
+  }
+  :root[data-template="immersive"] .card-db-hit {
+    border-radius: 12px;
+  }
+  :root[data-template="immersive"] mark {
+    background: var(--accent-soft);
+    color: var(--text);
+    border-radius: 4px;
+  }
+  /* 符號：每個符號是一顆圓角按鈕，選中的是薄荷底＋薄荷框（和牌陣方塊一致） */
+  :root[data-template="immersive"] .sym-grid {
+    gap: 10px;
+  }
+  :root[data-template="immersive"] .sym-btn {
+    border: 1.5px solid transparent;
+    border-radius: 18px;
+    background: var(--surface);
+    box-shadow: var(--tpl-shadow-1);
+    transition: transform var(--duration-fast) var(--ease-out), background-color var(--duration-fast) var(--ease-out);
+  }
+  :root[data-template="immersive"] .sym-btn:hover {
+    border-color: transparent;
+    background: var(--surface-elevated);
+  }
+  :root[data-template="immersive"] .sym-btn:active {
+    transform: scale(0.96);
+  }
+  :root[data-template="immersive"] .sym-btn[aria-pressed="true"] {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    color: var(--text);
+    box-shadow: none;
+  }
+  :root[data-template="immersive"] .sym-btn[aria-pressed="true"] .sym-btn-count {
+    color: var(--accent-text);
+  }
+  :root[data-template="immersive"] .sym-btn-title {
+    font-weight: 700;
+  }
+  :root[data-template="immersive"] .sym-detail {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+  :root[data-template="immersive"] .sym-detail-title {
+    font-weight: 900;
+  }
+
+  /* 知識庫：每一段是一張可展開的圓角牌，沒有分隔線 */
+  :root[data-template="immersive"] .deck-history-heading {
+    border-bottom: none;
+    padding-bottom: var(--space-3);
+    font-size: 1.25rem;
+  }
+  :root[data-template="immersive"] .deck-history-group {
+    gap: var(--space-3);
+  }
+  :root[data-template="immersive"] .deck-history-item {
+    border-radius: 20px;
+    padding: 0 var(--space-5);
+  }
+  :root[data-template="immersive"] .deck-history-title {
+    min-height: 56px;
+    font-weight: 700;
+  }
+  :root[data-template="immersive"] .deck-history-title::after {
+    border-color: var(--accent-text);
+  }
+  :root[data-template="immersive"] .deck-history-item[open] {
+    box-shadow: var(--tpl-shadow-2), inset 0 1px 0 var(--tpl-hairline);
+  }
+  :root[data-template="immersive"] .deck-history-text {
+    color: var(--text-body);
+  }
+
+  /* ── 我的：個人牌、統計、設定 ── */
+  :root[data-template="immersive"] .me-hub {
+    padding-top: var(--space-5);
+  }
+  :root[data-template="immersive"] .profile-chip {
+    border-radius: 20px;
+    padding: var(--space-3) var(--space-4);
+    transition: transform var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out);
+  }
+  :root[data-template="immersive"] .profile-chip:hover {
+    box-shadow: var(--tpl-shadow-2);
+  }
+  :root[data-template="immersive"] .profile-chip:active {
+    transform: scale(0.96);
+  }
+  :root[data-template="immersive"] .profile-chip-label {
+    color: var(--tpl-coral);
+    font-weight: 800;
+  }
+  :root[data-template="immersive"] .profile-chip-name {
+    font-weight: 800;
+  }
+  :root[data-template="immersive"] .stat-card {
+    border-radius: var(--tpl-r-lg);
+  }
+  :root[data-template="immersive"] .trend-chart {
+    border: none;
+    border-radius: 18px;
+    background: var(--tpl-chip);
+  }
+  :root[data-template="immersive"] .trend-bar {
+    border-radius: 4px 4px 1px 1px;
+    opacity: 0.85;
+  }
+  :root[data-template="immersive"] .stat-value {
+    font-weight: 900;
+    color: var(--accent-text);
+  }
+  :root[data-template="immersive"] .settings-section {
+    margin-bottom: var(--space-5);
+    padding: var(--space-5) var(--space-4);
+    border-radius: var(--tpl-r-xl);
+  }
+  :root[data-template="immersive"] .settings-title {
+    padding-inline: var(--space-2);
+  }
+  :root[data-template="immersive"] .checkbox-item {
+    border-radius: 18px;
+  }
+  :root[data-template="immersive"] .checkbox-item:hover {
+    background: var(--tpl-chip);
+  }
+  :root[data-template="immersive"] .checkbox-item:has(input[type=radio]:checked) .checkbox-label {
+    font-weight: 700;
+  }
+  /* 開關：設定裡的勾選框畫成膠囊開關（仍是原生 checkbox，鍵盤與報讀不變） */
+  :root[data-template="immersive"] .settings-section .checkbox-item input[type=checkbox] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 46px;
+    height: 28px;
+    margin: 0;
+    border-radius: 14px;
+    background:
+      radial-gradient(circle closest-side, var(--tpl-knob-off) calc(100% - 4px), transparent calc(100% - 3.5px)) left center / 28px 28px no-repeat,
+      var(--control-border);
+    transition: background-position var(--duration-fast) var(--ease-out), background-color var(--duration-fast) var(--ease-out);
+  }
+  :root[data-template="immersive"] .settings-section .checkbox-item input[type=checkbox]:checked {
+    background:
+      radial-gradient(circle closest-side, var(--accent-contrast) calc(100% - 4px), transparent calc(100% - 3.5px)) right center / 28px 28px no-repeat,
+      var(--accent);
+  }
+  :root[data-template="immersive"] .settings-section .checkbox-item input[type=checkbox]:focus-visible {
+    outline-offset: 2px;
+  }
+  :root[data-template="immersive"] .profile-preview {
+    border-radius: 20px;
+  }
+
+  /* ── 頁尾：沒有分隔線，淡淡地收尾 ── */
+  :root[data-template="immersive"] .app-footer {
+    background: transparent;
+    border-top: none;
+  }
+  :root[data-template="immersive"] .footer-bottom {
+    border-top: none;
+  }
+  :root[data-template="immersive"] .footer-version {
+    background: var(--surface);
+    border-radius: var(--radius-full);
+  }
+
+  /* ── 視窗（抽屜／面板） ── */
+  :root[data-template="immersive"] .modal-overlay:not(.card-viewer) .modal {
+    border: none;
+    box-shadow: var(--tpl-shadow-2);
+  }
+  :root[data-template="immersive"] .modal-title {
+    font-weight: 900;
+  }
+  :root[data-template="immersive"] .modal-close {
+    width: 44px;
+    height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--tpl-chip);
+    color: var(--text);
+  }
+  :root[data-template="immersive"] .modal-close:hover {
+    background: var(--tpl-chip-hover);
+  }
+  :root[data-template="immersive"] .modal-close:active {
+    transform: scale(0.92);
+  }
+  /* 牌義區塊：圓角的淺色塊，本次抽到的那一面用薄荷底色 */
+  :root[data-template="immersive"] .meaning-block {
+    border: none;
+    border-radius: var(--tpl-r-lg);
+    background: var(--bg-secondary);
+  }
+  :root[data-template="immersive"] .meaning-block.active {
+    background: var(--accent-soft);
+  }
+  :root[data-template="immersive"] .meaning-block .tag {
+    background: var(--surface);
+  }
+  :root[data-template="immersive"] .meaning-drawn {
+    color: var(--accent-text);
+    font-weight: 700;
+  }
+  /* 牌陣選單：每個牌陣是一個圓角列，沒有分隔線；選中的是薄荷底 */
+  :root[data-template="immersive"] .spread-picker-group-title {
+    border-bottom: none;
+    color: var(--tpl-coral);
+    font-weight: 800;
+  }
+  :root[data-template="immersive"] .spread-picker-group {
+    gap: 4px;
+  }
+  :root[data-template="immersive"] .spread-option {
+    padding: var(--space-3) var(--space-4);
+    border-radius: 18px;
+  }
+  :root[data-template="immersive"] .spread-option + .spread-option::before {
+    content: none;
+  }
+  :root[data-template="immersive"] .spread-option:hover {
+    background: var(--tpl-chip);
+  }
+  :root[data-template="immersive"] .spread-option[aria-selected=true] {
+    background: var(--accent-soft);
+  }
+  :root[data-template="immersive"] .spread-option[aria-selected=true] .spread-option-name {
+    color: var(--text);
+    font-weight: 800;
+  }
+  :root[data-template="immersive"] .modal-actions .btn {
+    min-height: 52px;
+  }
+
+  /* 卡片詳情的內容區塊：段落之間不用分隔線，用留白分開；條列項目（符號、情境、相關牌、延伸閱讀、比較）各是一個圓角小塊 */
+  :root[data-template="immersive"] :is(.lore-block, .lore-entry, .systems-group + .systems-group) {
+    border-top: none;
+    margin-top: var(--space-6);
+    padding-top: 0;
+  }
+  :root[data-template="immersive"] .card-modal-actions {
+    border-top: none;
+    padding-top: var(--space-2);
+  }
+  :root[data-template="immersive"] :is(.icon-row, .context-row, .refs-rel, .lore-link-item) {
+    margin-top: var(--space-2);
+    padding: var(--space-3) var(--space-4);
+    border: none;
+    border-radius: 16px;
+    background: var(--tpl-chip);
+  }
+  :root[data-template="immersive"] :is(.icon-row, .context-row, .refs-rel):first-child {
+    margin-top: 0;
+    padding-top: var(--space-3);
+  }
+  :root[data-template="immersive"] :is(.icon-row, .refs-rel):last-child {
+    padding-bottom: var(--space-3);
+  }
+  :root[data-template="immersive"] .lore-link {
+    padding-block: var(--space-2);
+  }
+  :root[data-template="immersive"] .lore-link-item:hover {
+    background: var(--tpl-chip-hover);
+  }
+  :root[data-template="immersive"] :is(.icon-row, .context-row, .refs-rel) .tag {
+    background: var(--surface);
+  }
+  /* 偉特原文、反思與書寫提問：圓角的提示卡（不用左邊的豎線） */
+  :root[data-template="immersive"] .waite-terms {
+    padding: var(--space-4);
+    border-left: none;
+    border-radius: 18px;
+    background: var(--bg-secondary);
+    box-shadow: inset 0 0 0 1px var(--divider);
+  }
+  :root[data-template="immersive"] .reflection-block {
+    padding: var(--space-4) var(--space-5);
+    border-left: none;
+    border-radius: 20px;
+    background: var(--accent-soft);
+  }
+  :root[data-template="immersive"] .reflection-block .reflection-label {
+    color: var(--accent-text);
+    font-weight: 800;
+  }
+  /* 比較兩張牌：每一列是一個圓角小塊，列名用珊瑚色 */
+  :root[data-template="immersive"] .cmp-row {
+    margin-top: var(--space-2);
+    padding: var(--space-3) var(--space-4);
+    border-top: none;
+    border-radius: 16px;
+    background: var(--tpl-chip);
+  }
+  :root[data-template="immersive"] .cmp-row dt {
+    color: var(--tpl-coral);
+    font-weight: 800;
+  }
+  :root[data-template="immersive"] .cmp-row .tag {
+    background: var(--surface);
+  }
+  :root[data-template="immersive"] .cmp-name {
+    font-weight: 900;
+  }
+
+  /* ── 提示訊息：上方置中的圓角浮卡 ── */
+  :root[data-template="immersive"] .toast-container {
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    align-items: center;
+    width: max-content;
+    max-width: calc(100vw - var(--space-8));
+  }
+  :root[data-template="immersive"] .toast {
+    min-width: 0;
+    max-width: 100%;
+    border: none;
+    border-radius: 22px;
+    background: var(--surface-elevated);
+    box-shadow: var(--tpl-shadow-2);
+    transform: translateY(-24px) scale(0.96);
+  }
+  :root[data-template="immersive"] .toast.show {
+    transform: none;
+  }
+  :root[data-template="immersive"] .toast-message {
+    font-weight: 600;
+  }
+
+  /* ── 浮動圖示 dock：窄螢幕在下方置中，只顯示圖示；目前分頁展開成「圖示＋文字」的膠囊 ── */
+  :root[data-template="immersive"]:not([data-template="minimal"]) .tpl-nav {
+    left: 50%;
+    right: auto;
+    bottom: calc(var(--tpl-nav-gap) + env(safe-area-inset-bottom, 0px));
+    transform: translateX(-50%);
+    justify-content: center;
+    gap: 2px;
+    width: max-content;
+    max-width: calc(100vw - 16px);
+    min-height: var(--tpl-nav-h);
+    padding: 0 6px;
+    border: none;
+    border-radius: 30px;
+    box-shadow: var(--tpl-dock-shadow);
+  }
+  :root[data-template="immersive"]:not([data-template="minimal"]) .tpl-nav-item {
+    position: relative;
+    flex: none;
+    flex-direction: row;
+    gap: 8px;
+    width: 46px;
+    min-width: 44px;
+    height: 46px;
+    min-height: 44px;
+    padding: 0;
+    border-radius: 23px;
+    font-size: 0.875rem;
+    font-weight: 700;
+    transition: background-color var(--duration-normal) var(--ease-out), color var(--duration-normal) var(--ease-out), width var(--duration-normal) var(--ease-out);
+  }
+  :root[data-template="immersive"]:not([data-template="minimal"]) .tpl-nav-item:not([aria-current="page"]):hover {
+    background: color-mix(in srgb, var(--nav-fg) 14%, transparent);
+  }
+  :root[data-template="immersive"]:not([data-template="minimal"]) .tpl-nav-item:active {
+    transform: scale(0.92);
+  }
+  :root[data-template="immersive"]:not([data-template="minimal"]) .tpl-nav-item[aria-current="page"] {
+    width: auto;
+    padding: 0 16px 0 14px;
+    font-weight: 800;
+  }
+  :root[data-template="immersive"]:not([data-template="minimal"]) .tpl-nav-icon {
+    width: 21px;
+    height: 21px;
+  }
+  /* 沒選中的項目只顯示圖示：文字只是「看不見」，報讀照樣念 */
+  :root[data-template="immersive"]:not([data-template="minimal"]) .tpl-nav-item:not([aria-current="page"]) .tpl-nav-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  :root[data-template="immersive"]:not([data-template="minimal"]) .tpl-nav-label {
+    white-space: nowrap;
+  }
+  /* 滑鼠移上或鍵盤聚焦：文字以小提示框浮在圖示上方 */
+  @media (hover: hover) {
+    :root[data-template="immersive"]:not([data-template="minimal"]) .tpl-nav-item:not([aria-current="page"]):hover .tpl-nav-label {
+      width: auto;
+      height: auto;
+      overflow: visible;
+      clip-path: none;
+      bottom: calc(100% + 12px);
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 6px 10px;
+      border-radius: 10px;
+      background: var(--nav-bg);
+      color: var(--nav-fg);
+      box-shadow: var(--tpl-dock-shadow);
+      font-size: 0.75rem;
+      pointer-events: none;
+    }
+  }
+  :root[data-template="immersive"]:not([data-template="minimal"]) .tpl-nav-item:not([aria-current="page"]):focus-visible .tpl-nav-label {
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip-path: none;
+    bottom: calc(100% + 12px);
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 6px 10px;
+    border-radius: 10px;
+    background: var(--nav-bg);
+    color: var(--nav-fg);
+    box-shadow: var(--tpl-dock-shadow);
+    font-size: 0.75rem;
+    pointer-events: none;
+  }
+  :root[data-template="immersive"]:not([data-template="minimal"]) .tpl-nav-item:focus-visible {
+    outline: 2.5px solid currentColor;
+    outline-offset: -4px;
+  }
+}
+
+/* 手機：個人牌排成一列，可以左右滑動（每張靠齊左緣） */
+@media screen and (max-width: 639.98px) {
+  :root[data-template="immersive"] .me-hub .profile-row {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: var(--space-5);
+    scrollbar-width: none;
+    margin-inline: calc(var(--space-5) * -1);
+    padding: var(--space-1) var(--space-5) var(--space-4);
+  }
+  :root[data-template="immersive"] .me-hub .profile-row::-webkit-scrollbar {
+    display: none;
+  }
+  :root[data-template="immersive"] .me-hub .profile-chip {
+    flex: none;
+    scroll-snap-align: start;
+  }
+}
+
+/* 手機與平板：牌組選單縮成問題下方置中的小膠囊，牌堆更早出現（標籤只是看不見，報讀照樣念） */
+@media screen and (max-width: 1023.98px) {
+  :root[data-template="immersive"] #tabReading label[for="deckType"] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  :root[data-template="immersive"] #tabReading #deckType {
+    align-self: center;
+    width: auto;
+    max-width: 100%;
+    min-height: 44px;
+    padding: 0 var(--space-12) 0 var(--space-5);
+    border-radius: var(--radius-full);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    box-shadow: var(--tpl-shadow-1);
+  }
+}
+
+/* 很窄的手機（< 360px）：dock 收緊一點 */
+@media screen and (max-width: 359.98px) {
+  :root[data-template="immersive"]:not([data-template="minimal"]) .tpl-nav {
+    gap: 0;
+    padding: 0 4px;
+  }
+  :root[data-template="immersive"]:not([data-template="minimal"]) .tpl-nav-item {
+    width: 44px;
+  }
+  :root[data-template="immersive"]:not([data-template="minimal"]) .tpl-nav-item[aria-current="page"] {
+    padding: 0 12px;
+  }
+}
+
+/* 平板以上：個人牌與資料庫多一點留白；逐張解讀改成左牌右文 */
+@media screen and (min-width: 768px) {
+  :root[data-template="immersive"] .settings-section {
+    padding: var(--space-6);
+  }
+  :root[data-template="immersive"] .insight-panel {
+    padding: var(--space-8);
+  }
+  :root[data-template="immersive"]:not([data-template="minimal"]) .rd-paged .rd-item {
+    grid-template-columns: minmax(0, 300px) minmax(0, 1fr);
+    grid-template-areas: "card pos" "card body";
+    grid-template-rows: auto 1fr;
+    column-gap: var(--space-8);
+    align-items: start;
+  }
+  :root[data-template="immersive"]:not([data-template="minimal"]) .rd-paged .rd-story-card {
+    grid-area: card;
+    margin-top: var(--space-4);
+  }
+  :root[data-template="immersive"]:not([data-template="minimal"]) .rd-paged .rd-pos {
+    grid-area: pos;
+    justify-content: flex-start;
+    align-items: flex-start;
+    text-align: left;
+    flex-direction: row;
+    gap: var(--space-3);
+    padding-top: var(--space-4);
+  }
+  :root[data-template="immersive"]:not([data-template="minimal"]) .rd-paged .rd-pos-desc {
+    margin-inline: 0;
+  }
+  :root[data-template="immersive"]:not([data-template="minimal"]) .rd-paged .rd-body {
+    grid-area: body;
+    padding: var(--space-8) var(--space-7) var(--space-6);
+  }
+  /* 寬畫面：鄰張牌改成疊在後面、微微旋轉的一疊牌 */
+  :root[data-template="immersive"]:not([data-template="minimal"]) .rd-story-card::before,
+  :root[data-template="immersive"]:not([data-template="minimal"]) .rd-story-card::after {
+    top: 2%;
+    bottom: 2%;
+    left: calc(50% - min(28vw, 112px) + 8px);
+    right: auto;
+    width: calc(min(56vw, 224px) - 16px);
+    opacity: 1;
+    transform-origin: 50% 100%;
+  }
+  :root[data-template="immersive"]:not([data-template="minimal"]) .rd-story-card::before {
+    transform: rotate(-6deg);
+  }
+  :root[data-template="immersive"]:not([data-template="minimal"]) .rd-story-card::after {
+    transform: rotate(5deg);
+    opacity: 0.6;
+  }
+}
+
+/* 桌機：首頁左邊是大牌堆，右邊是問題、牌陣與按鈕；dock 變成左側的直立浮動膠囊 */
+@media screen and (min-width: 1024px) {
+  :root[data-template="immersive"] #tabReading .form-section {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas: "hero form" "hero tiles" "hero btns";
+    grid-template-rows: auto auto 1fr;
+    column-gap: var(--space-12);
+    align-items: start;
+  }
+  :root[data-template="immersive"] #tabReading .form-section > .form-grid {
+    grid-area: form;
+    grid-template-columns: 1fr;
+    gap: var(--space-5);
+    margin-bottom: var(--space-6);
+  }
+  :root[data-template="immersive"] #tabReading .form-field {
+    align-items: stretch;
+  }
+  :root[data-template="immersive"] #tabReading #question {
+    text-align: left;
+  }
+  :root[data-template="immersive"] #tabReading .form-section > .deck-hero {
+    grid-area: hero;
+    align-self: center;
+    margin: 0;
+    padding: var(--space-8) 0;
+  }
+  :root[data-template="immersive"] #tabReading .form-section > .deck-hero .deck-hero-stack {
+    --hero-card-w: 150px;
+  }
+  :root[data-template="immersive"] #tabReading .form-section > .spread-tiles {
+    grid-area: tiles;
+  }
+  :root[data-template="immersive"] #tabReading .form-section > .btn-group {
+    grid-area: btns;
+  }
+  :root[data-template="immersive"] .card-db-grid {
+    gap: var(--space-4);
+  }
+  /* 記錄排成兩欄的卡片牆 */
+  :root[data-template="immersive"] .history-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+  :root[data-template="immersive"] .history-list > :not(.history-item) {
+    grid-column: 1 / -1;
+  }
+
+  :root[data-template="immersive"]:not([data-template="minimal"]) .tpl-nav {
+    top: 50%;
+    bottom: auto;
+    left: 16px;
+    right: auto;
+    transform: translateY(-50%);
+    width: 72px;
+    max-width: none;
+    padding: 8px;
+    gap: 6px;
+    flex-direction: column;
+    border-radius: 36px;
+    border-right: none;
+  }
+  :root[data-template="immersive"]:not([data-template="minimal"]) .tpl-nav-item {
+    width: 56px;
+    height: 56px;
+    min-height: 56px;
+    border-radius: 28px;
+    flex-direction: column;
+    gap: 4px;
+  }
+  :root[data-template="immersive"]:not([data-template="minimal"]) .tpl-nav-item[aria-current="page"] {
+    width: 56px;
+    height: auto;
+    padding: 12px 0;
+    font-size: 0.75rem;
+  }
+  @media (hover: hover) {
+    :root[data-template="immersive"]:not([data-template="minimal"]) .tpl-nav-item:not([aria-current="page"]):hover .tpl-nav-label {
+      bottom: auto;
+      top: 50%;
+      left: calc(100% + 14px);
+      transform: translateY(-50%);
+    }
+  }
+  :root[data-template="immersive"]:not([data-template="minimal"]) .tpl-nav-item:not([aria-current="page"]):focus-visible .tpl-nav-label {
+    bottom: auto;
+    top: 50%;
+    left: calc(100% + 14px);
+    transform: translateY(-50%);
+  }
+}
+
+@keyframes imm-nudge-up {
+  0%, 100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  50% {
+    transform: translateY(-6px);
+    opacity: 0.6;
+  }
+}

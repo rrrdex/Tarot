@@ -38,9 +38,12 @@ import {
 } from './state.js';
 import { readBtn, readBtnText, resultsEl, spreadTypeEl } from './dom.js';
 import { LAYOUT_IMG_SIZES, renderCard, visualStyle } from './render.js';
-import { loadDeck, loadMeaningTexts, loadedMeaningTexts } from './lazy.js';
+import { loadContexts, loadDeck, loadMeaningTexts, loadedContexts, loadedMeaningTexts } from './lazy.js';
+import { positionRole } from './position-roles.js';
 import { cardMeaningText, keywordsFor } from './meanings.js';
 import { generateInsight } from './insight.js';
+import { enhanceReadingPager } from './pager.js';
+import { haptic } from './haptics.js';
 import * as storage from './storage.js';
 
 const DECKS = {
@@ -130,7 +133,11 @@ export function performReading(seedOverride, save = true, picks = null, opts = {
   const interactive = storage.get('interactiveDraw') !== 'false';
   if (!interactive) {
     setReadBusy(true);
-    setTimeout(() => completeReading(cfg, firstN(), true, token), 500);
+    setTimeout(() => {
+      // 直接翻出結果（不親手選牌）：翻開時給一下觸覺回饋
+      if (token === readingToken) haptic();
+      completeReading(cfg, firstN(), true, token);
+    }, 500);
     return;
   }
   renderCardSelection(cfg, token);
@@ -207,6 +214,7 @@ function selectPick(idx, btn) {
   const cfg = pendingReading;
   if (!cfg || cfg.picks.length >= cfg.positions.length) return;
   cfg.picks.push(idx);
+  haptic();
   const order = cfg.picks.length;
   if (btn) {
     const hadFocus = document.activeElement === btn;
@@ -352,6 +360,8 @@ ${insightHTML}
 </div>
 `;
   bindReadingDetail();
+  // 新版型：逐張解讀改成一次一張的翻頁器（簡約版型維持清單）
+  enhanceReadingPager(resultsEl.querySelector('.reading-detail'), [...drawnCards, bottomCard].filter(Boolean));
 }
 function oriLabel(c) {
   return t(orientationNames[c.orientation] || c.orientation);
@@ -363,6 +373,22 @@ function positionDesc(pos) {
   const key = `${pos}.desc`;
   const desc = t(key);
   return desc !== key ? desc : '';
+}
+// 牌位屬於建議、阻礙或結果時，這張牌放在這種位置的讀法（contexts.js 的 positions）。
+// 情境資料另外打包：還沒載入就回傳 null，由 fillRoleTexts 補上；沒有讀法時回傳空字串
+function roleText(c) {
+  const role = positionRole(c.position);
+  if (!role) return '';
+  const ctx = loadedContexts();
+  if (!ctx) return null;
+  const text = ctx.cardContexts?.[c.nameKey]?.positions?.[role]?.[c.orientation];
+  return typeof text === 'string' ? text : '';
+}
+function roleHTML(c) {
+  const text = roleText(c);
+  if (text === '') return '';
+  // 還在載入時先藏起來（這段只是補充，不放「載入中」），載到後填字並顯示；載不到就整段拿掉
+  return `<p class="rd-role"${text === null ? ` hidden data-rd-role="${escapeHTML(c.nameKey)}" data-orientation="${escapeHTML(c.orientation)}" data-position="${escapeHTML(c.position)}"` : ''}><span class="rd-role-label">${escapeHTML(t('reading.detail.role'))}</span><span class="rd-role-text">${escapeHTML(text || '')}</span></p>`;
 }
 function detailItemHTML(c, num, open) {
   const ori = oriLabel(c);
@@ -387,6 +413,7 @@ ${desc ? `<p class="rd-pos-desc">${escapeHTML(desc)}</p>` : ''}
 <button type="button" class="rd-more" data-action="openCardModal" data-card="${escapeHTML(c.nameKey)}" data-orientation="${escapeHTML(c.orientation)}" aria-label="${escapeHTML(t('reading.detail.more.label', { name: c.name, ori }))}">${escapeHTML(t('reading.detail.more'))}</button>
 </div>
 ${keywords.length ? `<p class="rd-kw">${keywordList(keywords)}</p>` : ''}
+${roleHTML(c)}
 ${(text || pending) ? `
 <details class="rd-text"${open ? ' open' : ''}>
 <summary class="rd-text-title">${escapeHTML(t('reading.detail.text', { ori }))}</summary>
@@ -432,12 +459,29 @@ function fillDetailTexts() {
   };
   loadMeaningTexts().then(() => fill(true), () => fill(false));
 }
+function fillRoleTexts() {
+  if (!resultsEl.querySelector('[data-rd-role]')) return;
+  const fill = (ok) => {
+    resultsEl.querySelectorAll('[data-rd-role]').forEach(p => {
+      const text = ok ? roleText({ nameKey: p.dataset.rdRole, orientation: p.dataset.orientation, position: p.dataset.position }) : '';
+      if (!text) {
+        p.remove();
+        return;
+      }
+      p.removeAttribute('data-rd-role');
+      p.querySelector('.rd-role-text').textContent = text;
+      p.hidden = false;
+    });
+  };
+  loadContexts().then(() => fill(true), () => fill(false));
+}
 function syncToggleAll(btn, list) {
   const allOpen = Array.from(list.querySelectorAll('details')).every(d => d.open);
   btn.textContent = t(allOpen ? 'reading.detail.collapseAll' : 'reading.detail.expandAll');
 }
 function bindReadingDetail() {
   fillDetailTexts();
+  fillRoleTexts();
   const btn = resultsEl.querySelector('.rd-toggle-all');
   const list = document.getElementById('readingDetailList');
   if (!btn || !list) return;
@@ -461,9 +505,13 @@ window.addEventListener('afterprint', () => {
   printOpened = [];
 });
 function cardLine(c) {
-  const line = `${t(c.position)}：${c.name}（${oriLabel(c)}）`;
+  const lines = [`${t(c.position)}：${c.name}（${oriLabel(c)}）`];
   const keywords = keywordsFor(c.nameKey, c.orientation);
-  return keywords.length ? `${line}\n${t('reading.copy.keywords', { kw: keywords.join('、') })}` : line;
+  if (keywords.length) lines.push(t('reading.copy.keywords', { kw: keywords.join('、') }));
+  // 牌位屬於建議、阻礙或結果時附上這張牌在這種位置的讀法；情境資料還沒載入（或離線）時只少這一行
+  const role = roleText(c);
+  if (role) lines.push(t('reading.copy.role', { text: role }));
+  return lines.join('\n');
 }
 export function copyResults() {
   const { spreadName, question, drawnCards, bottomCard } = lastReadingData;

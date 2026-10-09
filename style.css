@@ -88,6 +88,12 @@
   --tracking-wider: 0.05em;
   --tracking-widest: 0.1em;
   --favorite: #f5b301;
+  /* 統計圓餅圖的配色（stats.js 讀取；新版型可各自覆寫） */
+  --chart-1: #007aff;
+  --chart-2: #34c759;
+  --chart-3: #ff9500;
+  --chart-4: #ff3b30;
+  --chart-5: #af52de;
   --favorite-stroke: #b07800;
   --heading-2: 22px;
   --heading-3: 17px;
@@ -2716,12 +2722,15 @@ select.btn {
 .db-filters {
   display: flex;
   flex-wrap: wrap;
+  /* 「對應」那組（文字＋下拉選單）比標籤高：各組不拉伸到同一列的高度，標籤維持膠囊形 */
+  align-items: center;
   gap: var(--space-2) var(--space-4);
   margin-bottom: var(--space-4);
 }
 .db-filter-group {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: var(--space-2);
 }
 /* 兩組排在同一列時用分隔線隔開，兩個「全部」才分得出是哪一組 */
@@ -3373,9 +3382,10 @@ input[type=search] {
 .spread-option[aria-selected=true] .spread-option-check {
   opacity: 1;
 }
+/* 提示訊息排在頂端標題列下方，不蓋住主題切換鈕 */
 .toast-container {
   position: fixed;
-  top: var(--space-6);
+  top: calc(var(--header-h) + var(--space-3));
   right: var(--space-5);
   z-index: var(--z-toast);
   display: flex;
@@ -3386,14 +3396,14 @@ input[type=search] {
 }
 @media (min-width: 640px) {
   .toast-container {
-    top: var(--space-8);
+    top: calc(var(--header-h) + var(--space-4));
     right: var(--space-6);
     max-width: 400px;
   }
 }
 @media (min-width: 768px) {
   .toast-container {
-    top: var(--space-10);
+    top: calc(var(--header-h) + var(--space-5));
     right: var(--space-8);
     max-width: 420px;
   }
@@ -4732,6 +4742,420 @@ button:focus-visible,
   height: 14px;
   cursor: default;
   pointer-events: none;
+}
+/* ── 卡片詳情：情境分頁的「放在不同牌位」與「書寫提問」 ── */
+.ctx-positions {
+  margin-top: var(--space-6);
+}
+.ctx-pos-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-3);
+}
+.ctx-pos-head .context-title {
+  margin-bottom: 0;
+}
+.segmented.ctx-pos-toggle {
+  margin: 0;
+}
+.ctx-pos-toggle .seg-item {
+  flex: none;
+  min-height: 32px;
+  padding-inline: var(--space-4);
+  font-size: var(--text-xs);
+}
+.ctx-pos-ori {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--text-secondary);
+}
+.ctx-pos-list {
+  margin: 0;
+}
+.ctx-pos-list dd {
+  margin: 0;
+}
+@media (min-width: 640px) {
+  .ctx-pos-list .context-row {
+    grid-template-columns: 3em minmax(0, 1fr);
+  }
+}
+.journal-block {
+  margin-top: var(--space-5);
+}
+.journal-list {
+  margin: 0;
+  padding-left: 1.4em;
+  display: grid;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: var(--leading-relaxed);
+}
+.journal-list li::marker {
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+/* ── 卡片詳情：源流分頁的相關的牌、其他牌系的名稱、畫面上的符號 ── */
+.refs-related,
+.refs-symbols {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.refs-rel {
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--divider);
+}
+.refs-rel:first-child {
+  padding-top: 0;
+  border-top: none;
+}
+.refs-rel:last-child {
+  padding-bottom: 0;
+}
+.refs-rel-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+}
+/* 關係（相似、對照…）只是標記，比可點的標籤小一號 */
+.tag.refs-kind {
+  flex: none;
+  padding: 2px var(--space-2);
+  font-size: var(--text-xs);
+  border-color: var(--divider);
+  background: transparent;
+  color: var(--text-secondary);
+}
+.text-link.refs-rel-card {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  font-size: var(--text-base);
+}
+.refs-rel-note {
+  margin-top: var(--space-1);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: var(--leading-relaxed);
+}
+.refs-names-alt {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+}
+.refs-help {
+  margin-top: var(--space-2);
+}
+.refs-help-title {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 32px;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--text-secondary);
+  cursor: pointer;
+  list-style: none;
+}
+.refs-help-title::-webkit-details-marker {
+  display: none;
+}
+.refs-help-title::after {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+.refs-help[open] > .refs-help-title::after {
+  transform: translateY(1px) rotate(225deg);
+}
+.refs-help .waite-terms-note {
+  margin-top: var(--space-2);
+}
+.refs-timing-note {
+  margin-top: var(--space-2);
+}
+/* 符號名（前往資料庫的按鈕）與它在畫面上的位置排成兩欄，位置文字對齊 */
+.refs-symbols {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: var(--space-2) var(--space-3);
+  align-items: baseline;
+}
+.refs-sym {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  align-items: baseline;
+}
+.refs-sym .tag {
+  justify-self: start;
+  font-family: inherit;
+}
+.refs-sym-where {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: var(--leading-relaxed);
+}
+.card-modal-actions {
+  justify-content: center;
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--divider);
+}
+.card-modal-actions .btn .icon {
+  width: 18px;
+  height: 18px;
+}
+/* ── 比較兩張牌 ── */
+.compare-modal {
+  max-width: 720px;
+}
+.compare-pick {
+  display: grid;
+  gap: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-5);
+}
+.modal-body .compare-pick .form-field + .form-field {
+  margin-top: 0;
+}
+@media (min-width: 560px) {
+  .compare-pick {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+.compare-pick select {
+  width: 100%;
+}
+/* 這個搜尋框沒有放大鏡圖示，不必留左側空位 */
+.compare-pick input[type=search] {
+  padding-left: var(--space-4);
+}
+.cmp-head,
+.cmp-rows {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  column-gap: var(--space-4);
+}
+.cmp-head {
+  align-items: end;
+  margin-bottom: var(--space-2);
+}
+.cmp-card {
+  min-width: 0;
+}
+.card-db-art.cmp-art {
+  width: 64px;
+  margin-bottom: var(--space-2);
+  content-visibility: visible;
+}
+.cmp-name {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+  color: var(--text);
+  line-height: var(--leading-tight);
+  overflow-wrap: anywhere;
+}
+.cmp-en {
+  margin-top: 2px;
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  overflow-wrap: anywhere;
+}
+.cmp-rows {
+  margin: 0;
+}
+.cmp-row {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  row-gap: var(--space-2);
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--divider);
+}
+.cmp-row dt {
+  grid-column: 1 / -1;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--text-tertiary);
+  letter-spacing: var(--tracking-wide);
+}
+.cmp-row dd {
+  margin: 0;
+  min-width: 0;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: var(--leading-relaxed);
+  overflow-wrap: anywhere;
+}
+.cmp-row-wide dd {
+  grid-column: 1 / -1;
+}
+.cmp-line + .cmp-line {
+  margin-top: var(--space-2);
+}
+.cmp-sub {
+  display: block;
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+}
+.cmp-rel .tag.refs-kind {
+  margin-right: var(--space-2);
+}
+.cmp-rel .cmp-sub {
+  display: inline;
+  margin-right: var(--space-1);
+}
+.cmp-row .yesno-badge {
+  margin-right: var(--space-1);
+}
+.tags.cmp-tags {
+  margin-top: 0;
+}
+.cmp-empty {
+  padding: var(--space-6) 0 var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
+  text-align: center;
+  line-height: var(--leading-relaxed);
+}
+/* ── 資料庫：「對應」篩選與符號分段 ── */
+.db-filter-corr {
+  align-items: center;
+}
+.db-filter-label {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--text-secondary);
+}
+.db-filter-corr select.btn {
+  width: auto;
+  min-height: 32px;
+  padding-left: var(--space-3);
+  font-size: var(--text-sm);
+}
+.sym-list-title {
+  font-size: var(--heading-4);
+  font-weight: var(--weight-semibold);
+  color: var(--text);
+  line-height: var(--leading-tight);
+}
+.sym-intro {
+  margin: var(--space-1) 0 var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: var(--leading-relaxed);
+}
+.sym-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(128px, calc(50% - var(--space-1))), 1fr));
+  gap: var(--space-2);
+}
+.sym-btn {
+  appearance: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2px;
+  min-height: 56px;
+  min-width: 0;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font-sans);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--duration-fast) var(--ease-out), background var(--duration-fast) var(--ease-out);
+}
+.sym-btn-title {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-tight);
+  overflow-wrap: anywhere;
+}
+.sym-btn-count {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  line-height: var(--leading-tight);
+}
+@media (hover: hover) {
+  .sym-btn:hover {
+    border-color: var(--control-border);
+  }
+}
+.sym-btn[aria-pressed="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-contrast);
+}
+.sym-btn[aria-pressed="true"] .sym-btn-count {
+  color: var(--accent-contrast);
+}
+.sym-detail {
+  margin-bottom: var(--space-8);
+  padding-bottom: var(--space-6);
+  border-bottom: 1px solid var(--divider);
+}
+.sym-detail-title {
+  scroll-margin-top: calc(var(--header-h, 0px) + var(--space-6));
+}
+.sym-detail-title:focus:not(:focus-visible) {
+  outline: none;
+}
+.sym-detail-title {
+  display: flex;
+  flex-wrap: wrap;
+  width: fit-content;
+  align-items: baseline;
+  gap: 0 var(--space-3);
+  margin-bottom: var(--space-4);
+  font-size: var(--heading-3);
+  font-weight: var(--weight-semibold);
+  color: var(--text);
+  line-height: var(--leading-tight);
+}
+.sym-detail-count {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-normal);
+  color: var(--text-tertiary);
+}
+.sym-card .card-db-name {
+  font-size: var(--text-base);
+}
+.sym-where {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  line-height: var(--leading-relaxed);
+}
+/* ── 逐張解讀：牌位屬於建議、阻礙或結果時的「在這個位置」 ── */
+.rd-role {
+  max-width: 42em;
+  margin-top: var(--space-1);
+  padding-left: var(--space-3);
+  border-left: 2px solid var(--divider);
+  font-size: var(--text-sm);
+  color: var(--text);
+  line-height: 1.8;
+}
+.rd-role-label {
+  display: block;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--text-tertiary);
+  line-height: var(--leading-snug);
 }
 @media print {
   :root,

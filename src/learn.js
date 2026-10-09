@@ -4,6 +4,7 @@ import { fullTarotCards, suitNames } from './data.js';
 import { cardMeaningText, cardMeanings, keywordsFor } from './meanings.js';
 import { loadLore, loadMeaningTexts, loadedLore, loadedMeaningTexts } from './lazy.js';
 import { cardThumb, visualStyle } from './render.js';
+import { haptic } from './haptics.js';
 import * as storage from './storage.js';
 
 export const LEARN_PROGRESS_KEY = 'learnProgress';
@@ -338,6 +339,7 @@ ${learnFlipped ? `
 function learnFlip() {
   if (learnFlipped) return;
   learnFlipped = true;
+  haptic();
   renderLearnFlash();
   focusLearnStage('#flashEasy');
 }

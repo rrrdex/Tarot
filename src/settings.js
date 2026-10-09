@@ -40,6 +40,8 @@ import {
   renderProfile
 } from './profile.js';
 import { setShortcutsEnabled, switchTab, updateSpreadInfo } from './main.js';
+import { TEMPLATES, applyTemplate, isNewTemplate } from './template.js';
+import { syncHapticsCheckbox } from './haptics.js';
 import * as storage from './storage.js';
 
 function isDarkActive() {
@@ -64,12 +66,23 @@ function syncThemeRadios() {
     r.checked = r.value === themePref;
   });
 }
-// 先換畫面，最後才寫入儲存空間
-function applyThemePref(pref) {
+// 霓虹主題只在簡約版型有專屬外觀；新版型以深色顯示（與 index.html 的 inline script 相同）
+function applyThemeClass() {
   const root = document.documentElement;
   root.classList.remove('light', 'dark', 'neon');
+  if (themePref !== 'auto') root.classList.add(themePref === 'neon' && isNewTemplate() ? 'dark' : themePref);
+}
+// 換版型後重新套用主題：霓虹與深色的對應、網址列顏色、統計圖的配色
+export function refreshTheme() {
+  applyThemeClass();
+  updateThemeIcons();
+  updateThemeColor();
+  if (currentTab === 'statistics') renderStatistics();
+}
+// 先換畫面，最後才寫入儲存空間
+function applyThemePref(pref) {
   themePref = ['light', 'dark', 'neon'].includes(pref) ? pref : 'auto';
-  if (themePref !== 'auto') root.classList.add(themePref);
+  applyThemeClass();
   updateThemeIcons();
   updateThemeColor();
   syncThemeRadios();
@@ -80,9 +93,7 @@ function applyThemePref(pref) {
 export function toggleTheme() {
   applyThemePref(isDarkActive() ? 'light' : 'dark');
 }
-if (['light', 'dark', 'neon'].includes(themePref)) {
-  document.documentElement.classList.add(themePref);
-}
+applyThemeClass();
 // 要在 applyStaticStrings 之後呼叫：按鈕的 aria-label 依目前主題而定，不能被靜態字串蓋掉
 export function initTheme() {
   updateThemeIcons();
@@ -98,6 +109,8 @@ document.querySelectorAll('input[name="themePref"]').forEach(radio => {
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
   updateThemeIcons();
   updateThemeColor();
+  // 跟隨系統時，統計圖的配色（--chart-*）也可能跟著深淺色變
+  if (currentTab === 'statistics') renderStatistics();
 });
 export function updateDataStats() {
   const el = document.getElementById('dataStats');
@@ -118,7 +131,7 @@ document.getElementById('clearAllData').addEventListener('click', async () => {
   // 連網址上的 seed、問題一起清掉，否則重新載入後又會畫出那次占卜
   location.replace(location.pathname);
 });
-const EXPORT_PREFS = ['theme', 'interactiveDraw', 'showSpreadInfo', 'showShortcuts', 'learnMode', 'learnScope', 'birthday', 'birthShichen'];
+const EXPORT_PREFS = ['theme', 'template', 'haptics', 'interactiveDraw', 'showSpreadInfo', 'showShortcuts', 'learnMode', 'learnScope', 'birthday', 'birthShichen'];
 function buildExportData() {
   const prefs = {};
   EXPORT_PREFS.forEach(k => {
@@ -145,6 +158,8 @@ document.getElementById('exportData').addEventListener('click', () => {
 });
 const IMPORT_PREF_RULES = {
   theme: v => ['light', 'dark', 'neon'].includes(v),
+  template: v => TEMPLATES.includes(v),
+  haptics: v => v === 'true' || v === 'false',
   interactiveDraw: v => v === 'true' || v === 'false',
   showSpreadInfo: v => v === 'true' || v === 'false',
   showShortcuts: v => v === 'true' || v === 'false',
@@ -180,7 +195,10 @@ function applyImportedExtras(data) {
     }
   }
   if (!applied) return 0;
+  // 先換版型再套主題：霓虹在新版型以深色顯示
+  applyTemplate(storage.get('template', 'minimal'), { save: false });
   applyThemePref(storage.get('theme', 'auto'));
+  syncHapticsCheckbox();
   reloadLearnPrefs();
   setShortcutsEnabled(storage.get('showShortcuts') !== 'false');
   const idc = document.getElementById('interactiveDraw');

@@ -37,8 +37,11 @@ const js = await build({
   minify: true,
   metafile: true
 });
+// 樣式表入口依序 @import 基礎、新版型共用與各版型的樣式，打包成一個 style-[hash].css
+const CSS_ENTRY = 'styles/index.css';
 const css = await build({
-  entryPoints: ['style.css'],
+  entryPoints: [{ in: CSS_ENTRY, out: 'style' }],
+  bundle: true,
   outdir: OUT,
   entryNames: '[name]-[hash]',
   minify: true,
@@ -51,7 +54,7 @@ const outputs = Object.entries({ ...js.metafile.outputs, ...css.metafile.outputs
 const urlOf = (path) => path.replace(`${OUT}/`, '');
 const entryUrl = (src) => urlOf(outputs.find(([, o]) => o.entryPoint === src)[0]);
 const appJs = entryUrl('src/main.js');
-const styleCss = entryUrl('style.css');
+const styleCss = entryUrl(CSS_ENTRY);
 // 線稿牌組是動態載入的片段；index.html 的 inline script 在線稿模式下會先預載它
 const deckJs = entryUrl('src/deck.js');
 
@@ -73,7 +76,7 @@ function rewrite(file, replacements) {
 }
 
 rewrite('index.html', [
-  ['href="style.css"', `href="${styleCss}"`],
+  [`href="${CSS_ENTRY}"`, `href="${styleCss}"`],
   ['src="js/app.js"', `src="${appJs}"`],
   ["var deck = '';", `var deck = ${JSON.stringify(deckJs)};`]
 ]);

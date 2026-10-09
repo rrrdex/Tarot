@@ -1,0 +1,1287 @@
+/* 星夜玻璃（aurora）：夜藍／淡紫、霧面玻璃、柔金、襯線標題、浮動膠囊導覽列
+   本檔目前只有色彩 token（淺色、深色）：把設計稿的色票對應到網站共用的 token（style.css :root），
+   再加上新版型共用的語意 token（shared.css 使用）與本版型專用的原始色票（--tpl-*，給 skin 用）。
+   之後的完整外觀（skin）規則接在檔案最後的「外觀」段落，一律以 :root[data-template="aurora"] 開頭。
+   色票都包在 @media screen 裡：列印時退回 style.css 的白紙配色，版型不影響列印。
+   深色的判斷與 style.css 相同：明確選深色（.dark；霓虹在新版型由 JS 換成 .dark，保險起見一併列 .neon），
+   或跟隨系統且系統是深色（prefers-color-scheme: dark 且沒有 .light）。
+   對比（已驗證）：--text、--text-secondary、--text-tertiary、--accent、--accent-text、狀態色
+   在 --bg、--bg-secondary、--surface、--surface-elevated 上都 ≥ 4.5:1；--accent-contrast 在 --accent 上 ≥ 4.5:1；
+   --nav-fg 在 --nav-bg 上 ≥ 4.5:1；--control-border 與 --pager-fill（相對 --pager-track）≥ 3:1；--chart-1…5 在卡片底上 ≥ 3:1。 */
+
+@media screen {
+  /* ── 淺色 ── */
+  :root[data-template="aurora"] {
+    /* 網站共用 token */
+    --bg: #F4F2FB;
+    --bg-secondary: #ECE9F7;
+    --bg-tertiary: #FFFFFF;
+    --surface: #FCFBFE;
+    --surface-elevated: #FFFFFF;
+    --text: #1C1A3A;
+    --text-secondary: #5A5779;
+    --text-tertiary: #636082;
+    --divider: #DCD9E8;
+    --control-border: #85829F;
+    --accent: #7E5A17;
+    --accent-hover: #6B4C14;
+    --accent-active: #5A3F10;
+    --accent-contrast: #FFFFFF;
+    --accent-light: rgba(201, 160, 78, 0.18);
+    --danger-text: #d70015;
+    --success-text: #1e7a34;
+    --warning-text: #c93400;
+    --yesno-yes: #1e7a34;
+    --yesno-no: #d70015;
+    /* 新版型共用的語意 token */
+    --accent-text: #7E5A17;
+    --accent-soft: #ECE3DC;
+    --text-body: #33304F;
+    --nav-bg: rgba(255, 255, 255, 0.9);
+    --nav-fg: #5E5B7E;
+    --nav-fg-active: #7E5A17;
+    --nav-active-bg: rgba(201, 160, 78, 0.18);
+    --nav-border: rgba(28, 26, 58, 0.14);
+    --sheet-bg: #FFFFFF;
+    --sheet-handle: rgba(28, 26, 58, 0.2);
+    --scrim: rgba(28, 26, 58, 0.45);
+    --pager-track: rgba(28, 26, 58, 0.2);
+    --pager-fill: #7E5A17;
+    --card-back: #1C1A3A;
+    --card-back-edge: rgba(201, 160, 78, 0.6);
+    --card-back-mark: #C9A04E;
+    --card-lift: 0 8px 28px rgba(201, 160, 78, 0.35);
+    /* 本版型的原始色票（skin 用；--tpl-gold 是填色用的柔金，淺色下不可當文字） */
+    --tpl-gold: #C9A04E;
+    --tpl-on-gold: #1C1A3A;
+    --tpl-gold-line: rgba(168, 123, 42, 0.55);
+    --tpl-soft: #3F3C60;
+    --tpl-line: rgba(28, 26, 58, 0.14);
+    --tpl-glass: rgba(255, 255, 255, 0.72);
+    --tpl-dock: rgba(255, 255, 255, 0.9);
+    --tpl-sheet: rgba(255, 255, 255, 0.96);
+    --tpl-card-face: #FFFFFF;
+    --tpl-card-active: #FFF8E8;
+    --tpl-halo: 0 8px 28px rgba(201, 160, 78, 0.35);
+    --tpl-glow-1: radial-gradient(circle, rgba(201, 160, 78, 0.30), rgba(201, 160, 78, 0) 70%);
+    --tpl-glow-2: radial-gradient(circle, rgba(140, 130, 235, 0.28), rgba(140, 130, 235, 0) 70%);
+    /* 霧面玻璃與陰影 */
+    --tpl-blur: saturate(160%) blur(18px);
+    --tpl-glass-strong: rgba(255, 255, 255, 0.82);
+    --tpl-control: rgba(255, 255, 255, 0.78);
+    --tpl-shadow: 0 10px 30px rgba(60, 50, 130, 0.08);
+    --tpl-shadow-strong: 0 18px 48px rgba(40, 34, 100, 0.16);
+    /* 統計圖表（圓餅圖）的五個系列色：暗金、靛藍、梅紫、青綠、玫瑰；在卡片底上都 ≥ 3:1 */
+    --chart-1: #A0731C;
+    --chart-2: #4B4FB8;
+    --chart-3: #9B4F8E;
+    --chart-4: #2E8A86;
+    --chart-5: #B8475E;
+  }
+
+  /* ── 深色（明確選擇；霓虹在新版型也以深色顯示）── */
+  :root[data-template="aurora"]:is(.dark, .neon) {
+    --bg: #0F1226;
+    --bg-secondary: #14182F;
+    --bg-tertiary: #1A1E3D;
+    --surface: #1A1E3D;
+    --surface-elevated: #20254A;
+    --text: #EDEBF7;
+    --text-secondary: #A9A6C4;
+    --text-tertiary: #A3A0BF;
+    --divider: #2E3252;
+    --control-border: #77749A;
+    --accent: #E3C07A;
+    --accent-hover: #EDD097;
+    --accent-active: #C9A04E;
+    --accent-contrast: #1A1530;
+    --accent-light: rgba(227, 192, 122, 0.14);
+    --danger-text: #ff6f66;
+    --success-text: #30d158;
+    --warning-text: #ff9f0a;
+    --yesno-yes: #30d158;
+    --yesno-no: #ff6f66;
+    --accent-text: #F3DDB0;
+    --accent-soft: #2D2A32;
+    --text-body: #DAD7EE;
+    --nav-bg: rgba(22, 26, 58, 0.92);
+    --nav-fg: #A9A6C4;
+    --nav-fg-active: #F3DDB0;
+    --nav-active-bg: rgba(227, 192, 122, 0.16);
+    --nav-border: rgba(255, 255, 255, 0.14);
+    --sheet-bg: #1C2046;
+    --sheet-handle: rgba(255, 255, 255, 0.3);
+    --scrim: rgba(5, 6, 18, 0.6);
+    --pager-track: rgba(255, 255, 255, 0.3);
+    --pager-fill: #E3C07A;
+    --card-back: #1B2045;
+    --card-back-edge: rgba(227, 192, 122, 0.5);
+    --card-back-mark: #E3C07A;
+    --card-lift: 0 0 32px rgba(227, 192, 122, 0.3);
+    --tpl-gold: #E3C07A;
+    --tpl-on-gold: #1A1530;
+    --tpl-gold-line: rgba(227, 192, 122, 0.5);
+    --tpl-soft: #CFCCE6;
+    --tpl-line: rgba(255, 255, 255, 0.14);
+    --tpl-glass: rgba(255, 255, 255, 0.06);
+    --tpl-dock: rgba(22, 26, 58, 0.92);
+    --tpl-sheet: rgba(28, 32, 70, 0.96);
+    --tpl-card-face: #1B2045;
+    --tpl-card-active: #262C5C;
+    --tpl-halo: 0 0 32px rgba(227, 192, 122, 0.3);
+    --tpl-glow-1: radial-gradient(circle, rgba(227, 192, 122, 0.22), rgba(227, 192, 122, 0) 70%);
+    --tpl-glow-2: radial-gradient(circle, rgba(120, 110, 230, 0.25), rgba(120, 110, 230, 0) 70%);
+    --tpl-blur: saturate(140%) blur(18px);
+    --tpl-glass-strong: rgba(20, 24, 54, 0.82);
+    --tpl-control: rgba(255, 255, 255, 0.05);
+    --tpl-shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
+    --tpl-shadow-strong: 0 18px 48px rgba(0, 0, 0, 0.5);
+    --chart-1: #E3C07A;
+    --chart-2: #8F95F2;
+    --chart-3: #D08AC8;
+    --chart-4: #5EC4B6;
+    --chart-5: #F2937A;
+  }
+}
+
+/* ── 深色（跟隨系統）：與上面的深色區塊相同 ── */
+@media screen and (prefers-color-scheme: dark) {
+  :root[data-template="aurora"]:not(.light) {
+    --bg: #0F1226;
+    --bg-secondary: #14182F;
+    --bg-tertiary: #1A1E3D;
+    --surface: #1A1E3D;
+    --surface-elevated: #20254A;
+    --text: #EDEBF7;
+    --text-secondary: #A9A6C4;
+    --text-tertiary: #A3A0BF;
+    --divider: #2E3252;
+    --control-border: #77749A;
+    --accent: #E3C07A;
+    --accent-hover: #EDD097;
+    --accent-active: #C9A04E;
+    --accent-contrast: #1A1530;
+    --accent-light: rgba(227, 192, 122, 0.14);
+    --danger-text: #ff6f66;
+    --success-text: #30d158;
+    --warning-text: #ff9f0a;
+    --yesno-yes: #30d158;
+    --yesno-no: #ff6f66;
+    --accent-text: #F3DDB0;
+    --accent-soft: #2D2A32;
+    --text-body: #DAD7EE;
+    --nav-bg: rgba(22, 26, 58, 0.92);
+    --nav-fg: #A9A6C4;
+    --nav-fg-active: #F3DDB0;
+    --nav-active-bg: rgba(227, 192, 122, 0.16);
+    --nav-border: rgba(255, 255, 255, 0.14);
+    --sheet-bg: #1C2046;
+    --sheet-handle: rgba(255, 255, 255, 0.3);
+    --scrim: rgba(5, 6, 18, 0.6);
+    --pager-track: rgba(255, 255, 255, 0.3);
+    --pager-fill: #E3C07A;
+    --card-back: #1B2045;
+    --card-back-edge: rgba(227, 192, 122, 0.5);
+    --card-back-mark: #E3C07A;
+    --card-lift: 0 0 32px rgba(227, 192, 122, 0.3);
+    --tpl-gold: #E3C07A;
+    --tpl-on-gold: #1A1530;
+    --tpl-gold-line: rgba(227, 192, 122, 0.5);
+    --tpl-soft: #CFCCE6;
+    --tpl-line: rgba(255, 255, 255, 0.14);
+    --tpl-glass: rgba(255, 255, 255, 0.06);
+    --tpl-dock: rgba(22, 26, 58, 0.92);
+    --tpl-sheet: rgba(28, 32, 70, 0.96);
+    --tpl-card-face: #1B2045;
+    --tpl-card-active: #262C5C;
+    --tpl-halo: 0 0 32px rgba(227, 192, 122, 0.3);
+    --tpl-glow-1: radial-gradient(circle, rgba(227, 192, 122, 0.22), rgba(227, 192, 122, 0) 70%);
+    --tpl-glow-2: radial-gradient(circle, rgba(120, 110, 230, 0.25), rgba(120, 110, 230, 0) 70%);
+    --tpl-blur: saturate(140%) blur(18px);
+    --tpl-glass-strong: rgba(20, 24, 54, 0.82);
+    --tpl-control: rgba(255, 255, 255, 0.05);
+    --tpl-shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
+    --tpl-shadow-strong: 0 18px 48px rgba(0, 0, 0, 0.5);
+    --chart-1: #E3C07A;
+    --chart-2: #8F95F2;
+    --chart-3: #D08AC8;
+    --chart-4: #5EC4B6;
+    --chart-5: #F2937A;
+  }
+}
+
+/* ── 外觀（skin）──
+   夜空底色上兩團柔光（金、淡紫），內容放在半透明的霧面玻璃卡片上；標題用襯線字，
+   主要按鈕是柔金膠囊（--tpl-gold 填色、--tpl-on-gold 文字），選取狀態用淡金底＋金色字。
+   導覽列是浮在底部的膠囊（寬螢幕是左側浮動直欄）；視窗是圓角 28px 的抽屜。
+   選擇器一律以 :root[data-template="aurora"] 開頭；要蓋過 shared.css（:root[data-template]:not(...) 開頭，
+   特異度較高）的規則改用 :root:root[data-template="aurora"]。全部包在 @media screen 裡，列印維持白紙。 */
+
+/* 導覽列的尺寸 token：外框（JS 與測試量的範圍）仍貼齊螢幕邊緣，膠囊畫在裡面 */
+:root:root[data-template="aurora"] {
+  --tpl-nav-h: 96px;
+  --tpl-rail-w: 104px;
+  --sheet-radius: 28px;
+}
+
+@media screen {
+  /* ── 背景：夜藍／淡紫底上的兩團柔光，固定在視窗上不跟著捲動 ── */
+  :root[data-template="aurora"] body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      var(--tpl-glow-1) right -80px top -120px / 320px 320px no-repeat,
+      var(--tpl-glow-2) left -140px top 300px / 300px 300px no-repeat;
+  }
+  :root[data-template="aurora"] .hero {
+    background: transparent;
+    overflow: visible;
+  }
+  /* 頁首與第一張卡片之間留一點夜空 */
+  :root[data-template="aurora"] .container {
+    padding-top: var(--space-5);
+  }
+  :root[data-template="aurora"] ::selection {
+    background: color-mix(in srgb, var(--tpl-gold) 32%, transparent);
+    color: var(--text);
+  }
+
+  /* ── 襯線標題 ── */
+  :root[data-template="aurora"] :is(
+    .title h1, .hero-title, .results-title, .modal-title, .insight-title, .settings-title,
+    .daily-card-name, .card-name, .rd-card-name, .history-spread, .stat-value, .card-db-name,
+    .deck-history-heading, .learn-mastery-title, .flash-name, .quiz-prompt, .quiz-result-score,
+    .spread-info-title, .context-title, .lore-title, .meaning-title, .changelog-version,
+    .pick-header h2, .pick-header h3, .profile-chip-name, .quiz-explain-head
+  ) {
+    font-family: var(--font-serif);
+    font-weight: var(--weight-bold);
+  }
+  :root[data-template="aurora"] .title h1 {
+    font-size: 24px;
+    letter-spacing: 0.08em;
+  }
+  :root[data-template="aurora"] .hero-title {
+    letter-spacing: 0.06em;
+  }
+  :root[data-template="aurora"] .results-title {
+    letter-spacing: 0.04em;
+  }
+
+  /* ── 頁首：霧面玻璃 ── */
+  :root:root[data-template="aurora"] .app-header {
+    background: color-mix(in srgb, var(--bg) 70%, transparent);
+    backdrop-filter: var(--tpl-blur);
+    -webkit-backdrop-filter: var(--tpl-blur);
+    border-bottom-color: var(--tpl-line);
+  }
+  :root[data-template="aurora"] .icon-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-full);
+    border: 1px solid var(--tpl-line);
+    background: var(--tpl-glass);
+    color: var(--text);
+  }
+  @media (hover: hover) {
+    :root[data-template="aurora"] .icon-btn:hover {
+      border-color: var(--tpl-gold-line);
+      color: var(--accent-text);
+    }
+  }
+
+  /* ── 霧面玻璃卡片 ── */
+  :root[data-template="aurora"] :is(.panel, .history-item, .stat-card, .quiz-card, .quiz-result, .flashcard, .learn-empty, .spread-info) {
+    background: var(--tpl-glass);
+    border: 1px solid var(--tpl-line);
+    box-shadow: var(--tpl-shadow);
+  }
+  :root[data-template="aurora"] .panel {
+    border-radius: var(--radius-3xl);
+  }
+  @media (min-width: 640px) {
+    :root[data-template="aurora"] .panel {
+      border-radius: 28px;
+    }
+  }
+  :root[data-template="aurora"] .panel:hover {
+    box-shadow: var(--tpl-shadow);
+  }
+  /* 結果面板與分頁裡的區塊：線條改成半透明的淡紫 */
+  :root[data-template="aurora"] :is(.reading-detail, .insight-panel, .learn-mastery-section, .quiz-result-wrong, .quiz-result-perfect, .card-footer, .footer-bottom) {
+    border-color: var(--tpl-line);
+  }
+
+  /* ── 表單 ── */
+  :root[data-template="aurora"] :is(input[type=text], input[type=search], input[type=date], select:not(.btn), .select-trigger, textarea) {
+    background-color: var(--tpl-control);
+    border: 1px solid var(--control-border);
+    border-radius: var(--radius-lg);
+  }
+  :root[data-template="aurora"] :is(input[type=text], input[type=search], input[type=date], select:not(.btn), .select-trigger, textarea):focus {
+    background-color: var(--surface-elevated);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--tpl-gold) 24%, transparent);
+  }
+  :root[data-template="aurora"] label {
+    letter-spacing: 0.04em;
+  }
+  :root[data-template="aurora"] :is(input[type=checkbox], input[type=radio]) {
+    accent-color: var(--accent);
+  }
+
+  /* ── 按鈕：主要是柔金膠囊，次要是淡金框，第三級是玻璃框 ── */
+  :root[data-template="aurora"] .btn {
+    font-family: var(--font-sans-tpl);
+  }
+  :root[data-template="aurora"] .btn-primary {
+    background: var(--tpl-gold);
+    color: var(--tpl-on-gold);
+    font-weight: var(--weight-bold);
+    letter-spacing: 0.06em;
+    box-shadow: 0 6px 20px color-mix(in srgb, var(--tpl-gold) 35%, transparent);
+  }
+  @media (hover: hover) {
+    :root[data-template="aurora"] .btn-primary:hover {
+      background: color-mix(in srgb, var(--tpl-gold) 86%, #fff);
+      box-shadow: var(--tpl-halo);
+    }
+  }
+  :root[data-template="aurora"] .btn-primary:active {
+    background: color-mix(in srgb, var(--tpl-gold) 92%, #000);
+  }
+  :root[data-template="aurora"] #readButton {
+    min-height: 60px;
+    font-size: 17px;
+    letter-spacing: 0.12em;
+  }
+  :root[data-template="aurora"] .btn-secondary {
+    border: 1px solid var(--tpl-gold-line);
+    color: var(--accent-text);
+    background: transparent;
+  }
+  :root[data-template="aurora"] .btn-secondary:hover {
+    background: var(--accent-light);
+  }
+  :root[data-template="aurora"] :is(.btn-tertiary, select.btn) {
+    border: 1px solid color-mix(in srgb, var(--control-border) 55%, transparent);
+    background-color: var(--tpl-glass);
+    color: var(--text);
+  }
+  @media (hover: hover) {
+    :root[data-template="aurora"] :is(.btn-tertiary, select.btn):hover {
+      border-color: var(--tpl-gold-line);
+      background-color: var(--tpl-glass);
+    }
+  }
+  :root[data-template="aurora"] .btn-tertiary.danger {
+    color: var(--danger-text);
+  }
+  :root[data-template="aurora"] .btn-danger {
+    border-width: 1px;
+  }
+  :root[data-template="aurora"] #filterFavorite[aria-pressed="true"] {
+    border-color: var(--tpl-gold);
+    background: var(--accent-light);
+    color: var(--accent-text);
+    font-weight: var(--weight-bold);
+  }
+
+  /* ── 標籤：關鍵詞是淡金底；可點的篩選標籤是細框膠囊，選取時淡金底＋金框 ── */
+  :root[data-template="aurora"] .tag {
+    background: var(--accent-light);
+    color: var(--accent-text);
+    border: 1px solid transparent;
+  }
+  :root[data-template="aurora"] .tag:is([role=button], button) {
+    background: transparent;
+    border-color: var(--tpl-line);
+    color: var(--tpl-soft);
+  }
+  @media (hover: hover) {
+    :root[data-template="aurora"] .tag:is([role=button], button):not(.active):hover {
+      background: var(--tpl-glass);
+      border-color: var(--tpl-gold-line);
+      color: var(--text);
+    }
+  }
+  :root[data-template="aurora"] .tag.active,
+  :root[data-template="aurora"] .tag:is([role=button], button).active {
+    background: var(--accent-light);
+    border-color: var(--tpl-gold);
+    color: var(--accent-text);
+    font-weight: var(--weight-bold);
+  }
+  :root[data-template="aurora"] .badge {
+    background: var(--accent-light);
+    color: var(--accent-text);
+    font-weight: var(--weight-semibold);
+  }
+
+  /* ── 分段按鈕：玻璃軌道，選中的是柔金膠囊 ── */
+  :root[data-template="aurora"] .segmented {
+    background: var(--tpl-glass);
+    border: 1px solid var(--tpl-line);
+    backdrop-filter: var(--tpl-blur);
+    -webkit-backdrop-filter: var(--tpl-blur);
+  }
+  :root[data-template="aurora"] .seg-item.active {
+    background: var(--tpl-gold);
+    color: var(--tpl-on-gold);
+    font-weight: var(--weight-bold);
+    box-shadow: 0 2px 10px color-mix(in srgb, var(--tpl-gold) 35%, transparent);
+  }
+
+  /* ── 浮動膠囊導覽列（窄螢幕在底部） ── */
+  :root:root[data-template="aurora"] .tpl-nav {
+    background: transparent;
+    border: none;
+    min-height: calc(var(--tpl-nav-h) + env(safe-area-inset-bottom, 0px));
+    padding: 14px max(26px, calc(50% - 270px)) calc(14px + env(safe-area-inset-bottom, 0px));
+    gap: 2px;
+    /* 外框只是定位用：膠囊外的透明區域不擋住底下的內容 */
+    pointer-events: none;
+  }
+  :root:root[data-template="aurora"] .tpl-nav::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    top: 14px;
+    bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+    left: max(16px, calc(50% - 280px));
+    right: max(16px, calc(50% - 280px));
+    border-radius: 34px;
+    border: 1px solid var(--nav-border);
+    background: var(--tpl-dock);
+    backdrop-filter: var(--tpl-blur);
+    -webkit-backdrop-filter: var(--tpl-blur);
+    box-shadow: var(--tpl-shadow-strong);
+  }
+  :root:root[data-template="aurora"] .tpl-nav-item {
+    pointer-events: auto;
+    min-height: 52px;
+    border-radius: 26px;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+  }
+  @media (hover: hover) {
+    :root:root[data-template="aurora"] .tpl-nav-item:not([aria-current="page"]):hover {
+      color: var(--text);
+    }
+  }
+  :root:root[data-template="aurora"] .tpl-nav-item[aria-current="page"] {
+    font-weight: var(--weight-bold);
+  }
+  :root:root[data-template="aurora"] .tpl-nav-item:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
+    border-radius: 26px;
+  }
+}
+/* 寬螢幕：左側浮動直欄（外框仍是整條左欄，膠囊只包住五個項目） */
+@media screen and (min-width: 1024px) {
+  :root:root[data-template="aurora"] .tpl-nav {
+    padding: calc(var(--header-h) + 28px) 22px 28px;
+    min-height: 0;
+    gap: var(--space-2);
+  }
+  :root:root[data-template="aurora"] .tpl-nav::before {
+    top: calc(var(--header-h) + 12px);
+    bottom: auto;
+    left: 14px;
+    right: 14px;
+    /* 五個項目（各 64px）＋四個間距＋上下各 16px */
+    height: calc(5 * 64px + 4 * var(--space-2) + 32px);
+    border-radius: 38px;
+  }
+  :root:root[data-template="aurora"] .tpl-nav-item {
+    min-height: 64px;
+    border-radius: 24px;
+  }
+}
+
+@media screen {
+  /* ── 每日一牌：玻璃卡片，左邊一張金框小牌（文字模式畫太陽紋，圖像模式顯示縮圖） ── */
+  :root[data-template="aurora"] .daily-card {
+    justify-content: flex-start;
+    gap: var(--space-4);
+    padding: 18px;
+    border-radius: var(--radius-3xl);
+    border: 1px solid var(--tpl-line);
+    background: var(--tpl-glass);
+    backdrop-filter: var(--tpl-blur);
+    -webkit-backdrop-filter: var(--tpl-blur);
+    box-shadow: var(--tpl-shadow);
+  }
+  :root[data-template="aurora"] .daily-card:not(:empty):not(:has(.daily-card-art))::before {
+    content: "";
+    flex: none;
+    width: 56px;
+    height: 90px;
+    border-radius: 10px;
+    border: 1px solid var(--tpl-gold-line);
+    background:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23C9A04E' stroke-width='1.5' stroke-linecap='round'%3E%3Cpath d='M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1'/%3E%3Ccircle cx='12' cy='12' r='3.2'/%3E%3C/svg%3E") center / 26px 26px no-repeat,
+      var(--tpl-card-face);
+  }
+  :root[data-template="aurora"] .daily-card-info {
+    flex: 1;
+    min-width: 0;
+  }
+  :root[data-template="aurora"] .daily-card-art :is(svg, img) {
+    border-radius: 8px;
+    box-shadow: 0 0 0 1px var(--tpl-gold-line);
+  }
+  :root[data-template="aurora"] .daily-card:hover {
+    background: var(--tpl-glass);
+    border-color: var(--tpl-gold-line);
+  }
+  :root[data-template="aurora"] .daily-card-label {
+    font-weight: var(--weight-medium);
+    color: var(--text-secondary);
+    letter-spacing: 0.06em;
+  }
+  :root[data-template="aurora"] .daily-card-name {
+    font-size: 22px;
+    letter-spacing: 0.02em;
+  }
+  :root[data-template="aurora"] .daily-card-ori {
+    font-family: var(--font-sans-tpl);
+    font-size: 13px;
+    color: var(--accent-text);
+  }
+  :root[data-template="aurora"] .daily-card-keywords {
+    font-size: 13px;
+    color: var(--tpl-soft);
+  }
+
+  /* ── 個人牌 ── */
+  :root[data-template="aurora"] .profile-chip {
+    border: 1px solid var(--tpl-line);
+    border-radius: 20px;
+    background: var(--tpl-glass);
+    box-shadow: var(--tpl-shadow);
+  }
+  @media (hover: hover) {
+    :root[data-template="aurora"] .profile-chip:hover {
+      border-color: var(--tpl-gold-line);
+    }
+  }
+  :root[data-template="aurora"] .me-hub .profile-chip {
+    flex: 1 1 140px;
+  }
+  :root[data-template="aurora"] .profile-chip-ori {
+    color: var(--accent-text);
+  }
+
+  /* ── 牌陣說明 ── */
+  :root[data-template="aurora"] .spread-info {
+    border-radius: var(--radius-3xl);
+  }
+  :root[data-template="aurora"] .spread-info-title .icon {
+    color: var(--accent-text);
+  }
+  :root[data-template="aurora"] .spread-position-num {
+    color: var(--accent-text);
+  }
+
+  /* ── 抽牌：夜藍牌背、金色細框與星芒 ── */
+  :root[data-template="aurora"] .pick-progress {
+    background: var(--accent-light);
+    color: var(--accent-text);
+  }
+  :root[data-template="aurora"] .pick-card {
+    border-radius: 8px;
+    background-color: var(--card-back);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 104'%3E%3Crect x='5' y='5' width='50' height='94' rx='4' fill='none' stroke='%23C9A04E' stroke-opacity='.45'/%3E%3Cpath d='M30 40l2.6 9.4L42 52l-9.4 2.6L30 64l-2.6-9.4L18 52l9.4-2.6z' fill='%23E3C07A' fill-opacity='.85'/%3E%3Ccircle cx='30' cy='22' r='1.4' fill='%23E3C07A' fill-opacity='.6'/%3E%3Ccircle cx='30' cy='82' r='1.4' fill='%23E3C07A' fill-opacity='.6'/%3E%3C/svg%3E");
+    background-size: 100% 100%;
+    box-shadow: inset 0 0 0 1px var(--card-back-edge);
+  }
+  @media (hover: hover) {
+    :root[data-template="aurora"] .pick-card:hover:not(:disabled) {
+      box-shadow: inset 0 0 0 1px var(--card-back-mark), var(--tpl-halo);
+    }
+  }
+  :root[data-template="aurora"] .pick-card.selected {
+    background-image: none;
+    background-color: var(--tpl-gold);
+    color: var(--tpl-on-gold);
+    box-shadow: var(--tpl-halo);
+  }
+
+  /* ── 結果：牌面卡片 ── */
+  :root[data-template="aurora"] .card {
+    background: var(--tpl-card-face);
+    border: 1px solid var(--tpl-line);
+    border-radius: var(--radius-lg);
+  }
+  @media (hover: hover) {
+    :root[data-template="aurora"] .card:hover {
+      border-color: var(--tpl-gold-line);
+      box-shadow: var(--tpl-halo);
+    }
+  }
+  :root[data-template="aurora"] .card.bottom {
+    border: 1px dashed var(--tpl-gold-line);
+  }
+  :root[data-template="aurora"] .card-position {
+    font-weight: var(--weight-medium);
+    color: var(--text-secondary);
+    letter-spacing: 0.08em;
+  }
+  :root[data-template="aurora"] .card-orientation {
+    color: var(--accent-text);
+  }
+  :root[data-template="aurora"] .card-keywords {
+    color: var(--tpl-soft);
+  }
+  :root[data-template="aurora"] .card.visual-api .card-image-container {
+    background: transparent;
+  }
+
+  /* ── 逐張解讀（圓點翻頁器）：一張浮起的玻璃抽屜，頂端一團金光 ── */
+  :root[data-template="aurora"] .reading-detail.rd-paged {
+    margin-top: var(--space-2);
+    padding: 22px 20px 20px;
+    border: 1px solid var(--tpl-line);
+    border-radius: 28px;
+    background:
+      var(--tpl-glow-1) center -170px / 340px 340px no-repeat,
+      var(--tpl-sheet);
+    box-shadow: var(--tpl-shadow-strong);
+  }
+  /* 窄螢幕：抽屜往面板內距外伸一點，內文行寬不被兩層內距擠窄 */
+  @media (max-width: 639.98px) {
+    :root[data-template="aurora"] .reading-detail.rd-paged {
+      margin-inline: calc(var(--space-3) * -1);
+      padding-inline: 18px;
+    }
+  }
+  @media (min-width: 768px) {
+    :root[data-template="aurora"] .reading-detail.rd-paged {
+      padding: 28px 32px 28px;
+    }
+  }
+  :root[data-template="aurora"] .rd-paged .rd-header .rd-title {
+    font-size: 19px;
+    letter-spacing: 0.04em;
+  }
+  :root:root[data-template="aurora"] .rd-pager-ind {
+    margin-bottom: var(--space-4);
+  }
+  :root:root[data-template="aurora"] .rd-pager-count {
+    letter-spacing: 0.08em;
+  }
+  :root:root[data-template="aurora"] .rd-dots {
+    padding: 6px 0;
+  }
+  :root[data-template="aurora"] .rd-paged .rd-item {
+    gap: var(--space-3);
+    padding-block: var(--space-2);
+  }
+  :root[data-template="aurora"] .rd-paged :is(.rd-body, .rd-bottom .rd-pos) {
+    padding-left: 0;
+  }
+  :root[data-template="aurora"] .rd-num {
+    border-color: var(--tpl-gold-line);
+    color: var(--accent-text);
+    font-weight: var(--weight-semibold);
+  }
+  :root[data-template="aurora"] .rd-pos-name {
+    color: var(--accent-text);
+    letter-spacing: 0.04em;
+  }
+  :root[data-template="aurora"] .rd-pos-desc {
+    color: var(--text-secondary);
+  }
+  :root[data-template="aurora"] .rd-paged .rd-pos-desc {
+    font-size: 13px;
+  }
+  :root[data-template="aurora"] .rd-paged .rd-card {
+    align-items: flex-end;
+    flex-wrap: wrap;
+    margin-top: var(--space-1);
+  }
+  :root[data-template="aurora"] .rd-paged .rd-card-name {
+    font-size: 26px;
+    letter-spacing: 0.02em;
+  }
+  :root[data-template="aurora"] .rd-ori {
+    font-family: var(--font-sans-tpl);
+    color: var(--accent-text);
+  }
+  :root[data-template="aurora"] .rd-more {
+    color: var(--accent-text);
+    text-decoration-color: var(--tpl-gold-line);
+  }
+  /* 關鍵詞變成淡金小膠囊（分隔符「・」仍在文字裡，複製與朗讀不變） */
+  :root[data-template="aurora"] .rd-paged .rd-kw .kw-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    font-size: 0;
+  }
+  :root[data-template="aurora"] .rd-paged .rd-kw .kw {
+    padding: 6px 12px;
+    border-radius: 14px;
+    background: var(--accent-light);
+    color: var(--accent-text);
+    font-size: 13px;
+    line-height: var(--leading-tight);
+  }
+  :root[data-template="aurora"] .rd-text-title {
+    color: var(--text-secondary);
+  }
+  :root[data-template="aurora"] .rd-text-body {
+    color: var(--text-body);
+  }
+  :root[data-template="aurora"] .rd-paged .rd-text-body {
+    font-size: 15px;
+    line-height: 1.85;
+  }
+  :root:root[data-template="aurora"] .rd-pager-nav {
+    margin-top: var(--space-5);
+  }
+  :root:root[data-template="aurora"] .rd-pager-btn {
+    min-height: 52px;
+  }
+
+  /* 牌位屬於建議、阻礙、結果時的「在這個位置」：左側一條金線 */
+  :root[data-template="aurora"] .rd-role {
+    border-left-color: var(--tpl-gold-line);
+    color: var(--text-body);
+  }
+  :root[data-template="aurora"] .rd-role-label {
+    color: var(--accent-text);
+    letter-spacing: 0.04em;
+  }
+
+  /* ── 綜合觀察 ── */
+  :root[data-template="aurora"] .insight-panel {
+    padding: 22px 20px;
+    border: 1px solid var(--tpl-line);
+    border-radius: var(--radius-3xl);
+    background: var(--tpl-glass);
+  }
+  @media (min-width: 768px) {
+    :root[data-template="aurora"] .insight-panel {
+      padding: 28px 32px;
+    }
+  }
+  :root[data-template="aurora"] .insight-tag {
+    color: var(--accent-text);
+    letter-spacing: 0.02em;
+  }
+  :root[data-template="aurora"] .insight-text {
+    color: var(--text-body);
+  }
+
+  /* ── 記錄 ── */
+  :root[data-template="aurora"] .history-item {
+    border-radius: 22px;
+  }
+  @media (hover: hover) {
+    :root[data-template="aurora"] .history-item:hover {
+      border-color: var(--tpl-gold-line);
+      box-shadow: var(--tpl-halo);
+    }
+    :root[data-template="aurora"] :is(.history-fav, .history-action):hover {
+      background: var(--accent-light);
+    }
+  }
+  :root[data-template="aurora"] .history-time {
+    color: var(--text-secondary);
+  }
+  :root[data-template="aurora"] .history-action {
+    border-radius: var(--radius-full);
+  }
+  :root[data-template="aurora"] .history-empty {
+    color: var(--text-secondary);
+  }
+  /* 空白提示：一顆淡金的星 */
+  :root[data-template="aurora"] .history-empty::before {
+    content: "";
+    display: block;
+    width: 44px;
+    height: 44px;
+    margin: 0 auto var(--space-4);
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23C9A04E' stroke-width='1.3' stroke-linejoin='round'%3E%3Cpath d='M12 3l2 7 7 2-7 2-2 7-2-7-7-2 7-2z'/%3E%3C/svg%3E") center / contain no-repeat;
+    opacity: 0.85;
+  }
+
+  /* ── 統計 ── */
+  :root[data-template="aurora"] .stat-card {
+    border-radius: 22px;
+  }
+  @media (hover: hover) {
+    :root[data-template="aurora"] .stat-card:hover {
+      box-shadow: var(--tpl-shadow-strong);
+    }
+  }
+  :root[data-template="aurora"] .stat-title {
+    font-weight: var(--weight-medium);
+    letter-spacing: 0.06em;
+  }
+  :root[data-template="aurora"] .stat-value {
+    color: var(--accent-text);
+    letter-spacing: 0;
+  }
+  :root[data-template="aurora"] :is(.trend-chart, .stat-item) {
+    background: var(--tpl-control);
+    border-color: var(--tpl-line);
+  }
+  :root[data-template="aurora"] .trend-chart {
+    border-radius: 18px;
+  }
+  :root[data-template="aurora"] .trend-bar {
+    border-radius: 4px 4px 1px 1px;
+    opacity: 0.85;
+  }
+
+  /* ── 資料庫 ── */
+  /* 黏在頁首下方的搜尋列：不畫整條底色，只有搜尋框本身是一顆霧面玻璃膠囊，黏住時浮在內容上 */
+  :root[data-template="aurora"] .search-field {
+    top: calc(var(--header-h) + var(--space-3));
+    padding-block: 0;
+    background: transparent;
+    border-bottom: none;
+    margin-bottom: var(--space-5);
+  }
+  :root[data-template="aurora"] .search-field input[type=search] {
+    border-radius: var(--radius-full);
+    background-color: var(--tpl-glass-strong);
+    backdrop-filter: var(--tpl-blur);
+    -webkit-backdrop-filter: var(--tpl-blur);
+    box-shadow: var(--tpl-shadow);
+  }
+  /* 搜尋框有 backdrop-filter（自成一層），放大鏡圖示要排在它上面 */
+  :root[data-template="aurora"] .search-field .search-icon {
+    z-index: 1;
+  }
+  :root[data-template="aurora"] .search-field input[type=search]:focus {
+    background-color: var(--surface-elevated);
+  }
+  :root[data-template="aurora"] input[type=search] {
+    border-radius: var(--radius-full);
+  }
+  /* 篩選列：各組靠下對齊（右邊有帶標籤的下拉選單時），標籤不被撐成橢圓 */
+  :root[data-template="aurora"] .db-filters {
+    align-items: flex-end;
+  }
+  :root[data-template="aurora"] .db-filter-group {
+    align-items: center;
+  }
+  :root[data-template="aurora"] .card-db-item {
+    padding: var(--space-3);
+    border: 1px solid transparent;
+    border-radius: 18px;
+  }
+  @media (hover: hover) {
+    :root[data-template="aurora"] .card-db-item:hover {
+      border-color: var(--tpl-line);
+      background: var(--tpl-glass);
+    }
+  }
+  :root[data-template="aurora"] .card-db-number {
+    color: var(--accent-text);
+    letter-spacing: 0.08em;
+  }
+  :root[data-template="aurora"] .card-db-art :is(svg, img) {
+    border-radius: 10px;
+  }
+  :root[data-template="aurora"] .card-db-hit {
+    border-color: var(--tpl-line);
+  }
+  :root[data-template="aurora"] .card-db-hit mark,
+  :root[data-template="aurora"] mark {
+    background: color-mix(in srgb, var(--tpl-gold) 32%, transparent);
+    color: var(--text);
+  }
+  @media (min-width: 640px) {
+    :root[data-template="aurora"] .db-filter-group + .db-filter-group {
+      border-left-color: var(--tpl-line);
+    }
+  }
+  :root[data-template="aurora"] .db-filter-label {
+    letter-spacing: 0.04em;
+  }
+  /* 符號：玻璃小卡，選中的是柔金 */
+  :root[data-template="aurora"] .sym-list-title,
+  :root[data-template="aurora"] .sym-detail-title {
+    font-family: var(--font-serif);
+    font-weight: var(--weight-bold);
+    letter-spacing: 0.04em;
+  }
+  :root[data-template="aurora"] .sym-btn {
+    border-color: var(--tpl-line);
+    border-radius: 16px;
+    background: var(--tpl-control);
+  }
+  @media (hover: hover) {
+    :root[data-template="aurora"] .sym-btn:hover {
+      border-color: var(--tpl-gold-line);
+      background: var(--accent-light);
+    }
+  }
+  :root[data-template="aurora"] .sym-btn[aria-pressed="true"] {
+    border-color: var(--tpl-gold);
+    background: var(--tpl-gold);
+    color: var(--tpl-on-gold);
+    box-shadow: 0 4px 14px color-mix(in srgb, var(--tpl-gold) 30%, transparent);
+  }
+  :root[data-template="aurora"] .sym-btn[aria-pressed="true"] .sym-btn-count {
+    color: var(--tpl-on-gold);
+  }
+  :root[data-template="aurora"] .sym-detail {
+    border-bottom-color: var(--tpl-line);
+  }
+  :root[data-template="aurora"] .sym-detail-count {
+    font-family: var(--font-sans-tpl);
+    font-weight: var(--weight-normal);
+    color: var(--text-secondary);
+  }
+  :root[data-template="aurora"] .sym-where {
+    color: var(--text-secondary);
+  }
+  /* 知識庫：每組一張玻璃卡，段落是細線分隔的摺疊列 */
+  :root[data-template="aurora"] .deck-history-group {
+    padding: var(--space-5) var(--space-5) var(--space-2);
+    border: 1px solid var(--tpl-line);
+    border-radius: var(--radius-3xl);
+    background: var(--tpl-glass);
+  }
+  @media (min-width: 768px) {
+    :root[data-template="aurora"] .deck-history-group {
+      padding: var(--space-6) var(--space-7) var(--space-3);
+    }
+  }
+  :root[data-template="aurora"] .deck-history-heading {
+    border-bottom: 1px solid var(--tpl-gold-line);
+    letter-spacing: 0.04em;
+  }
+  :root[data-template="aurora"] .deck-history-item {
+    border-bottom-color: var(--tpl-line);
+  }
+  :root[data-template="aurora"] .deck-history-item:last-child {
+    border-bottom: none;
+  }
+  :root[data-template="aurora"] .deck-history-title::after {
+    border-color: var(--accent-text);
+  }
+  :root[data-template="aurora"] .deck-history-item[open] > .deck-history-title {
+    color: var(--accent-text);
+  }
+  :root[data-template="aurora"] .deck-history-text {
+    color: var(--text-body);
+  }
+
+  /* ── 學習 ── */
+  :root[data-template="aurora"] .flashcard {
+    border-radius: 28px;
+    background:
+      var(--tpl-glow-1) center -150px / 320px 320px no-repeat,
+      var(--tpl-card-face);
+    border-color: var(--tpl-gold-line);
+  }
+  @media (hover: hover) {
+    :root[data-template="aurora"] .flashcard:not(.flipped):hover {
+      border-color: var(--tpl-gold);
+      box-shadow: var(--tpl-halo);
+    }
+  }
+  :root[data-template="aurora"] .flash-name {
+    letter-spacing: 0.04em;
+  }
+  :root[data-template="aurora"] .quiz-card,
+  :root[data-template="aurora"] .quiz-result {
+    border-radius: 28px;
+  }
+  :root[data-template="aurora"] .quiz-option {
+    border-color: color-mix(in srgb, var(--control-border) 55%, transparent);
+    border-radius: 18px;
+    background: var(--tpl-control);
+  }
+  @media (hover: hover) {
+    :root[data-template="aurora"] .quiz-option:not(:disabled):hover {
+      border-color: var(--tpl-gold);
+      background: var(--accent-light);
+    }
+  }
+  :root[data-template="aurora"] .quiz-option.correct {
+    border-color: var(--success);
+    color: var(--success-text);
+    background: color-mix(in srgb, var(--success) 10%, var(--tpl-card-face));
+  }
+  :root[data-template="aurora"] .quiz-option.wrong {
+    border-color: var(--danger);
+    color: var(--danger-text);
+    background: color-mix(in srgb, var(--danger) 10%, var(--tpl-card-face));
+  }
+  :root[data-template="aurora"] .quiz-explain {
+    border-color: var(--tpl-line);
+    border-radius: 18px;
+  }
+  :root[data-template="aurora"] .mastery-cell {
+    border-color: var(--tpl-line);
+    border-radius: 5px;
+  }
+  :root[data-template="aurora"] .learn-streak {
+    color: var(--accent-text);
+  }
+
+  /* ── 設定 ── */
+  :root[data-template="aurora"] .settings-section {
+    padding-bottom: var(--space-2);
+  }
+  :root[data-template="aurora"] .settings-title {
+    letter-spacing: 0.04em;
+  }
+  :root[data-template="aurora"] .checkbox-group {
+    padding: var(--space-1);
+    border: 1px solid var(--tpl-line);
+    border-radius: 22px;
+    background: var(--tpl-control);
+  }
+  :root[data-template="aurora"] .checkbox-item {
+    border-radius: 18px;
+  }
+  :root[data-template="aurora"] .checkbox-item:hover {
+    background: var(--accent-light);
+  }
+  :root[data-template="aurora"] .checkbox-item:has(input:checked) .checkbox-label {
+    font-weight: var(--weight-semibold);
+  }
+  :root[data-template="aurora"] .checkbox-desc {
+    padding-bottom: var(--space-2);
+  }
+  :root[data-template="aurora"] .profile-preview,
+  :root[data-template="aurora"] .data-stats {
+    color: var(--text-secondary);
+  }
+  :root[data-template="aurora"] .profile-note {
+    border-color: var(--tpl-line);
+  }
+
+  /* ── 頁尾：透明，讓背景光暈延續到底 ── */
+  :root[data-template="aurora"] .app-footer {
+    background: transparent;
+    border-top-color: var(--tpl-line);
+  }
+  :root[data-template="aurora"] .footer-section-title {
+    letter-spacing: 0.06em;
+  }
+  :root[data-template="aurora"] .footer-version {
+    border-radius: var(--radius-full);
+    background: var(--accent-light);
+    color: var(--accent-text);
+  }
+  :root[data-template="aurora"] .footer-link:hover {
+    color: var(--accent-text);
+  }
+
+  /* ── 視窗：抽屜（窄）／置中（平板）／右側面板（寬） ── */
+  :root:root[data-template="aurora"] .modal-overlay:not(.card-viewer) .modal {
+    border: 1px solid var(--tpl-line);
+    box-shadow: var(--tpl-shadow-strong);
+  }
+  :root[data-template="aurora"] .modal-title {
+    letter-spacing: 0.04em;
+  }
+  :root[data-template="aurora"] .modal-close {
+    width: 44px;
+    height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--tpl-line);
+    border-radius: var(--radius-full);
+    background: var(--tpl-control);
+  }
+  :root[data-template="aurora"] .modal-close:hover {
+    border-color: var(--tpl-gold-line);
+    background: var(--accent-light);
+    color: var(--text);
+  }
+  :root[data-template="aurora"] .modal-actions .btn {
+    min-height: 48px;
+  }
+  :root[data-template="aurora"] .card-modal-sub {
+    color: var(--text-secondary);
+  }
+  :root[data-template="aurora"] .meaning-block {
+    border-color: var(--tpl-line);
+    border-radius: 20px;
+    background: var(--tpl-control);
+  }
+  :root[data-template="aurora"] .meaning-block.active {
+    border-color: var(--tpl-gold-line);
+    background:
+      var(--tpl-glow-1) right -120px top -140px / 280px 280px no-repeat,
+      var(--tpl-card-active);
+  }
+  :root[data-template="aurora"] :is(.meaning-drawn, .lore-title, .context-title, .reflection-label) {
+    color: var(--accent-text);
+  }
+  :root[data-template="aurora"] .meaning-text,
+  :root[data-template="aurora"] .lore-text {
+    color: var(--text-body);
+  }
+  :root[data-template="aurora"] .reflection-block {
+    border-color: var(--tpl-gold-line);
+    border-radius: 18px;
+  }
+  :root[data-template="aurora"] .card-modal-art :is(svg, img) {
+    border-radius: 8px;
+  }
+  /* 卡片詳情的新區塊：情境的牌位、相關的牌、符號、底部按鈕列 */
+  :root[data-template="aurora"] :is(.refs-rel, .card-modal-actions, .cmp-row) {
+    border-color: var(--tpl-line);
+  }
+  /* 關係標記（相似、對照…）不是關鍵詞：維持細框、不填淡金 */
+  :root[data-template="aurora"] .tag.refs-kind {
+    background: transparent;
+    border-color: var(--tpl-gold-line);
+    color: var(--text-secondary);
+    font-weight: var(--weight-normal);
+  }
+  :root[data-template="aurora"] :is(.refs-rel-note, .refs-sym-where, .journal-list, .ctx-pos-ori) {
+    color: var(--text-secondary);
+  }
+  :root[data-template="aurora"] .journal-list li::marker {
+    color: var(--accent-text);
+  }
+  :root[data-template="aurora"] .refs-help-title {
+    color: var(--accent-text);
+  }
+  /* 比較兩張牌 */
+  :root[data-template="aurora"] .cmp-name {
+    font-family: var(--font-serif);
+    font-weight: var(--weight-bold);
+    letter-spacing: 0.02em;
+  }
+  :root[data-template="aurora"] .cmp-row dt {
+    color: var(--accent-text);
+    letter-spacing: 0.06em;
+  }
+  :root[data-template="aurora"] .cmp-row dd {
+    color: var(--text-body);
+  }
+  :root[data-template="aurora"] .cmp-art :is(svg, img) {
+    border-radius: 8px;
+  }
+  /* 牌陣選單：選中的一列淡金底 */
+  :root[data-template="aurora"] .spread-picker-group-title {
+    color: var(--accent-text);
+    border-bottom-color: var(--tpl-gold-line);
+  }
+  :root[data-template="aurora"] .spread-option + .spread-option::before {
+    border-top-color: var(--tpl-line);
+  }
+  :root[data-template="aurora"] .spread-option {
+    border-radius: 16px;
+    padding-inline: var(--space-3);
+  }
+  :root[data-template="aurora"] .spread-option[aria-selected=true] {
+    background: var(--accent-light);
+  }
+  :root[data-template="aurora"] .spread-option[aria-selected=true]::before,
+  :root[data-template="aurora"] .spread-option[aria-selected=true] + .spread-option::before {
+    border-top-color: transparent;
+  }
+  :root[data-template="aurora"] .spread-option[aria-selected=true] .spread-option-name {
+    color: var(--accent-text);
+    font-weight: var(--weight-bold);
+  }
+  :root[data-template="aurora"] .spread-option-check {
+    color: var(--accent-text);
+  }
+  /* 關於、隱私 */
+  :root[data-template="aurora"] .changelog-entry {
+    border-color: var(--tpl-line);
+  }
+  :root[data-template="aurora"] .changelog-version {
+    color: var(--accent-text);
+  }
+  :root[data-template="aurora"] .privacy-item svg {
+    color: var(--accent-text);
+  }
+  /* 牌面放大檢視（不是抽屜）：深夜藍的遮罩，關閉鈕是玻璃圓鈕 */
+  :root[data-template="aurora"] .card-viewer {
+    background: color-mix(in srgb, #070918 78%, transparent);
+  }
+  :root[data-template="aurora"] .card-viewer .card-viewer-close {
+    border: 1px solid var(--tpl-line);
+    background: var(--tpl-sheet);
+  }
+  :root[data-template="aurora"] .card-viewer-art :is(svg, img) {
+    box-shadow: 0 0 0 1px var(--tpl-gold-line), 0 24px 60px rgba(0, 0, 0, 0.5);
+  }
+
+  /* ── 提示訊息：玻璃膠囊 ── */
+  :root[data-template="aurora"] .toast {
+    border: 1px solid var(--tpl-line);
+    border-radius: 20px;
+    background: var(--tpl-glass-strong);
+    backdrop-filter: var(--tpl-blur);
+    -webkit-backdrop-filter: var(--tpl-blur);
+    box-shadow: var(--tpl-shadow-strong);
+  }
+  /* 從上方輕輕落下、淡入（不從右側滑進來） */
+  :root[data-template="aurora"] .toast {
+    transform: translateY(-12px);
+  }
+  :root[data-template="aurora"] .toast.show {
+    transform: none;
+  }
+  :root[data-template="aurora"] .toast.success .toast-icon {
+    color: var(--success-text);
+  }
+  :root[data-template="aurora"] .toast-action {
+    color: var(--accent-text);
+  }
+
+  /* ── 載入中、捲軸、焦點框 ── */
+  :root[data-template="aurora"] .spinner {
+    border-top-color: var(--tpl-gold);
+  }
+  :root[data-template="aurora"] ::-webkit-scrollbar-thumb {
+    background: var(--tpl-gold-line);
+    border-color: var(--bg);
+  }
+  :root[data-template="aurora"] * {
+    scrollbar-color: var(--tpl-gold-line) transparent;
+  }
+  :root[data-template="aurora"] :focus-visible {
+    outline-color: var(--accent);
+  }
+}
+
+/* 平板：視窗置中，四角都是抽屜的圓角 */
+@media screen and (min-width: 768px) and (max-width: 1023.98px) {
+  :root:root[data-template="aurora"] .modal-overlay:not(.card-viewer) .modal {
+    border-radius: var(--sheet-radius);
+  }
+}
+/* 寬螢幕：視窗是右側面板，提示訊息改到左下角，不蓋住面板的關閉鈕 */
+@media screen and (min-width: 1024px) {
+  :root[data-template="aurora"] .toast-container {
+    top: auto;
+    right: auto;
+    bottom: var(--space-6);
+    left: calc(var(--tpl-rail-w) + var(--space-6));
+  }
+  :root[data-template="aurora"] .toast {
+    transform: translateY(12px);
+  }
+}
+/* 寬螢幕：背景光暈放大，桌面上不會只剩兩個小點 */
+@media screen and (min-width: 768px) {
+  :root[data-template="aurora"] body::before {
+    background:
+      var(--tpl-glow-1) right -160px top -200px / 640px 640px no-repeat,
+      var(--tpl-glow-2) left -220px top 38% / 560px 560px no-repeat;
+  }
+}

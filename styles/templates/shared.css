@@ -1,0 +1,638 @@
+/* 新版型共用的版面與行為（星夜玻璃、現代編輯、沉浸手勢）
+   ─────────────────────────────────────────────
+   這裡只處理結構：導覽列、「我的」分段、底部抽屜式視窗、逐張解讀的翻頁器、沉浸版型的牌堆首頁。
+   顏色一律取自 token（各版型檔定義）；造型（字型、圓角、質感、陰影）留給各版型檔的 skin。
+   規則都以 :root[data-template]:not([data-template="minimal"]) 開頭（下面註解簡稱「新版型」），
+   簡約版型（與 JS 尚未設定版型時）完全不受影響。新元素在簡約版型一律不顯示。
+   會被 JS 改變的狀態：
+   - <html data-template>：版型（index.html 的 inline script 在繪製前就設好）
+   - <html data-tab>：目前分頁（main.js 的 switchTab）
+   - .tpl-nav-item[aria-current="page"]：導覽列目前的項目（「我的」涵蓋統計與設定）
+   - .modal.is-dragging、--sheet-drag：抽屜被往下拖曳中與拖曳距離（src/sheet.js）
+   - .reading-detail.rd-paged、.rd-slide.rd-slide-off、.rd-slide-on：翻頁器（src/pager.js）
+   - .deck-hero.is-dragging、--hero-drag：牌堆被往上拖曳中與拖曳距離（src/hero.js） */
+
+/* ── 新版型專用的元素：簡約版型不顯示 ── */
+:root:not([data-template]) :is(.tpl-nav, .me-hub, .deck-hero, .spread-tiles, .tpl-only),
+:root[data-template="minimal"] :is(.tpl-nav, .me-hub, .deck-hero, .spread-tiles, .tpl-only) {
+  display: none;
+}
+/* 牌堆首頁與牌陣方塊只屬於沉浸手勢 */
+:root:not([data-template="immersive"]) :is(.deck-hero, .spread-tiles) {
+  display: none;
+}
+/* 只在簡約版型出現的說明（例如霓虹主題的說明） */
+:root[data-template]:not([data-template="minimal"]) .minimal-only {
+  display: none;
+}
+
+/* ── 共用 token 的預設值（各版型檔可以覆寫） ── */
+:root[data-template]:not([data-template="minimal"]) {
+  /* 字型：不載入外部字型，只用系統字型堆疊 */
+  --font-serif: "Noto Serif TC", "Source Han Serif TC", "Songti TC", "PMingLiU", serif;
+  --font-sans-tpl: system-ui, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+  /* 底部導覽列：列高、與螢幕底邊的距離（浮動式導覽列設成大於 0）、側欄寬度 */
+  --tpl-nav-h: 64px;
+  --tpl-nav-gap: 0px;
+  --tpl-rail-w: 88px;
+  /* 底部導覽列實際佔掉的高度（含 iPhone 的主畫面指示條） */
+  --tpl-nav-space: calc(var(--tpl-nav-h) + var(--tpl-nav-gap) + env(safe-area-inset-bottom, 0px));
+  --sheet-radius: var(--radius-3xl);
+}
+
+@media screen {
+  /* 頁首半透明底色跟著版型的背景色 */
+  :root[data-template]:not([data-template="minimal"]) .app-header {
+    background: color-mix(in srgb, var(--bg) 85%, transparent);
+  }
+  /* 上方分頁列由導覽列取代 */
+  :root[data-template]:not([data-template="minimal"]) .tabs {
+    display: none;
+  }
+  /* 分段按鈕的點擊範圍至少 44px */
+  :root[data-template]:not([data-template="minimal"]) .seg-item {
+    min-height: 44px;
+  }
+
+  /* ── 導覽列：窄螢幕在底部（拇指區），1024px 以上改成左側直欄 ── */
+  :root[data-template]:not([data-template="minimal"]) .tpl-nav {
+    position: fixed;
+    z-index: var(--z-fixed);
+    left: 0;
+    right: 0;
+    bottom: var(--tpl-nav-gap);
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    gap: var(--space-1);
+    min-height: var(--tpl-nav-h);
+    padding: 0 var(--space-2) env(safe-area-inset-bottom, 0px);
+    background: var(--nav-bg, var(--surface));
+    border-top: 1px solid var(--nav-border, var(--divider));
+    /* 切換分頁的轉場不帶著導覽列一起淡入淡出 */
+    view-transition-name: tpl-nav;
+  }
+  :root[data-template]:not([data-template="minimal"]) .tpl-nav-item {
+    appearance: none;
+    flex: 1 1 0;
+    min-width: 44px;
+    min-height: 48px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: var(--space-1) var(--space-1);
+    border: none;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--nav-fg, var(--text-secondary));
+    font-family: inherit;
+    font-size: var(--text-xs);
+    font-weight: var(--weight-medium);
+    line-height: var(--leading-none);
+    cursor: pointer;
+    transition: color var(--duration-fast) var(--ease-out), background-color var(--duration-fast) var(--ease-out);
+  }
+  :root[data-template]:not([data-template="minimal"]) .tpl-nav-item[aria-current="page"] {
+    color: var(--nav-fg-active, var(--accent));
+    background: var(--nav-active-bg, transparent);
+    font-weight: var(--weight-semibold);
+  }
+  :root[data-template]:not([data-template="minimal"]) .tpl-nav-item:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: -3px;
+  }
+  :root[data-template]:not([data-template="minimal"]) .tpl-nav-icon {
+    width: 22px;
+    height: 22px;
+    flex: none;
+  }
+  /* 頁面底部讓出導覽列的高度；鍵盤移動焦點時捲動也讓開它 */
+  :root[data-template]:not([data-template="minimal"]) body {
+    padding-bottom: var(--tpl-nav-space);
+  }
+  :root[data-template]:not([data-template="minimal"]) {
+    scroll-padding-bottom: var(--tpl-nav-space);
+  }
+}
+@media screen and (min-width: 1024px) {
+  :root[data-template]:not([data-template="minimal"]) .tpl-nav {
+    top: 0;
+    bottom: 0;
+    right: auto;
+    width: var(--tpl-rail-w);
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: var(--space-2);
+    padding: calc(var(--header-h) + var(--space-4)) var(--space-2) var(--space-4);
+    border-top: none;
+    border-right: 1px solid var(--nav-border, var(--divider));
+  }
+  :root[data-template]:not([data-template="minimal"]) .tpl-nav-item {
+    flex: none;
+    width: 100%;
+    min-height: 64px;
+  }
+  :root[data-template]:not([data-template="minimal"]) body {
+    padding-bottom: 0;
+    padding-left: var(--tpl-rail-w);
+  }
+  :root[data-template]:not([data-template="minimal"]) {
+    scroll-padding-bottom: 0;
+  }
+}
+
+/* ── 我的：統計｜設定 分段與個人牌（只在統計、設定分頁顯示） ── */
+:root:not([data-tab="statistics"]):not([data-tab="settings"]) .me-hub {
+  display: none;
+}
+@media screen {
+  :root[data-template]:not([data-template="minimal"]) .me-hub {
+    margin-bottom: var(--space-6);
+  }
+  :root[data-template]:not([data-template="minimal"]) .me-seg {
+    margin-bottom: var(--space-5);
+  }
+  :root[data-template]:not([data-template="minimal"]) .me-hub .profile-row {
+    margin-bottom: 0;
+  }
+}
+
+/* ── 視窗：窄螢幕是底部抽屜，寬螢幕是右側面板（牌面放大檢視不變） ── */
+@media screen {
+  :root[data-template]:not([data-template="minimal"]) .modal-overlay:not(.card-viewer) {
+    background: var(--scrim, rgba(0, 0, 0, 0.6));
+  }
+  /* 視窗內的「表面色」改用抽屜色：黏住的標題列、牌卡分頁籤的遮罩都跟著換 */
+  :root[data-template]:not([data-template="minimal"]) .modal-overlay:not(.card-viewer) .modal {
+    --surface: var(--sheet-bg);
+    background: var(--surface);
+  }
+}
+@media screen and (max-width: 767.98px) {
+  :root[data-template]:not([data-template="minimal"]) .modal-overlay:not(.card-viewer) {
+    align-items: flex-end;
+    padding: 0;
+  }
+  :root[data-template]:not([data-template="minimal"]) .modal-overlay:not(.card-viewer) .modal {
+    max-width: none;
+    width: 100%;
+    max-height: 92vh;
+    max-height: 92dvh;
+    border-radius: var(--sheet-radius) var(--sheet-radius) 0 0;
+    border-bottom: none;
+    padding-bottom: calc(var(--modal-pad) + env(safe-area-inset-bottom, 0px));
+    transform: translateY(100%);
+    transition: transform var(--duration-slow) var(--ease-out);
+  }
+  :root[data-template]:not([data-template="minimal"]) .modal-overlay.show:not(.card-viewer) .modal {
+    transform: translateY(var(--sheet-drag, 0px));
+  }
+  /* 拖曳中跟著手指走，不要轉場 */
+  :root[data-template]:not([data-template="minimal"]) .modal-overlay:not(.card-viewer) .modal.is-dragging {
+    transition: none;
+  }
+  /* 標題列是拖曳把手：往下拖可關閉；不讓瀏覽器把這裡的手勢當成捲動或下拉重新整理 */
+  :root[data-template]:not([data-template="minimal"]) .modal-overlay:not(.card-viewer) .modal-header {
+    padding-top: calc(var(--modal-pad) + var(--space-2));
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  :root[data-template]:not([data-template="minimal"]) .modal-overlay:not(.card-viewer) .modal-header::before {
+    content: "";
+    position: absolute;
+    top: var(--space-2);
+    left: 50%;
+    width: 40px;
+    height: 5px;
+    margin-left: -20px;
+    border-radius: var(--radius-full);
+    background: var(--sheet-handle, var(--divider));
+  }
+}
+@media screen and (min-width: 1024px) {
+  :root[data-template]:not([data-template="minimal"]) .modal-overlay:not(.card-viewer) {
+    justify-content: flex-end;
+    align-items: stretch;
+    padding: 0;
+  }
+  :root[data-template]:not([data-template="minimal"]) .modal-overlay:not(.card-viewer) .modal {
+    width: min(520px, 100%);
+    max-width: none;
+    height: 100%;
+    max-height: none;
+    border-radius: var(--sheet-radius) 0 0 var(--sheet-radius);
+    border-right: none;
+    transform: translateX(100%);
+    transition: transform var(--duration-slow) var(--ease-out);
+  }
+  :root[data-template]:not([data-template="minimal"]) .modal-overlay.show:not(.card-viewer) .modal {
+    transform: none;
+  }
+}
+
+/* ── 逐張解讀翻頁器：一次一張，上一張／下一張、左右滑動、位置指示（三種樣式只有結構，造型交給 skin） ── */
+@media screen {
+  :root[data-template]:not([data-template="minimal"]) .rd-paged .rd-toggle-all {
+    display: none;
+  }
+  :root[data-template]:not([data-template="minimal"]) .rd-paged .rd-slide-off {
+    display: none;
+  }
+  /* 左右滑動換張：水平手勢交給程式，垂直捲動照常 */
+  :root[data-template]:not([data-template="minimal"]) .rd-paged #readingDetailList {
+    touch-action: pan-y;
+  }
+  :root[data-template]:not([data-template="minimal"]) .rd-paged .rd-item {
+    border-bottom: none;
+  }
+  :root[data-template]:not([data-template="minimal"]) .rd-slide-on {
+    animation: rd-slide-in var(--duration-slow) var(--ease-out);
+  }
+  :root[data-template]:not([data-template="minimal"]) .rd-pager-ind {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-bottom: var(--space-2);
+  }
+  :root[data-template]:not([data-template="minimal"]) .rd-pager-count {
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: var(--tracking-wider);
+  }
+  /* 星夜玻璃：圓點，目前這張拉長 */
+  :root[data-template]:not([data-template="minimal"]) .rd-dots {
+    display: flex;
+    gap: 6px;
+  }
+  :root[data-template]:not([data-template="minimal"]) .rd-dots > span {
+    width: 6px;
+    height: 6px;
+    border-radius: var(--radius-full);
+    background: var(--pager-track, var(--divider));
+    transition: width var(--duration-normal) var(--ease-out);
+  }
+  :root[data-template]:not([data-template="minimal"]) .rd-dots > span.on {
+    width: 18px;
+    background: var(--pager-fill, var(--accent));
+  }
+  /* 現代編輯：牌位分頁籤（role=tablist） */
+  :root[data-template]:not([data-template="minimal"]) .rd-tabs {
+    display: flex;
+    gap: var(--space-2);
+    width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding: 2px;
+  }
+  :root[data-template]:not([data-template="minimal"]) .rd-tab {
+    appearance: none;
+    flex: 1 0 auto;
+    min-width: 72px;
+    min-height: 56px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--divider);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    color: var(--text);
+    font-family: inherit;
+    cursor: pointer;
+  }
+  :root[data-template]:not([data-template="minimal"]) .rd-tab-pos {
+    font-size: var(--text-2xs);
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+  :root[data-template]:not([data-template="minimal"]) .rd-tab-name {
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    white-space: nowrap;
+  }
+  :root[data-template]:not([data-template="minimal"]) .rd-tab[aria-selected="true"] {
+    background: var(--text);
+    border-color: var(--text);
+    color: var(--bg);
+  }
+  :root[data-template]:not([data-template="minimal"]) .rd-tab[aria-selected="true"] .rd-tab-pos {
+    color: inherit;
+  }
+  :root[data-template]:not([data-template="minimal"]) .rd-tab:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  /* 沉浸手勢：上方的限時動態進度條 + 大張牌 */
+  :root[data-template]:not([data-template="minimal"]) .rd-story {
+    display: flex;
+    gap: 6px;
+    width: 100%;
+  }
+  :root[data-template]:not([data-template="minimal"]) .rd-story > span {
+    flex: 1;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--pager-track, var(--divider));
+  }
+  :root[data-template]:not([data-template="minimal"]) .rd-story > span.on {
+    background: var(--pager-fill, var(--accent));
+  }
+  :root[data-template]:not([data-template="minimal"]) .rd-story-card {
+    display: flex;
+    justify-content: center;
+    margin: var(--space-2) 0 var(--space-4);
+  }
+  :root[data-template]:not([data-template="minimal"]) .rd-story-card picture {
+    display: contents;
+  }
+  :root[data-template]:not([data-template="minimal"]) .rd-story-card :is(svg, img) {
+    display: block;
+    width: min(56vw, 224px);
+    height: auto;
+    border: 1px solid var(--divider);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--card-lift, var(--shadow-lg));
+  }
+  :root[data-template]:not([data-template="minimal"]) .rd-story-card :is(svg, img).reversed {
+    transform: rotate(180deg);
+  }
+  /* 文字模式沒有牌面：畫一張只有牌名的牌 */
+  :root[data-template]:not([data-template="minimal"]) .rd-story-blank {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: min(56vw, 224px);
+    aspect-ratio: 300 / 519;
+    padding: var(--space-4);
+    border: 2px solid var(--accent);
+    border-radius: var(--radius-xl);
+    background: var(--surface-elevated);
+    box-shadow: var(--card-lift, var(--shadow-lg));
+    color: var(--accent-text, var(--text));
+    font-size: var(--text-2xl);
+    font-weight: var(--weight-bold);
+    text-align: center;
+    line-height: var(--leading-tight);
+  }
+  :root[data-template]:not([data-template="minimal"]) .rd-pager-nav {
+    display: flex;
+    gap: var(--space-3);
+    margin-top: var(--space-4);
+  }
+  :root[data-template]:not([data-template="minimal"]) .rd-pager-btn {
+    min-height: 48px;
+    min-width: 0;
+    padding: 0 var(--space-5);
+  }
+  :root[data-template]:not([data-template="minimal"]) .rd-pager-prev {
+    flex: 0 0 auto;
+  }
+  :root[data-template]:not([data-template="minimal"]) .rd-pager-next {
+    flex: 1 1 auto;
+    white-space: normal;
+  }
+  :root[data-template]:not([data-template="minimal"]) .rd-pager-btn[aria-disabled="true"] {
+    opacity: 0.45;
+    cursor: default;
+  }
+  :root[data-template]:not([data-template="minimal"]) .rd-pager-hint {
+    margin-top: var(--space-3);
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+    text-align: center;
+  }
+  /* 有滑鼠、沒有觸控的裝置不提示滑動 */
+  @media (hover: hover) and (pointer: fine) {
+    :root[data-template]:not([data-template="minimal"]) .rd-pager-hint {
+      display: none;
+    }
+  }
+}
+@keyframes rd-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(var(--rd-from, 16px));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ── 沉浸手勢：牌堆首頁與牌陣方塊 ── */
+@media screen {
+  :root[data-template="immersive"] .spread-field {
+    display: none;
+  }
+  :root[data-template="immersive"] .deck-hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-3);
+    margin-bottom: var(--space-6);
+  }
+  :root[data-template="immersive"] .deck-hero-stack {
+    /* 牌寬隨螢幕縮放，扇形展開的牌在 320px 寬也不超出版面 */
+    --hero-card-w: clamp(76px, 26vw, 112px);
+    position: relative;
+    width: calc(var(--hero-card-w) * 2.5);
+    max-width: 100%;
+    height: calc(var(--hero-card-w) * 1.625 + 46px);
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    cursor: grab;
+  }
+  :root[data-template="immersive"] .deck-hero.is-dragging .deck-hero-stack {
+    cursor: grabbing;
+  }
+  :root[data-template="immersive"] .deck-hero-card {
+    position: absolute;
+    left: 50%;
+    top: 30px;
+    width: var(--hero-card-w);
+    height: calc(var(--hero-card-w) * 1.625);
+    margin-left: calc(var(--hero-card-w) / -2);
+    border-radius: var(--radius-lg);
+    background: var(--card-back);
+    border: 2px solid var(--card-back-edge);
+    transform-origin: 50% 90%;
+  }
+  :root[data-template="immersive"] .deck-hero-card:nth-child(1) {
+    transform: translateX(calc(var(--hero-card-w) * -0.54)) rotate(-16deg);
+  }
+  :root[data-template="immersive"] .deck-hero-card:nth-child(2) {
+    transform: translateX(calc(var(--hero-card-w) * -0.27)) translateY(-14px) rotate(-8deg);
+  }
+  :root[data-template="immersive"] .deck-hero-card:nth-child(3) {
+    transform: translateX(calc(var(--hero-card-w) * 0.27)) translateY(-14px) rotate(8deg);
+  }
+  :root[data-template="immersive"] .deck-hero-card:nth-child(4) {
+    transform: translateX(calc(var(--hero-card-w) * 0.54)) rotate(16deg);
+  }
+  :root[data-template="immersive"] .deck-hero-top {
+    top: 0;
+    border-color: var(--tpl-coral-deco, var(--accent));
+    box-shadow: var(--card-lift, var(--shadow-xl));
+    transform: translateY(var(--hero-drag, 0px));
+    transition: transform var(--duration-slow) var(--ease-out), opacity var(--duration-slow) var(--ease-out);
+  }
+  :root[data-template="immersive"] .deck-hero.is-dragging .deck-hero-top {
+    transition: none;
+  }
+  /* 抽出：最上面那張往上飛走，畫面換成結果後再回到牌堆 */
+  :root[data-template="immersive"] .deck-hero.is-drawn .deck-hero-top {
+    transform: translateY(-140px);
+    opacity: 0;
+  }
+  :root[data-template="immersive"] .deck-hero-hint {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-1);
+    font-size: var(--text-base);
+    font-weight: var(--weight-semibold);
+    color: var(--text);
+    text-align: center;
+  }
+  :root[data-template="immersive"] .deck-hero-chevron {
+    width: 22px;
+    height: 22px;
+    color: var(--tpl-coral, var(--accent-text));
+  }
+  :root[data-template="immersive"] .spread-tiles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-bottom: var(--space-6);
+  }
+  :root[data-template="immersive"] .spread-tiles-label {
+    flex: 0 0 100%;
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+    color: var(--text-secondary);
+  }
+  :root[data-template="immersive"] .spread-tile {
+    appearance: none;
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 76px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    padding: var(--space-2);
+    border: 1.5px solid var(--divider);
+    border-radius: var(--radius-xl);
+    background: var(--surface-elevated);
+    color: var(--text);
+    font-family: inherit;
+    font-size: var(--text-sm);
+    line-height: var(--leading-tight);
+    text-align: center;
+    cursor: pointer;
+  }
+  :root[data-template="immersive"] .spread-tile[aria-pressed="true"] {
+    border-color: var(--accent);
+    background: var(--accent-soft, var(--accent-light));
+    font-weight: var(--weight-bold);
+  }
+  :root[data-template="immersive"] .spread-tile:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  :root[data-template="immersive"] .spread-tile-more {
+    flex: 0 0 auto;
+    min-width: 64px;
+  }
+  :root[data-template="immersive"] .spread-tile-glyph {
+    position: relative;
+    display: flex;
+    gap: 3px;
+    height: 20px;
+    color: var(--tpl-glyph, var(--text-tertiary));
+  }
+  :root[data-template="immersive"] .spread-tile[aria-pressed="true"] .spread-tile-glyph {
+    color: var(--accent);
+  }
+  :root[data-template="immersive"] .spread-tile-glyph > span {
+    width: 12px;
+    height: 20px;
+    border-radius: 3px;
+    background: currentColor;
+  }
+  :root[data-template="immersive"] .spread-tile-glyph-cross {
+    width: 26px;
+  }
+  :root[data-template="immersive"] .spread-tile-glyph-cross > span {
+    position: absolute;
+    left: 7px;
+    top: 0;
+  }
+  :root[data-template="immersive"] .spread-tile-glyph-cross > span + span {
+    left: 0;
+    top: 6px;
+    width: 26px;
+    height: 8px;
+  }
+  :root[data-template="immersive"] .spread-tile-dots {
+    width: 20px;
+    height: 20px;
+    color: var(--text-secondary);
+  }
+  :root[data-template="immersive"] .spread-tile-current {
+    font-size: var(--text-xs);
+    font-weight: var(--weight-medium);
+    color: var(--text-secondary);
+  }
+  :root[data-template="immersive"] .spread-tile-current:empty {
+    display: none;
+  }
+}
+
+/* ── 列印：新元素一律不印，逐張解讀印出全部 ── */
+@media print {
+  .tpl-nav,
+  .me-hub,
+  .deck-hero,
+  .spread-tiles,
+  .rd-pager-ind,
+  .rd-pager-nav,
+  .rd-pager-hint,
+  .rd-story-card {
+    display: none !important;
+  }
+}
+
+/* ── 減少動態：分頁轉場與翻頁動畫都關掉（其他轉場由 style.css 統一縮短） ── */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
+/* 共用的預設值（:where 不加權重，各版型的 skin 可以直接覆寫）
+   字卡評分列黏在底部時，停在底部導覽列上方；寬螢幕的視窗是右側面板，提示訊息移到左下角，不蓋住面板的關閉鈕 */
+@media screen and (max-width: 1023.98px) {
+  :root:where([data-template]:not([data-template="minimal"])) .flash-actions {
+    bottom: var(--tpl-nav-space);
+  }
+}
+@media screen and (min-width: 1024px) {
+  :root:where([data-template]:not([data-template="minimal"])) .toast-container {
+    top: auto;
+    right: auto;
+    bottom: var(--space-6);
+    left: calc(var(--tpl-rail-w) + var(--space-6));
+  }
+}

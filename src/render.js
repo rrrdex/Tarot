@@ -13,7 +13,8 @@ import { mofaTerms } from './mofa.js';
 import { waiteTermZh } from './waite-zh.js';
 import { cardClass, cardSystems, waiteCourtLooks } from './systems.js';
 import { cardMeaningText, cardMeanings, keywordsFor } from './meanings.js';
-import { loadContexts, loadDeck, loadLore, loadMeaningTexts, loadedDeck, loadedMeaningTexts } from './lazy.js';
+import { loadContexts, loadDeck, loadLore, loadMeaningTexts, loadRefs, loadedDeck, loadedMeaningTexts, loadedRefs } from './lazy.js';
+import { otherNameRows, relatedKindLabel, symbolDeckNote, symbolsOfCard, timingText } from './refs-ui.js';
 import { currentTab, lastReadingData } from './state.js';
 import { renderResults, shownReading } from './reading.js';
 import { renderCardDatabase } from './database.js';
@@ -58,7 +59,11 @@ function refreshCardVisuals() {
   renderProfileCards();
   if (currentTab === 'database') renderCardDatabase();
   if (currentTab === 'learn') renderLearnStage();
-  if (document.getElementById('cardModal')?.classList.contains('show')) renderCardModalArt();
+  if (document.getElementById('cardModal')?.classList.contains('show')) {
+    renderCardModalArt();
+    // 符號的「僅原版牌圖／僅線稿牌組」跟著牌面樣式
+    if (cardViewerTarget && loadedRefs()) renderCardModalRefs(loadedRefs(), cardViewerTarget.card);
+  }
 }
 const CARD_THUMB_WIDTHS = [160, 320, 400];
 const CARD_FULL_WIDTH = 500;
@@ -231,9 +236,11 @@ function setIconSegOffline(on) {
   }
 }
 let cardModalKey = null;
+// 情境分頁「放在不同牌位」目前顯示的方向（fixed：抽到的牌，不能切換）
+let positionsView = { fixed: false, ori: 'upright' };
 // fromReading：從占卜結果點開時，副標題也寫出這次抽到的正逆位。
 // drawn：這個正逆位是真的抽到的（占卜結果、每日一牌）；測驗與生日牌只是指定要看哪一面
-export function openCardModal(nameKey, orientation, { fromReading = false, drawn = fromReading } = {}) {
+export function openCardModal(nameKey, orientation, { fromReading = false, drawn = fromReading, seg = 'meaning' } = {}) {
   const card = fullTarotCards.find(c => c.nameKey === nameKey);
   const m = cardMeanings[nameKey];
   if (!card || !m) return;
@@ -259,6 +266,13 @@ export function openCardModal(nameKey, orientation, { fromReading = false, drawn
   drawnBlockFirst('meaningUpright', 'meaningReversed', orientation === 'reversed');
   drawnBlockFirst('imageUpright', 'imageReversed', orientation === 'reversed');
   cardModalKey = nameKey;
+  // 情境分頁的「放在不同牌位」：抽到的牌只顯示抽到的那一面；其他情況可切換正逆位，從指定的那一面（沒指定就正位）開始
+  positionsView = { fixed: !!(drawn && orientationNames[orientation]), ori: orientation === 'reversed' ? 'reversed' : 'upright' };
+  const compareBtn = document.getElementById('cardModalCompare');
+  if (compareBtn) {
+    compareBtn.dataset.card = nameKey;
+    compareBtn.setAttribute('aria-label', t('compare.open.label', { name: card.name }));
+  }
   // 完整牌義另外載入：先顯示「載入中」，到了再填；視窗已換成別張牌就不覆蓋
   if (loadedMeaningTexts()) {
     fillCardModalTexts(card);
@@ -272,6 +286,15 @@ export function openCardModal(nameKey, orientation, { fromReading = false, drawn
   loadContexts()
     .then(m => { if (cardModalKey === nameKey) renderCardModalContext(m, nameKey); })
     .catch(() => { if (cardModalKey === nameKey) renderCardModalContextFailed(); });
+  // 對應系統不靠另外載入的資料，先畫；日期對應等參考資料到了再補上
+  renderCardModalSystems(card);
+  loadRefs()
+    .then(m => {
+      if (cardModalKey !== nameKey) return;
+      renderCardModalSystems(card);
+      renderCardModalRefs(m, card);
+    })
+    .catch(() => { if (cardModalKey === nameKey) renderCardModalRefs(null, card); });
   loadLore()
     .then(m => {
       if (cardModalKey !== nameKey) return;
@@ -285,7 +308,8 @@ export function openCardModal(nameKey, orientation, { fromReading = false, drawn
       const list = document.getElementById('cardModalLoreList');
       if (list) list.innerHTML = chunkFailedHTML();
     });
-  setCardModalSeg('meaning');
+  // 一般從牌義看起；從源流的「相關的牌」點過去時停在源流，方便接著比對
+  setCardModalSeg(seg);
   const overlay = document.getElementById('cardModal');
   const wasOpen = overlay.classList.contains('show');
   // 每次換牌都從頂端看起；在視窗裡點了另一張牌（延伸閱讀的相關牌）時，焦點移到新的牌名上
@@ -319,6 +343,82 @@ function drawnBlockFirst(upId, rvId, reversedFirst) {
 // 前往資料庫知識庫某一段的按鈕（main.js 的 openLibrary 動作）
 function libraryLinkHTML(id, label, extraClass = 'text-link') {
   return `<button type="button" class="${extraClass}" data-action="openLibrary" data-lib="${escapeHTML(id)}">${label}</button>`;
+}
+// 對應系統的一列：vars 原樣代入，tvars 的值是字串鍵，先翻譯再代入（例如「{planet}在{sign}」）
+function systemsRowVars(r) {
+  if (!r.tvars) return r.vars;
+  const vars = { ...(r.vars || {}) };
+  Object.keys(r.tvars).forEach(k => { vars[k] = t(r.tvars[k]); });
+  return vars;
+}
+// 對應系統：每套系統一個小標題，欄位與值排成兩欄的 <dl>；各欄怎麼讀只在最後連一次到知識庫。
+// 不靠另外載入的資料，打開視窗就畫；參考資料到了再重畫一次，黃金黎明那一組多一列「對應日期」與它的註腳
+function renderCardModalSystems(card) {
+  const sysBlock = document.getElementById('cardModalSystemsBlock');
+  const sysList = document.getElementById('cardModalSystemsList');
+  if (!sysBlock || !sysList) return;
+  const groups = cardSystems(card) || [];
+  const refs = loadedRefs();
+  const timing = timingText(refs?.cardRefs?.[card.nameKey]?.timing);
+  const isStd = (g) => timing && g.source === 'systems.std.source';
+  sysList.innerHTML = groups.map(g => `
+<div class="systems-group">
+<h4 class="systems-source">${escapeHTML(t(g.source))}</h4>
+<dl class="systems-rows">
+${g.rows.map(r => `<div class="systems-row"><dt>${escapeHTML(t(r.label))}</dt><dd>${escapeHTML(t(r.value, systemsRowVars(r)))}</dd></div>`).join('')}
+${isStd(g) ? `<div class="systems-row refs-timing"><dt>${escapeHTML(t('refs.timing.label'))}</dt><dd>${escapeHTML(timing)}</dd></div>` : ''}
+</dl>
+${g.note ? `<p class="waite-terms-note">${escapeHTML(t(g.note))}</p>` : ''}
+${isStd(g) ? `<p class="waite-terms-note refs-timing-note">${escapeHTML(refs.refsNotes?.timing || '')}</p>` : ''}
+</div>
+`).join('') + (groups.length ? `<p class="lore-link-line">${escapeHTML(t('systems.guide.lead'))}${libraryLinkHTML('systems-guide', escapeHTML(t('systems.guide.link')))}</p>` : '');
+  sysBlock.classList.toggle('hidden', !groups.length);
+}
+// 源流分頁的參考資料：相關的牌、其他牌系的名稱、畫面上的符號。refs 為 null 表示片段載不到：相關的牌那格說明需要網路，其餘收起
+function renderCardModalRefs(refs, card) {
+  const relBlock = document.getElementById('cardModalRelatedBlock');
+  const namesBlock = document.getElementById('cardModalNamesBlock');
+  const symBlock = document.getElementById('cardModalSymbolsBlock');
+  if (!relBlock || !namesBlock || !symBlock) return;
+  if (!refs) {
+    relBlock.classList.remove('hidden');
+    document.getElementById('cardModalRelated').innerHTML = `<li>${chunkFailedHTML()}</li>`;
+    namesBlock.classList.add('hidden');
+    symBlock.classList.add('hidden');
+    return;
+  }
+  const data = refs.cardRefs[card.nameKey] || {};
+  // 相關的牌：關係（相似、對照、延續、呼應）、牌名（點了換看那張牌）、為什麼相關
+  const related = (data.related || []).map(r => ({ ...r, other: fullTarotCards.find(c => c.nameKey === r.card) })).filter(r => r.other);
+  document.getElementById('cardModalRelated').innerHTML = related.map(r => `
+<li class="refs-rel">
+<p class="refs-rel-head"><span class="tag refs-kind" data-kind="${escapeHTML(r.kind)}">${escapeHTML(relatedKindLabel(r.kind))}</span><button type="button" class="text-link refs-rel-card" data-action="openCardModal" data-seg="lore" data-card="${escapeHTML(r.other.nameKey)}" data-orientation="upright">${escapeHTML(r.other.name)}</button></p>
+<p class="refs-rel-note">${escapeHTML(r.note || '')}</p>
+</li>`).join('');
+  relBlock.classList.toggle('hidden', !related.length);
+  // 其他牌系的名稱：小型 <dl>，接著這張牌的補充說明（提到力量與正義對調時連到知識庫那一段），最後是收合的「說明」
+  const names = data.names;
+  const rows = otherNameRows(card, names);
+  let note = names && names.note ? escapeHTML(names.note) : '';
+  const SWAP = '力量與正義為什麼對調';
+  if (note.includes(SWAP)) note = note.replace(SWAP, libraryLinkHTML('strength-justice', SWAP));
+  const notes = refs.refsNotes || {};
+  const help = [notes.names, cardClass(card) === 'court' ? notes.thothCourts : ''].filter(Boolean);
+  document.getElementById('cardModalNames').innerHTML = rows.length ? `
+<dl class="systems-rows refs-names">
+${rows.map(([label, value]) => `<div class="systems-row"><dt>${escapeHTML(label)}</dt><dd>${value}</dd></div>`).join('')}
+</dl>
+${note ? `<p class="waite-terms-note">${note}</p>` : ''}
+${help.length ? `<details class="refs-help"><summary class="refs-help-title">${escapeHTML(t('refs.names.help'))}</summary>${help.map(p => `<p class="waite-terms-note">${escapeHTML(p)}</p>`).join('')}</details>` : ''}
+` : '';
+  namesBlock.classList.toggle('hidden', !rows.length);
+  // 畫面上的符號：符號名是前往資料庫符號分段的按鈕（提示文字是它在畫面上的位置），旁邊也直接寫出位置
+  const symbols = symbolsOfCard(refs.symbolIndex, card.nameKey);
+  document.getElementById('cardModalSymbols').innerHTML = symbols.map(({ symbol, entry }) => {
+    const where = entry.where + symbolDeckNote(entry, visualStyle);
+    return `<li class="refs-sym"><button type="button" class="tag" data-action="openSymbol" data-sym="${escapeHTML(symbol.id)}" title="${escapeHTML(where)}">${escapeHTML(symbol.title)}</button><span class="refs-sym-where">${escapeHTML(where)}</span></li>`;
+  }).join('');
+  symBlock.classList.toggle('hidden', !symbols.length);
 }
 function renderCardModalLore({ cardLore, getCardLore, loreLibrary = [] }, card, nameKey) {
   const lore = cardLore[nameKey];
@@ -395,29 +495,6 @@ function renderCardModalLore({ cardLore, getCardLore, loreLibrary = [] }, card, 
 `).join('');
     iconBlock.classList.toggle('hidden', !icons.length);
   }
-  // 對應系統的一列：vars 原樣代入，tvars 的值是字串鍵，先翻譯再代入（例如「{planet}在{sign}」）
-  const systemsRowVars = r => {
-    if (!r.tvars) return r.vars;
-    const vars = { ...(r.vars || {}) };
-    Object.keys(r.tvars).forEach(k => { vars[k] = t(r.tvars[k]); });
-    return vars;
-  };
-  const sysBlock = document.getElementById('cardModalSystemsBlock');
-  const sysList = document.getElementById('cardModalSystemsList');
-  if (sysBlock && sysList) {
-    const groups = cardSystems(card) || [];
-    // 每套系統一個小標題，欄位與值排成兩欄的 <dl>；各欄怎麼讀只在最後連一次到知識庫
-    sysList.innerHTML = groups.map(g => `
-<div class="systems-group">
-<h4 class="systems-source">${escapeHTML(t(g.source))}</h4>
-<dl class="systems-rows">
-${g.rows.map(r => `<div class="systems-row"><dt>${escapeHTML(t(r.label))}</dt><dd>${escapeHTML(t(r.value, systemsRowVars(r)))}</dd></div>`).join('')}
-</dl>
-${g.note ? `<p class="waite-terms-note">${escapeHTML(t(g.note))}</p>` : ''}
-</div>
-`).join('') + (groups.length ? `<p class="lore-link-line">${escapeHTML(t('systems.guide.lead'))}${libraryLinkHTML('systems-guide', escapeHTML(t('systems.guide.link')))}</p>` : '');
-    sysBlock.classList.toggle('hidden', !groups.length);
-  }
   const list = document.getElementById('cardModalLoreList');
   if (!list) return;
   // 花色、數字、位階與大阿卡納的共通背景每張牌都一樣，只寫在資料庫的知識庫裡；這裡列成連結，
@@ -492,6 +569,8 @@ function renderCardModalContextFailed() {
   section.classList.remove('hidden');
   document.getElementById('cardModalContextList').innerHTML = chunkFailedHTML();
   section.querySelector('.reflection-block')?.classList.add('hidden');
+  renderCardModalPositions(null);
+  renderCardModalJournal(null);
 }
 function renderCardModalContext({ cardContexts, contextText }, nameKey) {
   const section = document.getElementById('cardModalContextSection');
@@ -512,6 +591,8 @@ function renderCardModalContext({ cardContexts, contextText }, nameKey) {
     { icon: '💼', label: t('card.context.career'), text: contextText(card, 'career') },
     { icon: '💰', label: t('card.context.wealth'), text: contextText(card, 'wealth') },
     { icon: '🌿', label: t('card.context.wellbeing'), text: contextText(card, 'wellbeing') },
+    { icon: '📚', label: t('card.context.study'), text: contextText(card, 'study') },
+    { icon: '🌱', label: t('card.context.growth'), text: contextText(card, 'growth') },
     {
       icon: '⚖️',
       label: t('card.context.yesno'),
@@ -526,6 +607,66 @@ function renderCardModalContext({ cardContexts, contextText }, nameKey) {
 </div>
 `).join('');
   document.getElementById('cardModalReflection').textContent = contextReflection(cardContexts, card);
+  renderCardModalPositions(ctx.positions);
+  renderCardModalJournal(ctx.journal);
+}
+// 「放在不同牌位」：建議、阻礙、結果三個位置各一段，只顯示一個方向。
+// 抽到的牌固定在抽到的那一面並標出來；其他情況放一組正位／逆位切換鈕（aria-pressed），三段一起換
+const POSITION_ROLES = ['advice', 'obstacle', 'outcome'];
+let positionsData = null;
+function renderCardModalPositions(positions) {
+  const box = document.getElementById('cardModalPositions');
+  if (!box) return;
+  positionsData = positions && POSITION_ROLES.some(r => positions[r]) ? positions : null;
+  box.classList.toggle('hidden', !positionsData);
+  if (!positionsData) {
+    box.innerHTML = '';
+    return;
+  }
+  const { fixed, ori } = positionsView;
+  const oriName = (o) => t(orientationNames[o]);
+  const control = fixed
+    ? `<span class="ctx-pos-ori">${escapeHTML(oriName(ori) + t('card.meaning.drawn'))}</span>`
+    : `<div class="segmented ctx-pos-toggle" role="group" aria-labelledby="cardModalPositionsTitle">
+${['upright', 'reversed'].map(o => `<button type="button" class="seg-item${o === ori ? ' active' : ''}" data-pos-ori="${o}" aria-pressed="${o === ori}">${escapeHTML(oriName(o))}</button>`).join('')}
+</div>`;
+  box.innerHTML = `
+<div class="ctx-pos-head">
+<h3 class="context-title" id="cardModalPositionsTitle">${escapeHTML(t('card.positions.title'))}</h3>
+${control}
+</div>
+<dl class="ctx-pos-list">
+${POSITION_ROLES.map(r => `<div class="context-row"><dt class="context-label">${escapeHTML(t(`card.positions.${r}`))}</dt><dd class="context-text" data-role="${r}"></dd></div>`).join('')}
+</dl>`;
+  fillPositionTexts();
+}
+function fillPositionTexts() {
+  const box = document.getElementById('cardModalPositions');
+  if (!box || !positionsData) return;
+  const ori = positionsView.ori;
+  box.querySelectorAll('[data-role]').forEach(dd => {
+    dd.textContent = positionsData[dd.dataset.role]?.[ori] || '';
+  });
+  box.querySelectorAll('[data-pos-ori]').forEach(b => {
+    const on = b.dataset.posOri === ori;
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-pressed', on);
+  });
+}
+document.getElementById('cardModalPositions')?.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-pos-ori]');
+  if (!btn || positionsView.fixed) return;
+  positionsView.ori = btn.dataset.posOri === 'reversed' ? 'reversed' : 'upright';
+  fillPositionTexts();
+});
+// 反思問題下方的「書寫提問」：三個可以寫進日記的問題
+function renderCardModalJournal(list) {
+  const block = document.getElementById('cardModalJournalBlock');
+  const ol = document.getElementById('cardModalJournal');
+  if (!block || !ol) return;
+  const items = Array.isArray(list) ? list.filter(q => typeof q === 'string' && q) : [];
+  ol.innerHTML = items.map(q => `<li>${escapeHTML(q)}</li>`).join('');
+  block.classList.toggle('hidden', !items.length);
 }
 const cardModalSegEl = document.getElementById('cardModalSeg');
 if (cardModalSegEl) {
