@@ -3,7 +3,7 @@ import { debounce, escapeHTML, scrollBehavior } from './utils.js';
 import { fullTarotCards, orientationNames, suitNames } from './data.js';
 import { cardMeanings } from './meanings.js';
 import { loadContexts, loadLore, loadMeaningTexts, loadRefs, loadedContexts, loadedDeck, loadedLore, loadedMeaningTexts, loadedRefs } from './lazy.js';
-import { cardThumb, visualStyle } from './render.js';
+import { cardThumb, careHTML, visualStyle } from './render.js';
 import { cardClass, cardSystems } from './systems.js';
 import { waiteAdditional, waiteTerms } from './waite.js';
 import { waiteTermZh } from './waite-zh.js';
@@ -127,12 +127,14 @@ function renderLibrary() {
   return libraryPromise;
 }
 const cardByKey = new Map(fullTarotCards.map(c => [c.nameKey, c]));
-// 每段預設收合；id 讓卡片詳情的「延伸閱讀」能連過來。分節的段落每節一個小標題
+// 每段預設收合；id 讓卡片詳情的「延伸閱讀」能連過來。分節的段落每節一個小標題。
+// 「抽到讓你不安的牌」那一組的文字提到網站附的求助專線，組末統一附上
 function libraryGroupHTML(g) {
   return `
 <section class="deck-history-group" aria-labelledby="lib-group-${escapeHTML(g.id)}">
 <h3 class="deck-history-heading" id="lib-group-${escapeHTML(g.id)}">${escapeHTML(g.title)}</h3>
 ${g.items.map(libraryItemHTML).join('')}
+${g.id === 'unsettling' ? careHTML() : ''}
 </section>`;
 }
 function libraryItemHTML(item) {
@@ -354,7 +356,7 @@ function getTextIndex() {
   return textIndex;
 }
 // 查詢字本身就是花色或類別名（「大阿卡納」「聖杯」「major」）時只比對牌名欄，不把內文順帶提到的牌也列出來；
-// 編號、羅馬數字這類很短的英數字也只比對牌名欄，免得「0」「II」配到內文裡的數字或單字
+// 編號、羅馬數字這類很短的英數字也只比對牌名欄，免得「0」「II」配到內文裡的數字、單字或其他牌系的編號（XIII）
 const CATEGORY_NAMES = Object.keys(suitNames).flatMap(s => [normalizeQuery(s), normalizeQuery(t(suitNames[s]))]);
 function deepSearchAllowed(q) {
   if (CATEGORY_NAMES.some(name => name.includes(q))) return false;
@@ -375,7 +377,7 @@ function searchCards(q) {
       return;
     }
     for (const e of index.get(c.nameKey) || []) {
-      if (e.tier >= 2 && !deep) break;
+      if (e.tier >= 1 && !deep) break;
       const vs = e.tier === 0 ? nameVariants : variants;
       const v = vs.find(x => e.norm.includes(x));
       if (v) {
@@ -384,7 +386,9 @@ function searchCards(q) {
       }
     }
   });
-  return hits.sort((a, b) => a.tier - b.tier || a.order - b.order);
+  // 查的是牌名或別名（「權杖王牌」「女教皇」）：只列名字相符的牌，不把內文順帶提到它的其他牌也列出來
+  const named = hits.some(h => h.tier === 0);
+  return hits.filter(h => !named || h.tier === 0).sort((a, b) => a.tier - b.tier || a.order - b.order);
 }
 // 命中處前後各留一小段。比對時忽略了空白、撇號與重音：逐字折疊原文、記下每個折疊後的字來自原文哪個位置，
 // 在折疊後的字串裡找到命中處，再對回原文

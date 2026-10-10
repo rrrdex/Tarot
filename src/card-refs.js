@@ -94,7 +94,7 @@ export const cardRefs = {
     ]
   },
   hermit: {
-    names: { marseille: 'L\'Hermite', thoth: 'The Hermit', thothNumber: 'IX', italian: ['L\'Eremita', 'Il Vecchio', 'Il Gobbo'], aliases: ['隱者'] },
+    names: { marseille: 'L\'Hermite', thoth: 'The Hermit', thothNumber: 'IX', italian: ['L\'Eremita', 'Il Vecchio', 'Il Gobbo', 'Il Tempo'], aliases: ['隱者'] },
     timing: { from: '08-23', to: '09-22', basis: 'sign', sign: 'Virgo' },
     related: [
       { card: 'hierophant', kind: 'contrast', note: '一門學問常要兩種老師：教皇教你公認的方法，隱士讓你在獨處裡想通它的意義。只有一種，易流於死背或空想。' },
@@ -166,7 +166,7 @@ export const cardRefs = {
     ]
   },
   tower: {
-    names: { marseille: 'La Maison Dieu', thoth: 'The Tower', thothNumber: 'XVI', italian: ['La Torre', 'La Saetta'], aliases: ['塔'] },
+    names: { marseille: 'La Maison Dieu', thoth: 'The Tower', thothNumber: 'XVI', italian: ['La Torre', 'La Saetta', 'La Casa del Diavolo', 'Il Fuoco'], aliases: ['塔'] },
     timing: null,
     related: [
       { card: 'devil', kind: 'sequence', note: '高塔接在惡魔之後：束縛若一直沒有自己解開，被困住的結構終究可能從外面被打破。' },
@@ -770,7 +770,7 @@ export const cardRefs = {
     timing: null,
     related: [
       { card: 'empress', kind: 'similar', note: '都是滋養的形象。皇后談豐饒與創造，偏向自然的生長；錢幣皇后談打理與持家，把豐饒落到預算、三餐與住處。' },
-      { card: 'king_of_pentacles', kind: 'pair', note: '同花色的后與王同現，常讀成一個家或事業的內外分工：她管日常收支與身邊的人，他管對外經營與大筆決定。' },
+      { card: 'king_of_pentacles', kind: 'pair', note: '同花色的皇后與國王同現，常讀成一個家或事業的內外分工：她管日常收支與身邊的人，他管對外經營與大筆決定。' },
       { card: 'queen_of_swords', kind: 'contrast', note: '寶劍皇后用說清楚的話照顧人，錢幣皇后用做出來的事照顧人；一個給真話，一個給熱飯。' },
       { card: 'ten_of_pentacles', kind: 'similar', note: '都和家有關。錢幣十是一個家幾代人累積的結構，錢幣皇后則是每天讓這個家運作起來的那個人。' }
     ]
@@ -1273,5 +1273,52 @@ export const symbolIndex = [
     { card: 'four_of_cups', where: '從雲中伸出、遞來第四只杯的手' },
     { card: 'ace_of_swords', where: '從左側雲中伸出、緊握劍柄的手' },
     { card: 'ace_of_pentacles', where: '從左側雲中伸出、掌心托著錢幣的手' }
+  ] },
+  { id: 'yod', title: '光點（Yod）', cards: [
+    { card: 'tower', where: '塔兩側黑色天空中落下的黃色火焰形光點' },
+    { card: 'moon', where: '月亮下方飄落的一串黃色水滴形光點' },
+    { card: 'ace_of_wands', where: '杖身兩旁飄落、形如水滴的幾片綠葉' },
+    { card: 'ace_of_cups', where: '杯身四周飄落的藍色水滴', lineart: false },
+    { card: 'ace_of_swords', where: '劍身兩側飄落的六枚黃色光點' }
+  ] },
+  { id: 'banner', title: '旗幟', cards: [
+    { card: 'death', where: '骷髏騎士手持、黑底繡著白玫瑰的旗' },
+    { card: 'sun', where: '孩子身後隨風翻捲的一面大紅旗' },
+    { card: 'judgement', where: '天使長號上垂掛的白底紅十字旗' },
+    { card: 'seven_of_swords', where: '遠處營帳頂上插著的幾面小旗' }
+  ] },
+  { id: 'book', title: '書與卷軸', cards: [
+    { card: 'high_priestess', where: '膝上半掩在袍下、寫著 TORA 的卷軸' },
+    { card: 'wheel_of_fortune', where: '四角帶翼活物身前各攤著的一本書' }
+  ] },
+  { id: 'jackal', title: '胡狼頭神', cards: [
+    { card: 'wheel_of_fortune', where: '沿輪子右側往上升、紅色胡狼頭的人形' }
+  ] },
+  { id: 'halo', title: '光環', cards: [
+    { card: 'hanged_man', where: '倒垂的頭部四周一圈金色光環' },
+    { card: 'temperance', where: '頭部四周放射的光芒，額上一個圓形記號' }
+  ] },
+  { id: 'path', title: '小路', cards: [
+    { card: 'temperance', where: '從池邊蜿蜒上山、通往發光遠山的小路' },
+    { card: 'moon', where: '從水池穿過狗與狼之間、通往遠山的小路' },
+    { card: 'ace_of_pentacles', where: '穿過花籬拱門、通往遠山的黃土小路' }
+  ] },
+  { id: 'bridge', title: '橋', cards: [
+    { card: 'four_of_wands', where: '右下方城牆邊的一座拱橋', lineart: false },
+    { card: 'five_of_cups', where: '右後方橫跨河面的灰色石拱橋' }
+  ] },
+  { id: 'cat', title: '貓', cards: [
+    { card: 'queen_of_wands', where: '王座台階前正面端坐的黑貓' }
+  ] },
+  { id: 'dragon', title: '龍', cards: [
+    { card: 'seven_of_cups', where: '下排最右一只杯中探出身子的龍' }
+  ] },
+  { id: 'feather', title: '羽毛', cards: [
+    { card: 'fool', where: '頭上綠葉花環裡插著的一根紅羽毛' },
+    { card: 'death', where: '骷髏黑色頭盔上豎起的紅色羽飾' },
+    { card: 'sun', where: '孩子花環上方插著的一根紅羽毛', lineart: false },
+    { card: 'page_of_wands', where: '侍者帽子上插著的一根紅羽毛' },
+    { card: 'knight_of_wands', where: '頭盔後方像火焰般飄起的紅色羽飾' },
+    { card: 'knight_of_swords', where: '頭盔頂上被風往後拉長的紅色羽飾' }
   ] }
 ];

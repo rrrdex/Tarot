@@ -3,11 +3,12 @@ import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
 import { existsSync, readFileSync } from 'node:fs';
 import { extname, join, normalize } from 'node:path';
-import { brotliCompressSync, gzipSync } from 'node:zlib';
+import { brotliCompressSync, constants as zlibConstants, gzipSync } from 'node:zlib';
 
 const ROOT = 'dist';
 const COMPRESSIBLE = new Set(['.html', '.js', '.css', '.json', '.map', '.svg', '.txt', '.xml']);
 const PORT = Number(process.env.PORT) || 4173;
+const compressed = new Map();
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
@@ -56,12 +57,13 @@ createServer(async (req, res) => {
     const accept = req.headers['accept-encoding'] || '';
     if (COMPRESSIBLE.has(extname(file))) {
       res.setHeader('Vary', 'Accept-Encoding');
-      if (accept.includes('br')) {
-        body = brotliCompressSync(body);
-        res.setHeader('Content-Encoding', 'br');
-      } else if (accept.includes('gzip')) {
-        body = gzipSync(body);
-        res.setHeader('Content-Encoding', 'gzip');
+      const enc = accept.includes('br') ? 'br' : (accept.includes('gzip') ? 'gzip' : '');
+      if (enc) {
+        // 壓縮結果依檔案與修改時間快取；brotli 用中等品質（和 CDN 即時壓縮相近），最高品質壓大的資料檔要好幾秒，平行測試時會互相拖慢
+        const key = `${enc}:${file}:${(await stat(file)).mtimeMs}`;
+        if (!compressed.has(key)) compressed.set(key, enc === 'br' ? brotliCompressSync(body, { params: { [zlibConstants.BROTLI_PARAM_QUALITY]: 5 } }) : gzipSync(body));
+        body = compressed.get(key);
+        res.setHeader('Content-Encoding', enc);
       }
     }
     res.writeHead(200);

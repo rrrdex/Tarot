@@ -560,7 +560,8 @@ function renderLearnQuiz() {
   if (!learnQuiz && !quizDataTried && (!loadedContexts() || !loadedRefs())) {
     quizDataTried = true;
     stage.innerHTML = `<div class="learn-empty">${escapeHTML(t('card.loading'))}</div>`;
-    Promise.allSettled([loadContexts(), loadRefs()]).then(() => {
+    // 最多等兩秒半：網路慢時先出關鍵詞題，不讓人對著「載入中」乾等
+    Promise.race([Promise.allSettled([loadContexts(), loadRefs()]), new Promise(r => setTimeout(r, 2500))]).then(() => {
       if (learnMode !== 'quiz' || learnQuiz || !stage.isConnected) return;
       const active = document.activeElement;
       const refocus = !active || active === document.body || stage.contains(active);
