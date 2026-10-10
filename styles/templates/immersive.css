@@ -1813,7 +1813,7 @@
 
 /* 手機與平板：牌組選單縮成問題下方置中的小膠囊，牌堆更早出現（標籤只是看不見，報讀照樣念） */
 @media screen and (max-width: 1023.98px) {
-  :root[data-template="immersive"] #tabReading label[for="deckType"] {
+  :root[data-template="immersive"] #tabReading :is(label[for="deckType"], label[for="topic"]) {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -1821,7 +1821,7 @@
     clip-path: inset(50%);
     white-space: nowrap;
   }
-  :root[data-template="immersive"] #tabReading #deckType {
+  :root[data-template="immersive"] #tabReading :is(#deckType, #topic) {
     align-self: center;
     width: auto;
     max-width: 100%;

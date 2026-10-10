@@ -24,38 +24,70 @@ test('從 #card= 打開時焦點移進視窗；關掉後網址拿掉 #card=', as
   expect(await page.evaluate(() => location.hash)).toBe('');
 });
 
-test('情境分頁：學業、成長、三種牌位與書寫提問；正逆位切換鈕換掉三段文字', async ({ page }) => {
+test('情境分頁：是非與六個情境、細分主題、三種牌位、節奏與組合；正逆位切換鈕換掉整頁的文字', async ({ page }) => {
   await openCard(page, 'two_of_wands');
   await page.locator('#cardModalSeg [data-seg="context"]').click();
   const list = page.locator('#cardModalContextList');
-  await expect(list.locator('.context-label')).toHaveText(['感情', '事業', '財務', '身心', '學業', '成長', '是非'], CHUNK);
+  await expect(list.locator('.context-label')).toHaveText(['是非', '感情', '事業', '財務', '身心', '學業', '成長'], CHUNK);
+  // 感情、事業、財務底下各有收合的細分主題
+  await expect(list.locator('details.ctx-sub')).toHaveCount(3);
+  await expect(list.locator('details.ctx-sub[data-domain="love"] dt')).toHaveText(['曖昧與新對象', '交往中或婚姻', '對方的想法', '復合']);
   const pos = page.locator('#cardModalPositions');
   await expect(pos.locator('h3')).toHaveText('放在不同牌位');
   await expect(pos.locator('dt')).toHaveText(['建議', '阻礙', '結果']);
-  const up = pos.locator('[data-pos-ori="upright"]');
-  const rv = pos.locator('[data-pos-ori="reversed"]');
+  // 數字牌沒有「代表的人」；節奏與常見組合都有
+  await expect(page.locator('#cardModalPerson')).toBeHidden();
+  await expect(page.locator('#cardModalPace')).toBeVisible();
+  await expect(page.locator('#cardModalCombos .refs-rel')).not.toHaveCount(0);
+  const up = page.locator('#cardModalCtxOri [data-ctx-ori="upright"]');
+  const rv = page.locator('#cardModalCtxOri [data-ctx-ori="reversed"]');
   await expect(up).toHaveAttribute('aria-pressed', 'true');
-  const advice = pos.locator('dd[data-role="advice"]');
-  const before = await advice.textContent();
-  expect(before.length).toBeGreaterThan(10);
+  const advice = pos.locator('dd').first();
+  const love = list.locator('.context-row').nth(1).locator('.context-text');
+  const [adviceUp, loveUp] = [await advice.textContent(), await love.textContent()];
+  expect(adviceUp.length).toBeGreaterThan(10);
   await rv.click();
   await expect(rv).toHaveAttribute('aria-pressed', 'true');
   await expect(up).toHaveAttribute('aria-pressed', 'false');
-  await expect(advice).not.toHaveText(before);
+  await expect(advice).not.toHaveText(adviceUp);
+  await expect(love).not.toHaveText(loveUp);
   await up.click();
-  await expect(advice).toHaveText(before);
+  await expect(advice).toHaveText(adviceUp);
+  await expect(love).toHaveText(loveUp);
   await expect(page.locator('#cardModalJournal li')).toHaveCount(3);
 });
 
-test('從占卜結果打開：牌位讀法固定在抽到的方向，沒有切換鈕', async ({ page }) => {
+test('宮廷牌與大牌有「當它代表一個人」；身心碰到嚴重困擾的牌附上求助專線', async ({ page }) => {
+  await openCard(page, 'ten_of_swords');
+  await page.locator('#cardModalSeg [data-seg="context"]').click();
+  await expect(page.locator('#cardModalContextList .care-note')).toContainText('1925', CHUNK);
+  await page.goto('/#card=queen_of_cups');
+  await page.locator('#cardModalSeg [data-seg="context"]').click();
+  await expect(page.locator('#cardModalPerson h3')).toHaveText('當它代表一個人', CHUNK);
+  // 換到組合裡的另一張牌，仍停在情境分頁
+  await page.locator('#cardModalCombos .refs-rel-card').first().click();
+  await expect(page.locator('#cardSegContext')).toBeVisible();
+});
+
+test('從占卜結果打開：情境分頁固定在抽到的方向，沒有切換鈕', async ({ page }) => {
   await page.goto(SHARE_URL);
   // 第二張是正位的權杖侍者
   await page.locator('#results .card').nth(1).click();
   await expect(modal(page)).toHaveClass(/show/);
   await page.locator('#cardModalSeg [data-seg="context"]').click();
-  const pos = page.locator('#cardModalPositions');
-  await expect(pos.locator('.ctx-pos-ori')).toHaveText('正位（本次抽到）', CHUNK);
-  await expect(pos.locator('[data-pos-ori]')).toHaveCount(0);
+  await expect(page.locator('#cardModalCtxOri .ctx-pos-ori')).toHaveText('正位（本次抽到）', CHUNK);
+  await expect(page.locator('[data-ctx-ori]')).toHaveCount(0);
+  await expect(page.locator('#cardModalPerson')).toBeVisible();
+});
+
+test('主題與是非指引：逐張解讀列出這一面的主題讀法與是非傾向，網址帶著主題', async ({ page }) => {
+  await page.goto('/?seed=123456789&spread=yesno&deck=full&topic=loveFeelings');
+  const first = page.locator('#results .rd-item').first();
+  await expect(first.locator('.rd-topic .rd-role-label')).toHaveText('對方的想法', CHUNK);
+  await expect(first.locator('.rd-yesno .yesno-badge')).toBeVisible();
+  await expect(page.locator('#results .results-topic')).toHaveText('主題：對方的想法');
+  await expect(page.locator('#topic')).toHaveValue('loveFeelings');
+  expect(new URL(page.url()).searchParams.get('topic')).toBe('loveFeelings');
 });
 
 test('源流分頁：相關的牌可換看那張牌；其他牌系的名稱與對應日期', async ({ page }) => {

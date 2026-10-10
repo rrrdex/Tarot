@@ -20,7 +20,7 @@ export const cardMeanings = {
   },
   emperor: {
     keywords: ['秩序', '權威', '結構', '責任'],
-    keywordsReversed: ['專制', '僵化', '散漫', '界線鬆散']
+    keywordsReversed: ['專制', '僵化', '逃避決定', '界線鬆散']
   },
   hierophant: {
     keywords: ['傳統', '信仰', '指導', '體制'],
@@ -260,7 +260,7 @@ export const cardMeanings = {
   },
   ace_of_pentacles: {
     keywords: ['實在機會', '新資源', '播種', '穩固起點'],
-    keywordsReversed: ['錯失良機', '準備不足', '成本失算', '只顧眼前']
+    keywordsReversed: ['錯失良機', '準備不足', '成本失算', '富而無益']
   },
   two_of_pentacles: {
     keywords: ['兩頭兼顧', '彈性調度', '節奏', '應變'],

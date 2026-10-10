@@ -1,6 +1,6 @@
 import { t } from './i18n.js';
 import { debounce, escapeHTML, scrollBehavior } from './utils.js';
-import { fullTarotCards, suitNames } from './data.js';
+import { fullTarotCards, orientationNames, suitNames } from './data.js';
 import { cardMeanings } from './meanings.js';
 import { loadContexts, loadLore, loadMeaningTexts, loadRefs, loadedContexts, loadedDeck, loadedLore, loadedMeaningTexts, loadedRefs } from './lazy.js';
 import { cardThumb, visualStyle } from './render.js';
@@ -141,11 +141,18 @@ function libraryItemHTML(item) {
 <h4 class="deck-history-subtitle">${escapeHTML(s.title || '')}</h4>
 <p class="deck-history-text">${escapeHTML(s.text || '')}</p>`).join('')
     : `<p class="deck-history-text">${escapeHTML(item.text || '')}</p>`;
-  const cards = (item.cards || []).map(k => cardByKey.get(k)).filter(Boolean);
+  // cards 可以只是牌的 key，或範例解讀用的 { key, orientation, position }：後者在標籤上寫出牌位與正逆位
+  const cards = (item.cards || []).map(x => {
+    const c = cardByKey.get(typeof x === 'string' ? x : x?.key);
+    if (!c) return null;
+    const ori = x?.orientation === 'reversed' ? 'reversed' : 'upright';
+    const label = typeof x === 'string' ? c.name : t('db.library.sampleCard', { pos: x.position || '', name: c.name, ori: t(orientationNames[ori]) });
+    return { c, ori, label };
+  }).filter(Boolean);
   const chips = cards.length ? `
-<p class="lib-cards-label" id="lib-${escapeHTML(item.id)}-cards">${escapeHTML(t('db.library.cards'))}</p>
+<p class="lib-cards-label" id="lib-${escapeHTML(item.id)}-cards">${escapeHTML(t(item.cards.some(x => typeof x !== 'string') ? 'db.library.sampleCards' : 'db.library.cards'))}</p>
 <div class="tags lib-card-chips" role="group" aria-labelledby="lib-${escapeHTML(item.id)}-cards">
-${cards.map(c => `<button type="button" class="tag" data-action="openCardModal" data-card="${escapeHTML(c.nameKey)}">${escapeHTML(c.name)}</button>`).join('')}
+${cards.map(({ c, ori, label }) => `<button type="button" class="tag" data-action="openCardModal" data-card="${escapeHTML(c.nameKey)}" data-orientation="${ori}">${escapeHTML(label)}</button>`).join('')}
 </div>` : '';
   return `
 <details class="deck-history-item" id="lib-${escapeHTML(item.id)}">
@@ -314,6 +321,7 @@ function cardSearchEntries(c) {
   const ref = refs?.cardRefs?.[c.nameKey];
   const names = ref?.names || {};
   const positions = ctx?.positions || {};
+  const guide = loadedContexts()?.cardGuide?.[c.nameKey] || {};
   const symbols = (refs?.symbolIndex || []).flatMap(sym => sym.cards.filter(e => e.card === c.nameKey).map(e => `${sym.title}：${e.where}`));
   const entries = [
     ...[c.name, c.englishName, t(suitNames[c.suit]), c.suit].map(text => ({ tier: 0, text })),
@@ -334,6 +342,8 @@ function cardSearchEntries(c) {
     { tier: 3, label: 'db.hit.study', text: ctx?.study || '' },
     { tier: 3, label: 'db.hit.growth', text: ctx?.growth || '' },
     { tier: 3, label: 'db.hit.positions', text: ['advice', 'obstacle', 'outcome'].flatMap(r => [positions[r]?.upright, positions[r]?.reversed]).filter(Boolean).join(' ') },
+    { tier: 3, label: 'db.hit.person', text: [guide.person?.upright, guide.person?.reversed].filter(Boolean).join(' ') },
+    { tier: 3, label: 'db.hit.combos', text: (guide.combos || []).map(x => x.note).filter(Boolean).join(' ') },
     { tier: 3, label: 'db.hit.journal', text: (ctx?.journal || []).join(' ') },
     { tier: 3, label: 'db.hit.related', text: (ref?.related || []).map(r => r.note).filter(Boolean).join(' ') }
   ];

@@ -16,7 +16,7 @@ test('分享連結以同一個 seed 重現同一組牌', async ({ page }) => {
 
 test('追蹤參數不影響載入，canonical 會移除它們', async ({ page }) => {
   await page.goto('/?utm_source=x&fbclid=y&lang=zh');
-  await expect(page.locator('#spreadType option')).toHaveCount(29);
+  await expect(page.locator('#spreadType option')).toHaveCount(35);
   const canonical = await page.locator('link[rel="canonical"]').getAttribute('href');
   expect(canonical).not.toContain('utm_source');
   expect(canonical).not.toContain('fbclid');

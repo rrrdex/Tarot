@@ -65,6 +65,7 @@ import { initTemplate, navigateTab, syncNav } from './template.js';
 import { initSheetGestures } from './sheet.js';
 import { syncSpreadTiles } from './hero.js';
 import * as storage from './storage.js';
+import { TOPIC_GROUPS, isTopic } from './topics.js';
 
 const KEYNAV_ITEM = '[data-keynav-item]';
 const KEYNAV_ARROWS = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
@@ -249,7 +250,30 @@ export function updateSpreadInfo() {
 <span><span class="spread-position-name">${escapeHTML(t(pos))}</span>${desc !== descKey ? `<span class="spread-position-desc">${escapeHTML(desc)}</span>` : ''}</span>
 </div>`;
   }).join('');
+  renderSpreadGuide(spreadType);
 }
+// 牌陣說明的下半部：牌位之間怎麼對照著讀，以及適合用這個牌陣問的問題（點一下填進問題欄）
+function renderSpreadGuide(spreadType) {
+  const box = document.getElementById('spreadGuide');
+  if (!box) return;
+  const opt = (key) => {
+    const v = t(key);
+    return v !== key ? v : '';
+  };
+  const howTo = opt(`spread.${spreadType}.howTo`);
+  const examples = [0, 1, 2].map(i => opt(`spread.${spreadType}.ex.${i}`)).filter(Boolean);
+  box.innerHTML = `
+${howTo ? `<h4 class="spread-positions-title">${escapeHTML(t('reading.spreadInfo.howTo'))}</h4><p class="spread-info-content spread-howto">${escapeHTML(howTo)}</p>` : ''}
+${examples.length ? `<h4 class="spread-positions-title">${escapeHTML(t('reading.spreadInfo.examples'))}</h4>
+<ul class="spread-examples">${examples.map(q => `<li><button type="button" class="text-link spread-example" data-question="${escapeHTML(q)}" aria-label="${escapeHTML(t('reading.spreadInfo.useExample', { q }))}">${escapeHTML(q)}</button></li>`).join('')}</ul>` : ''}`;
+}
+document.getElementById('spreadGuide')?.addEventListener('click', (e) => {
+  const btn = e.target.closest('.spread-example');
+  if (!btn) return;
+  const input = document.getElementById('question');
+  input.value = btn.dataset.question.slice(0, QUESTION_MAX);
+  input.focus();
+});
 showSpreadInfoCheckbox.checked = storage.get('showSpreadInfo') !== 'false';
 spreadTypeEl.addEventListener('change', updateSpreadInfo);
 showSpreadInfoCheckbox.addEventListener('change', () => {
@@ -595,6 +619,7 @@ document.addEventListener('visibilitychange', () => {
 });
 export function rerenderForLang() {
   applyStaticStrings();
+  buildTopicOptions();
   initTheme();
   buildLangSwitch();
   syncSpreadTrigger();
@@ -604,6 +629,15 @@ export function rerenderForLang() {
   syncLearnSeg();
   switchTab(currentTab);
 }
+// 主題選單：第一項「不指定」寫在 HTML，其餘依 TOPIC_GROUPS 分組產生；換語言時重建並保留原本的選擇
+function buildTopicOptions() {
+  const el = document.getElementById('topic');
+  if (!el) return;
+  const value = el.value;
+  el.querySelectorAll('optgroup').forEach(g => g.remove());
+  el.insertAdjacentHTML('beforeend', TOPIC_GROUPS.map(g => `<optgroup label="${escapeHTML(t(g.label))}">${g.keys.map(k => `<option value="${k}">${escapeHTML(t(`topic.${k}`))}</option>`).join('')}</optgroup>`).join(''));
+  el.value = isTopic(value) ? value : '';
+}
 // 分享連結的參數：都合法才照著占卜；有任何一項看不懂就略過那一項、清掉網址上的參數，並提示一次
 function readShareParams(url) {
   const p = url.searchParams;
@@ -612,11 +646,14 @@ function readShareParams(url) {
   const spread = p.get('spread');
   const q = questionFromURL(url);
   const picksParam = p.get('picks');
+  const topicParam = p.get('topic');
   let bad = false;
   const deckType = deck && isDeckType(deck) ? deck : 'full';
   if (deck && deckType !== deck) bad = true;
   const spreadType = spread && spreads[spread] ? spread : 'single';
   if (spread && spreadType !== spread) bad = true;
+  const topic = isTopic(topicParam) ? topicParam : '';
+  if (topicParam && !topic) bad = true;
   let validSeed = null;
   if (seed !== null) {
     if (isValidSeed(seed)) validSeed = seed;
@@ -628,7 +665,7 @@ function readShareParams(url) {
     if (parsed && validPicks(parsed, deckType, spreadType)) picks = parsed;
     else bad = true;
   }
-  return { seed: validSeed, deck, deckType, spread, spreadType, question: (q || '').trim().slice(0, QUESTION_MAX), picks, bad };
+  return { seed: validSeed, deck, deckType, spread, spreadType, topic, question: (q || '').trim().slice(0, QUESTION_MAX), picks, bad };
 }
 // Service Worker 換成新版本時（不是第一次安裝），提示重新整理才會用到新版
 function registerServiceWorker() {
@@ -651,11 +688,13 @@ function registerServiceWorker() {
   initTemplate();
   buildLangSwitch();
   syncCanonical();
+  buildTopicOptions();
   const share = readShareParams(new URL(location.href));
   const deckEl = document.getElementById('deckType');
   if (share.deck) deckEl.value = share.deckType;
   if (share.spread) spreadTypeEl.value = share.spreadType;
   if (share.question) document.getElementById('question').value = share.question;
+  if (share.topic) document.getElementById('topic').value = share.topic;
   // 舊版連結的 ?q= 搬到 # 後面，之後的重新整理與分享都不再把問題送到伺服器
   if (new URL(location.href).searchParams.has('q')) updateURL({ q: share.question || null });
   updateSpreadInfo();
@@ -669,11 +708,12 @@ function registerServiceWorker() {
       deckType: share.deckType,
       spreadType: share.spreadType,
       question: share.question,
+      topic: share.topic,
       focus: false
     });
   }
   if (share.bad) {
-    if (!share.seed) updateURL({ seed: null, picks: null, deck: null, spread: null, q: null });
+    if (!share.seed) updateURL({ seed: null, picks: null, deck: null, spread: null, topic: null, q: null });
     showToast(t('toast.badShareLink'), 'warning');
   }
   registerServiceWorker();

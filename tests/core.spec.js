@@ -197,11 +197,11 @@ test.describe('鍵盤', () => {
     await expect(page.locator('#tabStatistics')).toBeVisible();
   });
 
-  test('29 種牌陣的每一張牌都能只用方向鍵走到', async ({ page }) => {
+  test('35 種牌陣的每一張牌都能只用方向鍵走到', async ({ page }) => {
     test.setTimeout(240000);
     await page.goto('/');
     const spreads = await page.$$eval('#spreadType option', os => os.map(o => o.value));
-    expect(spreads).toHaveLength(29);
+    expect(spreads).toHaveLength(35);
     for (const s of spreads) {
       await page.goto(`/?seed=123456789&spread=${s}&deck=full`);
       await expect(page.locator('#results .card').first()).toBeVisible();

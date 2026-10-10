@@ -60,11 +60,15 @@ function keywordsHTML(c) {
   return [['upright', m.keywords], ['reversed', m.keywordsReversed]].map(([ori, list]) => (list && list.length)
     ? `<p class="cmp-line"><span class="cmp-sub">${escapeHTML(t(orientationNames[ori]))}</span>${keywordList(list)}</p>` : '').join('');
 }
+// 是非傾向和關鍵詞一樣正逆位各列一行
 function yesnoHTML(c) {
-  const ctx = loadedContexts()?.cardContexts?.[c.nameKey];
-  if (!ctx || !ctx.yesno) return escapeHTML(t('compare.none'));
-  const tendency = tendencyNames[ctx.yesno.tendency] ? ctx.yesno.tendency : 'unclear';
-  return `<span class="yesno-badge ${tendency}">${escapeHTML(t(tendencyNames[tendency]))}</span> <span class="cmp-note">${escapeHTML(ctx.yesno.note || '')}</span>`;
+  const ctx = loadedContexts();
+  const lines = ctx ? ['upright', 'reversed'].map(ori => [ori, ctx.yesnoOf(c.nameKey, ori)]).filter(([, y]) => y) : [];
+  if (!lines.length) return escapeHTML(t('compare.none'));
+  return lines.map(([ori, y]) => {
+    const tendency = tendencyNames[y.tendency] ? y.tendency : 'unclear';
+    return `<p class="cmp-line"><span class="cmp-sub">${escapeHTML(t(orientationNames[ori]))}</span><span class="yesno-badge ${tendency}">${escapeHTML(t(tendencyNames[tendency]))}</span> <span class="cmp-note">${escapeHTML(y.note || '')}</span></p>`;
+  }).join('');
 }
 // 元素與黃金黎明的對應：花色元素、大牌的行星／星座／元素、數字牌的旬位
 function attrHTML(c) {

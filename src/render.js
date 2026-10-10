@@ -20,6 +20,7 @@ import { renderResults, shownReading } from './reading.js';
 import { renderCardDatabase } from './database.js';
 import { renderLearnStage } from './learn.js';
 import { renderProfileCards } from './profile.js';
+import { SUBTOPICS } from './topics.js';
 import * as storage from './storage.js';
 
 const VISUAL_STYLES = ['text', 'api', 'line'];
@@ -236,8 +237,8 @@ function setIconSegOffline(on) {
   }
 }
 let cardModalKey = null;
-// 情境分頁「放在不同牌位」目前顯示的方向（fixed：抽到的牌，不能切換）
-let positionsView = { fixed: false, ori: 'upright' };
+// 情境分頁目前顯示的方向（fixed：抽到的牌，不能切換）
+let ctxView = { fixed: false, ori: 'upright' };
 // fromReading：從占卜結果點開時，副標題也寫出這次抽到的正逆位。
 // drawn：這個正逆位是真的抽到的（占卜結果、每日一牌）；測驗與生日牌只是指定要看哪一面
 export function openCardModal(nameKey, orientation, { fromReading = false, drawn = fromReading, seg = 'meaning' } = {}) {
@@ -266,8 +267,8 @@ export function openCardModal(nameKey, orientation, { fromReading = false, drawn
   drawnBlockFirst('meaningUpright', 'meaningReversed', orientation === 'reversed');
   drawnBlockFirst('imageUpright', 'imageReversed', orientation === 'reversed');
   cardModalKey = nameKey;
-  // 情境分頁的「放在不同牌位」：抽到的牌只顯示抽到的那一面；其他情況可切換正逆位，從指定的那一面（沒指定就正位）開始
-  positionsView = { fixed: !!(drawn && orientationNames[orientation]), ori: orientation === 'reversed' ? 'reversed' : 'upright' };
+  // 情境分頁：抽到的牌只顯示抽到的那一面；其他情況可切換正逆位，從指定的那一面（沒指定就正位）開始
+  ctxView = { fixed: !!(drawn && orientationNames[orientation]), ori: orientation === 'reversed' ? 'reversed' : 'upright' };
   const compareBtn = document.getElementById('cardModalCompare');
   if (compareBtn) {
     compareBtn.dataset.card = nameKey;
@@ -567,97 +568,158 @@ function renderCardModalContextFailed() {
   const section = document.getElementById('cardModalContextSection');
   if (!section) return;
   section.classList.remove('hidden');
+  ctxData = null;
+  document.getElementById('cardModalCtxOri').innerHTML = '';
   document.getElementById('cardModalContextList').innerHTML = chunkFailedHTML();
   section.querySelector('.reflection-block')?.classList.add('hidden');
-  renderCardModalPositions(null);
+  ['cardModalPositions', 'cardModalPerson', 'cardModalPace', 'cardModalCombos'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = '';
+    el.classList.add('hidden');
+  });
   renderCardModalJournal(null);
 }
-function renderCardModalContext({ cardContexts, contextText }, nameKey) {
+// 情境分頁整頁跟著一個「看哪一面」走：是非傾向、六個情境與細分主題、放在不同牌位、代表的人、節奏。
+// 抽到的牌固定在抽到的那一面並標出來；其他情況放一組正位／逆位切換鈕（aria-pressed），整頁一起換
+const CONTEXT_ROWS = [
+  { domain: 'love', icon: '💕' },
+  { domain: 'career', icon: '💼' },
+  { domain: 'wealth', icon: '💰' },
+  { domain: 'wellbeing', icon: '🌿' },
+  { domain: 'study', icon: '📚' },
+  { domain: 'growth', icon: '🌱' }
+];
+const POSITION_ROLES = ['advice', 'obstacle', 'outcome'];
+let ctxData = null;
+function renderCardModalContext(m, nameKey) {
   const section = document.getElementById('cardModalContextSection');
   if (!section) return;
   section.querySelector('.reflection-block')?.classList.remove('hidden');
   const card = fullTarotCards.find(c => c.nameKey === nameKey);
-  const ctx = cardContexts[nameKey];
+  const ctx = m.cardContexts[nameKey];
   if (!ctx || !card) {
+    ctxData = null;
     section.classList.add('hidden');
     return;
   }
   section.classList.remove('hidden');
-  const yesno = ctx.yesno || {};
-  const tendency = yesno.tendency || '';
-  const cls = tendencyNames[tendency] ? tendency : 'unclear';
-  const rows = [
-    { icon: '💕', label: t('card.context.love'), text: contextText(card, 'love') },
-    { icon: '💼', label: t('card.context.career'), text: contextText(card, 'career') },
-    { icon: '💰', label: t('card.context.wealth'), text: contextText(card, 'wealth') },
-    { icon: '🌿', label: t('card.context.wellbeing'), text: contextText(card, 'wellbeing') },
-    { icon: '📚', label: t('card.context.study'), text: contextText(card, 'study') },
-    { icon: '🌱', label: t('card.context.growth'), text: contextText(card, 'growth') },
-    {
-      icon: '⚖️',
-      label: t('card.context.yesno'),
-      html: `<span class="yesno-badge ${cls}">${escapeHTML(t(tendencyNames[tendency] || tendency))}</span><span>${escapeHTML(yesno.note || '')}</span>`
-    }
-  ];
-  document.getElementById('cardModalContextList').innerHTML = rows.map(r => `
-<div class="context-row">
-<span class="context-icon">${r.icon}</span>
-<span class="context-label">${escapeHTML(r.label)}</span>
-<p class="context-text${r.html ? ' context-text-yesno' : ''}">${r.html || escapeHTML(r.text || '')}</p>
-</div>
-`).join('');
-  document.getElementById('cardModalReflection').textContent = contextReflection(cardContexts, card);
-  renderCardModalPositions(ctx.positions);
-  renderCardModalJournal(ctx.journal);
-}
-// 「放在不同牌位」：建議、阻礙、結果三個位置各一段，只顯示一個方向。
-// 抽到的牌固定在抽到的那一面並標出來；其他情況放一組正位／逆位切換鈕（aria-pressed），三段一起換
-const POSITION_ROLES = ['advice', 'obstacle', 'outcome'];
-let positionsData = null;
-function renderCardModalPositions(positions) {
-  const box = document.getElementById('cardModalPositions');
-  if (!box) return;
-  positionsData = positions && POSITION_ROLES.some(r => positions[r]) ? positions : null;
-  box.classList.toggle('hidden', !positionsData);
-  if (!positionsData) {
-    box.innerHTML = '';
-    return;
-  }
-  const { fixed, ori } = positionsView;
+  ctxData = { m, card, ctx, guide: m.cardGuide?.[nameKey] || {} };
+  const { fixed, ori } = ctxView;
   const oriName = (o) => t(orientationNames[o]);
-  const control = fixed
+  document.getElementById('cardModalCtxOri').innerHTML = fixed
     ? `<span class="ctx-pos-ori">${escapeHTML(oriName(ori) + t('card.meaning.drawn'))}</span>`
-    : `<div class="segmented ctx-pos-toggle" role="group" aria-labelledby="cardModalPositionsTitle">
-${['upright', 'reversed'].map(o => `<button type="button" class="seg-item${o === ori ? ' active' : ''}" data-pos-ori="${o}" aria-pressed="${o === ori}">${escapeHTML(oriName(o))}</button>`).join('')}
+    : `<div class="segmented ctx-pos-toggle" role="group" aria-label="${escapeHTML(t('card.context.ori.label'))}">
+${['upright', 'reversed'].map(o => `<button type="button" class="seg-item${o === ori ? ' active' : ''}" data-ctx-ori="${o}" aria-pressed="${o === ori}">${escapeHTML(oriName(o))}</button>`).join('')}
 </div>`;
-  box.innerHTML = `
-<div class="ctx-pos-head">
-<h3 class="context-title" id="cardModalPositionsTitle">${escapeHTML(t('card.positions.title'))}</h3>
-${control}
-</div>
-<dl class="ctx-pos-list">
-${POSITION_ROLES.map(r => `<div class="context-row"><dt class="context-label">${escapeHTML(t(`card.positions.${r}`))}</dt><dd class="context-text" data-role="${r}"></dd></div>`).join('')}
-</dl>`;
-  fillPositionTexts();
+  document.getElementById('cardModalReflection').textContent = contextReflection(m.cardContexts, card);
+  renderCardModalJournal(ctx.journal);
+  renderCardModalCombos(ctxData.guide.combos);
+  fillCardModalContext();
 }
-function fillPositionTexts() {
-  const box = document.getElementById('cardModalPositions');
-  if (!box || !positionsData) return;
-  const ori = positionsView.ori;
-  box.querySelectorAll('[data-role]').forEach(dd => {
-    dd.textContent = positionsData[dd.dataset.role]?.[ori] || '';
+// 依目前的方向重畫跟方向有關的部分；展開過的細分主題保持展開
+function fillCardModalContext() {
+  if (!ctxData) return;
+  const { m, card, ctx, guide } = ctxData;
+  const ori = ctxView.ori;
+  const list = document.getElementById('cardModalContextList');
+  const openSubs = new Set(Array.from(list.querySelectorAll('details[open][data-domain]')).map(d => d.dataset.domain));
+  const yesno = m.yesnoOf(card.nameKey, ori);
+  const tendency = yesno && tendencyNames[yesno.tendency] ? yesno.tendency : 'unclear';
+  const rows = yesno ? [`
+<div class="context-row">
+<span class="context-icon">⚖️</span>
+<span class="context-label">${escapeHTML(t('card.context.yesno'))}</span>
+<p class="context-text context-text-yesno"><span class="yesno-badge ${tendency}">${escapeHTML(t(tendencyNames[tendency]))}</span><span>${escapeHTML(yesno.note || '')}</span></p>
+</div>`] : [];
+  CONTEXT_ROWS.forEach(({ domain, icon }) => {
+    const text = m.contextText(card, domain, ori);
+    if (!text) return;
+    const subs = (SUBTOPICS[domain] || []).map(k => [k, m.topicText(card, k, ori)]).filter(([, v]) => v);
+    const subHTML = subs.length ? `
+<details class="ctx-sub" data-domain="${domain}"${openSubs.has(domain) ? ' open' : ''}>
+<summary class="ctx-sub-title">${escapeHTML(t('card.context.more', { list: subs.map(([k]) => t(`topic.${k}`)).join('、') }))}</summary>
+<dl class="ctx-sub-list">
+${subs.map(([k, v]) => `<div class="ctx-sub-row"><dt>${escapeHTML(t(`topic.${k}`))}</dt><dd>${escapeHTML(v)}</dd></div>`).join('')}
+</dl>
+</details>` : '';
+    const care = domain === 'wellbeing' && guide.care ? careHTML() : '';
+    rows.push(`
+<div class="context-row">
+<span class="context-icon">${icon}</span>
+<span class="context-label">${escapeHTML(t(`card.context.${domain}`))}</span>
+<p class="context-text">${escapeHTML(text)}</p>${subHTML}${care}
+</div>`);
   });
-  box.querySelectorAll('[data-pos-ori]').forEach(b => {
-    const on = b.dataset.posOri === ori;
+  list.innerHTML = rows.join('');
+  renderCardModalPositions(ctx.positions);
+  renderCardModalPerson(guide.person);
+  renderCardModalPace(guide.pace);
+  document.querySelectorAll('#cardModalCtxOri [data-ctx-ori]').forEach(b => {
+    const on = b.dataset.ctxOri === ori;
     b.classList.toggle('active', on);
     b.setAttribute('aria-pressed', on);
   });
 }
-document.getElementById('cardModalPositions')?.addEventListener('click', (e) => {
-  const btn = e.target.closest('[data-pos-ori]');
-  if (!btn || positionsView.fixed) return;
-  positionsView.ori = btn.dataset.posOri === 'reversed' ? 'reversed' : 'upright';
-  fillPositionTexts();
+// 身心面向碰到絕望、自傷念頭、被控制或暴力時，統一附上台灣的求助專線（文字在 strings.js，不寫在各張牌裡）
+export function careHTML() {
+  return `
+<aside class="care-note" aria-label="${escapeHTML(t('care.title'))}">
+<p class="care-title">${escapeHTML(t('care.title'))}</p>
+<p class="care-text">${escapeHTML(t('care.text'))}</p>
+<ul class="care-list">
+${['1925', '1995', '1980', '113'].map(k => `<li>${escapeHTML(t(`care.${k}`))}</li>`).join('')}
+</ul>
+<p class="care-text">${escapeHTML(t('care.emergency'))}</p>
+</aside>`;
+}
+// 「放在不同牌位」：建議、阻礙、結果三個位置各一段，跟著情境分頁的方向
+function renderCardModalPositions(positions) {
+  const box = document.getElementById('cardModalPositions');
+  if (!box) return;
+  const data = positions && POSITION_ROLES.some(r => positions[r]?.[ctxView.ori]) ? positions : null;
+  box.classList.toggle('hidden', !data);
+  box.innerHTML = data ? `
+<h3 class="context-title" id="cardModalPositionsTitle">${escapeHTML(t('card.positions.title'))}</h3>
+<dl class="ctx-pos-list">
+${POSITION_ROLES.filter(r => data[r]?.[ctxView.ori]).map(r => `<div class="context-row"><dt class="context-label">${escapeHTML(t(`card.positions.${r}`))}</dt><dd class="context-text">${escapeHTML(data[r][ctxView.ori])}</dd></div>`).join('')}
+</dl>` : '';
+}
+// 代表的人（大阿卡納與宮廷牌）與節奏：一段文字，跟著方向
+function renderCtxBlock(id, titleKey, text, noteKey) {
+  const box = document.getElementById(id);
+  if (!box) return;
+  box.classList.toggle('hidden', !text);
+  box.innerHTML = text ? `
+<h3 class="context-title">${escapeHTML(t(titleKey))}</h3>
+<p class="context-text ctx-para">${escapeHTML(text)}</p>
+${noteKey ? `<p class="waite-terms-note">${escapeHTML(t(noteKey))}</p>` : ''}` : '';
+}
+function renderCardModalPerson(person) {
+  renderCtxBlock('cardModalPerson', 'card.person.title', person?.[ctxView.ori], 'card.person.note');
+}
+function renderCardModalPace(pace) {
+  renderCtxBlock('cardModalPace', 'card.pace.title', pace?.[ctxView.ori], 'card.pace.note');
+}
+// 常見組合不分正逆位：牌名是換看那張牌的按鈕，旁邊寫兩張一起出現時意思怎麼變
+function renderCardModalCombos(combos) {
+  const box = document.getElementById('cardModalCombos');
+  if (!box) return;
+  const items = (Array.isArray(combos) ? combos : [])
+    .map(c => ({ ...c, other: fullTarotCards.find(x => x.nameKey === c.card) }))
+    .filter(c => c.other && c.note);
+  box.classList.toggle('hidden', !items.length);
+  box.innerHTML = items.length ? `
+<h3 class="context-title">${escapeHTML(t('card.combos.title'))}</h3>
+<ul class="refs-related ctx-combos">
+${items.map(c => `<li class="refs-rel"><p class="refs-rel-head"><button type="button" class="text-link refs-rel-card" data-action="openCardModal" data-seg="context" data-card="${escapeHTML(c.other.nameKey)}" data-orientation="upright">${escapeHTML(c.other.name)}</button></p><p class="refs-rel-note">${escapeHTML(c.note)}</p></li>`).join('')}
+</ul>` : '';
+}
+document.getElementById('cardModalCtxOri')?.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-ctx-ori]');
+  if (!btn || ctxView.fixed) return;
+  ctxView.ori = btn.dataset.ctxOri === 'reversed' ? 'reversed' : 'upright';
+  fillCardModalContext();
 });
 // 反思問題下方的「書寫提問」：三個可以寫進日記的問題
 function renderCardModalJournal(list) {

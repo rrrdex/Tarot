@@ -24,7 +24,8 @@ import {
   orientationNames,
   spreadLayouts,
   spreads,
-  suitNames
+  suitNames,
+  tendencyNames
 } from './data.js';
 import {
   HISTORY_MAX,
@@ -40,6 +41,7 @@ import { readBtn, readBtnText, resultsEl, spreadTypeEl } from './dom.js';
 import { LAYOUT_IMG_SIZES, renderCard, visualStyle } from './render.js';
 import { loadContexts, loadDeck, loadMeaningTexts, loadedContexts, loadedMeaningTexts } from './lazy.js';
 import { positionRole } from './position-roles.js';
+import { isTopic } from './topics.js';
 import { cardMeaningText, keywordsFor } from './meanings.js';
 import { generateInsight } from './insight.js';
 import { enhanceReadingPager } from './pager.js';
@@ -75,6 +77,8 @@ function buildReadingConfig(seedOverride, save, opts = {}) {
   const deckType = isDeckType(opts.deckType) ? opts.deckType : document.getElementById('deckType').value;
   const spreadType = spreads[opts.spreadType] ? opts.spreadType : spreadTypeEl.value;
   const question = typeof opts.question === 'string' ? opts.question : document.getElementById('question').value.trim();
+  const topicIn = typeof opts.topic === 'string' ? opts.topic : document.getElementById('topic').value;
+  const topic = isTopic(topicIn) ? topicIn : '';
   const deck = getDeck(deckType);
   const seed = isValidSeed(seedOverride) ? String(seedOverride) : newSeed();
   const rng = seedRng(seed);
@@ -82,7 +86,7 @@ function buildReadingConfig(seedOverride, save, opts = {}) {
   const orientations = shuffled.map(() => rng() > 0.5 ? 'upright' : 'reversed');
   const spread = spreads[spreadType];
   return {
-    seed, deckType, spreadType, spreadName: spreadNameOf(spreadType), question,
+    seed, deckType, spreadType, spreadName: spreadNameOf(spreadType), question, topic,
     shuffled, orientations, positions: spread.positions, save,
     // 開啟分享連結時不搶焦點（只捲動），免得頁面一載入就畫出焦點框
     focus: opts.focus !== false
@@ -186,7 +190,7 @@ ${Array.from({ length: pickable }, (_, i) => `
     }
   });
   document.getElementById('pickReshuffle').addEventListener('click', () => {
-    performReading(undefined, cfg.save, null, { deckType: cfg.deckType, spreadType: cfg.spreadType, question: cfg.question });
+    performReading(undefined, cfg.save, null, { deckType: cfg.deckType, spreadType: cfg.spreadType, question: cfg.question, topic: cfg.topic });
   });
   document.getElementById('pickCancel').addEventListener('click', () => {
     cancelPendingReading();
@@ -233,7 +237,7 @@ function selectPick(idx, btn) {
 }
 function completeReading(cfg, picks, revealed, token) {
   if (token !== readingToken) return;
-  const { seed, deckType, spreadType, spreadName, question, shuffled, orientations, positions, save } = cfg;
+  const { seed, deckType, spreadType, spreadName, question, topic, shuffled, orientations, positions, save } = cfg;
   const drawn = picks.map((deckIdx, i) => ({
     ...shuffled[deckIdx],
     position: positions[i],
@@ -252,6 +256,7 @@ function completeReading(cfg, picks, revealed, token) {
     spreadType,
     spreadName,
     question,
+    topic,
     picks,
     drawnCards: drawn,
     bottomCard,
@@ -291,11 +296,11 @@ export function shownReading() {
   if (!panel || !lastReadingData || lastReadingData.id === undefined) return null;
   return String(lastReadingData.id) === panel.dataset.readingId ? lastReadingData : null;
 }
-const NO_READING_PARAMS = { seed: null, deck: null, spread: null, q: null, picks: null };
+const NO_READING_PARAMS = { seed: null, deck: null, spread: null, topic: null, q: null, picks: null };
 function readingURLParams(r) {
   if (!r || !isValidSeed(r.seed)) return NO_READING_PARAMS;
   const picks = Array.isArray(r.picks) && !r.picks.every((p, i) => p === i) ? r.picks.join('-') : null;
-  return { seed: r.seed, deck: r.deckType || null, spread: r.spreadType || null, q: r.question || null, picks };
+  return { seed: r.seed, deck: r.deckType || null, spread: r.spreadType || null, topic: isTopic(r.topic) ? r.topic : null, q: r.question || null, picks };
 }
 // 網址只帶「占卜分頁上正在顯示的結果」：複製、分享、重新整理都以它為準；在其他分頁時不帶，重新整理才不會跳回占卜分頁
 export function syncReadingURL() {
@@ -304,8 +309,13 @@ export function syncReadingURL() {
 export function clearReadingURL() {
   updateURL(NO_READING_PARAMS);
 }
+// 逐張解讀要多附哪些段落：選了主題就附主題的讀法；是非指引牌陣附每張牌這一面的是非傾向
+function readingView(r) {
+  return { topic: isTopic(r && r.topic) ? r.topic : '', yesno: !!r && r.spreadType === 'yesno' };
+}
 export function renderResults(data, revealed = false) {
   const { spreadName, spreadType, question, drawnCards, bottomCard, favorite, note } = data;
+  const view = readingView(data);
   const anim = revealed ? 'flip-in' : 'slide-in';
   const layout = (spreadLayouts[spreadType] &&
     spreadLayouts[spreadType].cells.length === drawnCards.length) ? spreadLayouts[spreadType] : null;
@@ -346,11 +356,12 @@ ${insights.map(item => `
 <div class="results-meta">
 <span class="badge ${favorite ? 'favorite' : ''}">${escapeHTML(t(spreadName))}</span>
 ${question ? `<span>${escapeHTML(question)}</span>` : ''}
+${view.topic ? `<span class="results-topic">${escapeHTML(t('reading.meta.topic', { topic: t(`topic.${view.topic}`) }))}</span>` : ''}
 </div>
 </div>
 ${note ? `<div class="card-notes">${escapeHTML(note)}</div>` : ''}
 ${cardsHTML}
-${readingDetailHTML(drawnCards, bottomCard)}
+${readingDetailHTML(drawnCards, bottomCard, view)}
 ${insightHTML}
 <div class="btn-group">
 <button class="btn btn-tertiary btn-sm" data-action="copyResults">${escapeHTML(t('btn.copyResults'))}</button>
@@ -390,7 +401,35 @@ function roleHTML(c) {
   // 還在載入時先藏起來（這段只是補充，不放「載入中」），載到後填字並顯示；載不到就整段拿掉
   return `<p class="rd-role"${text === null ? ` hidden data-rd-role="${escapeHTML(c.nameKey)}" data-orientation="${escapeHTML(c.orientation)}" data-position="${escapeHTML(c.position)}"` : ''}><span class="rd-role-label">${escapeHTML(t('reading.detail.role'))}</span><span class="rd-role-text">${escapeHTML(text || '')}</span></p>`;
 }
-function detailItemHTML(c, num, open) {
+// 選了主題時，這張牌在這個主題、抽到這一面的讀法；是非指引牌陣另外附上這一面的是非傾向。
+// 和牌位讀法一樣：情境資料還沒載入就先藏起來，載到後由 fillGuideTexts 補上
+function guideParts(c, view) {
+  const ctx = loadedContexts();
+  if (!ctx) return null;
+  const parts = [];
+  if (view.yesno) {
+    const y = ctx.yesnoOf(c.nameKey, c.orientation);
+    if (y) parts.push({ kind: 'yesno', tendency: tendencyNames[y.tendency] ? y.tendency : 'unclear', text: y.note || '' });
+  }
+  if (view.topic) {
+    const text = ctx.topicText(c, view.topic, c.orientation);
+    if (text) parts.push({ kind: 'topic', text });
+  }
+  return parts;
+}
+function guidePartHTML(p, topic) {
+  if (p.kind === 'yesno') {
+    return `<p class="rd-role rd-yesno"><span class="rd-role-label">${escapeHTML(t('reading.detail.yesno'))}</span><span class="rd-role-text"><span class="yesno-badge ${p.tendency}">${escapeHTML(t(tendencyNames[p.tendency]))}</span> ${escapeHTML(p.text)}</span></p>`;
+  }
+  return `<p class="rd-role rd-topic"><span class="rd-role-label">${escapeHTML(t(`topic.${topic}`))}</span><span class="rd-role-text">${escapeHTML(p.text)}</span></p>`;
+}
+function guideHTML(c, view) {
+  if (!view.topic && !view.yesno) return '';
+  const parts = guideParts(c, view);
+  if (parts) return parts.map(p => guidePartHTML(p, view.topic)).join('');
+  return `<div class="rd-guide" hidden data-rd-guide="${escapeHTML(c.nameKey)}" data-orientation="${escapeHTML(c.orientation)}"></div>`;
+}
+function detailItemHTML(c, num, open, view = {}) {
   const ori = oriLabel(c);
   const keywords = keywordsFor(c.nameKey, c.orientation);
   const desc = num ? positionDesc(c.position) : t('spread.bottom.desc');
@@ -414,6 +453,7 @@ ${desc ? `<p class="rd-pos-desc">${escapeHTML(desc)}</p>` : ''}
 </div>
 ${keywords.length ? `<p class="rd-kw">${keywordList(keywords)}</p>` : ''}
 ${roleHTML(c)}
+${guideHTML(c, view)}
 ${(text || pending) ? `
 <details class="rd-text"${open ? ' open' : ''}>
 <summary class="rd-text-title">${escapeHTML(t('reading.detail.text', { ori }))}</summary>
@@ -424,20 +464,20 @@ ${(text || pending) ? `
 </article>
 `;
 }
-function readingDetailHTML(drawnCards, bottomCard) {
+function readingDetailHTML(drawnCards, bottomCard, view = {}) {
   const total = drawnCards.length + (bottomCard ? 1 : 0);
   const open = total <= DETAIL_OPEN_MAX;
   return `
-<section class="reading-detail" aria-labelledby="readingDetailTitle">
+<section class="reading-detail" aria-labelledby="readingDetailTitle"${view.topic ? ` data-topic="${escapeHTML(view.topic)}"` : ''}${view.yesno ? ' data-yesno="true"' : ''}>
 <div class="rd-header">
 <h3 class="insight-title rd-title" id="readingDetailTitle">${escapeHTML(t('reading.detail.title'))}</h3>
 ${open ? '' : `<button type="button" class="rd-toggle-all" aria-controls="readingDetailList">${escapeHTML(t('reading.detail.expandAll'))}</button>`}
 </div>
 <div id="readingDetailList">
 <ol class="rd-list">
-${drawnCards.map((c, i) => `<li>${detailItemHTML(c, i + 1, open)}</li>`).join('')}
+${drawnCards.map((c, i) => `<li>${detailItemHTML(c, i + 1, open, view)}</li>`).join('')}
 </ol>
-${bottomCard ? detailItemHTML(bottomCard, 0, open) : ''}
+${bottomCard ? detailItemHTML(bottomCard, 0, open, view) : ''}
 </div>
 </section>
 `;
@@ -475,6 +515,21 @@ function fillRoleTexts() {
   };
   loadContexts().then(() => fill(true), () => fill(false));
 }
+function fillGuideTexts() {
+  if (!resultsEl.querySelector('[data-rd-guide]')) return;
+  const view = resultsEl.querySelector('.reading-detail')?.dataset || {};
+  const fill = (ok) => {
+    resultsEl.querySelectorAll('[data-rd-guide]').forEach(el => {
+      const parts = ok ? guideParts({ nameKey: el.dataset.rdGuide, orientation: el.dataset.orientation }, { topic: view.topic, yesno: view.yesno === 'true' }) : null;
+      if (!parts || !parts.length) {
+        el.remove();
+        return;
+      }
+      el.outerHTML = parts.map(p => guidePartHTML(p, view.topic)).join('');
+    });
+  };
+  loadContexts().then(() => fill(true), () => fill(false));
+}
 function syncToggleAll(btn, list) {
   const allOpen = Array.from(list.querySelectorAll('details')).every(d => d.open);
   btn.textContent = t(allOpen ? 'reading.detail.collapseAll' : 'reading.detail.expandAll');
@@ -482,6 +537,7 @@ function syncToggleAll(btn, list) {
 function bindReadingDetail() {
   fillDetailTexts();
   fillRoleTexts();
+  fillGuideTexts();
   const btn = resultsEl.querySelector('.rd-toggle-all');
   const list = document.getElementById('readingDetailList');
   if (!btn || !list) return;
@@ -504,13 +560,18 @@ window.addEventListener('afterprint', () => {
   printOpened.forEach(d => { d.open = false; });
   printOpened = [];
 });
-function cardLine(c) {
+function cardLine(c, view) {
   const lines = [`${t(c.position)}：${c.name}（${oriLabel(c)}）`];
   const keywords = keywordsFor(c.nameKey, c.orientation);
   if (keywords.length) lines.push(t('reading.copy.keywords', { kw: keywords.join('、') }));
   // 牌位屬於建議、阻礙或結果時附上這張牌在這種位置的讀法；情境資料還沒載入（或離線）時只少這一行
   const role = roleText(c);
   if (role) lines.push(t('reading.copy.role', { text: role }));
+  (guideParts(c, view) || []).forEach(p => {
+    lines.push(p.kind === 'yesno'
+      ? t('reading.copy.yesno', { tendency: t(tendencyNames[p.tendency]), note: p.text })
+      : t('reading.copy.topic', { topic: t(`topic.${view.topic}`), text: p.text }));
+  });
   return lines.join('\n');
 }
 export function copyResults() {
@@ -519,7 +580,7 @@ export function copyResults() {
   const text = [
     `${t(spreadName)}${question ? `—${question}` : ''}`,
     '---',
-    [...drawnCards, bottomCard].filter(Boolean).map(cardLine).join('\n\n'),
+    [...drawnCards, bottomCard].filter(Boolean).map(c => cardLine(c, readingView(lastReadingData))).join('\n\n'),
     '',
     location.href
   ].join('\n');

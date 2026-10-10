@@ -1,5 +1,6 @@
 import { fullTarotCards, spreads } from './data.js';
 import * as storage from './storage.js';
+import { isTopic } from './topics.js';
 
 export let lastReadingData = {};
 export const HISTORY_MAX = 100;
@@ -79,6 +80,7 @@ export function normalizeReading(r, i) {
     spreadType: typeof r.spreadType === 'string' ? r.spreadType : '',
     deckType: typeof r.deckType === 'string' ? r.deckType : 'full',
     question: typeof r.question === 'string' ? r.question : '',
+    topic: isTopic(r.topic) ? r.topic : '',
     favorite: !!r.favorite,
     tags: cleanTags(r.tags),
     note: typeof r.note === 'string' ? r.note : ''

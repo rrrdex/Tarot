@@ -129,7 +129,13 @@ export const spreads = {
   dream: { positions: ['spread.dream.pos.0', 'spread.dream.pos.1', 'spread.dream.pos.2', 'spread.dream.pos.3'], description: 'spread.dream.desc' },
   horseshoe: { positions: ['spread.horseshoe.pos.0', 'spread.horseshoe.pos.1', 'spread.horseshoe.pos.2', 'spread.horseshoe.pos.3', 'spread.horseshoe.pos.4', 'spread.horseshoe.pos.5', 'spread.horseshoe.pos.6'], description: 'spread.horseshoe.desc' },
   treeOfLife: { positions: ['spread.treeOfLife.pos.0', 'spread.treeOfLife.pos.1', 'spread.treeOfLife.pos.2', 'spread.treeOfLife.pos.3', 'spread.treeOfLife.pos.4', 'spread.treeOfLife.pos.5', 'spread.treeOfLife.pos.6', 'spread.treeOfLife.pos.7', 'spread.treeOfLife.pos.8', 'spread.treeOfLife.pos.9'], description: 'spread.treeOfLife.desc' },
-  astroHouses: { positions: ['spread.astroHouses.pos.0', 'spread.astroHouses.pos.1', 'spread.astroHouses.pos.2', 'spread.astroHouses.pos.3', 'spread.astroHouses.pos.4', 'spread.astroHouses.pos.5', 'spread.astroHouses.pos.6', 'spread.astroHouses.pos.7', 'spread.astroHouses.pos.8', 'spread.astroHouses.pos.9', 'spread.astroHouses.pos.10', 'spread.astroHouses.pos.11'], description: 'spread.astroHouses.desc' }
+  astroHouses: { positions: ['spread.astroHouses.pos.0', 'spread.astroHouses.pos.1', 'spread.astroHouses.pos.2', 'spread.astroHouses.pos.3', 'spread.astroHouses.pos.4', 'spread.astroHouses.pos.5', 'spread.astroHouses.pos.6', 'spread.astroHouses.pos.7', 'spread.astroHouses.pos.8', 'spread.astroHouses.pos.9', 'spread.astroHouses.pos.10', 'spread.astroHouses.pos.11'], description: 'spread.astroHouses.desc' },
+  hexagram: { positions: ['spread.hexagram.pos.0', 'spread.hexagram.pos.1', 'spread.hexagram.pos.2', 'spread.hexagram.pos.3', 'spread.hexagram.pos.4', 'spread.hexagram.pos.5', 'spread.hexagram.pos.6'], description: 'spread.hexagram.desc' },
+  reunion: { positions: ['spread.reunion.pos.0', 'spread.reunion.pos.1', 'spread.reunion.pos.2', 'spread.reunion.pos.3', 'spread.reunion.pos.4', 'spread.reunion.pos.5', 'spread.reunion.pos.6'], description: 'spread.reunion.desc' },
+  newLove: { positions: ['spread.newLove.pos.0', 'spread.newLove.pos.1', 'spread.newLove.pos.2', 'spread.newLove.pos.3', 'spread.newLove.pos.4'], description: 'spread.newLove.desc' },
+  exam: { positions: ['spread.exam.pos.0', 'spread.exam.pos.1', 'spread.exam.pos.2', 'spread.exam.pos.3', 'spread.exam.pos.4'], description: 'spread.exam.desc' },
+  interview: { positions: ['spread.interview.pos.0', 'spread.interview.pos.1', 'spread.interview.pos.2', 'spread.interview.pos.3', 'spread.interview.pos.4'], description: 'spread.interview.desc' },
+  threeChoice: { positions: ['spread.threeChoice.pos.0', 'spread.threeChoice.pos.1', 'spread.threeChoice.pos.2', 'spread.threeChoice.pos.3', 'spread.threeChoice.pos.4', 'spread.threeChoice.pos.5', 'spread.threeChoice.pos.6'], description: 'spread.threeChoice.desc' }
 };
 export const commonTags = ['工作', '感情', '健康', '財運', '學業', '人際', '靈性', '決策'];
 export const spreadLayouts = {
@@ -176,5 +182,24 @@ export const spreadLayouts = {
     { r: 3, c: 2 },
     { r: 1, c: 2 },
     { r: 2, c: 4 }
+  ] },
+  // 兩個交疊的三角形：每張牌跨兩列，左右兩欄與中欄錯開半張牌的高度
+  hexagram: { cols: 3, cells: [
+    { r: 1, c: 2, rs: 2 },
+    { r: 4, c: 3, rs: 2 },
+    { r: 4, c: 1, rs: 2 },
+    { r: 5, c: 2, rs: 2 },
+    { r: 2, c: 1, rs: 2 },
+    { r: 2, c: 3, rs: 2 },
+    { r: 3, c: 2, rs: 2 }
+  ] },
+  threeChoice: { cols: 3, cells: [
+    { r: 3, c: 2 },
+    { r: 2, c: 1 },
+    { r: 2, c: 2 },
+    { r: 2, c: 3 },
+    { r: 1, c: 1 },
+    { r: 1, c: 2 },
+    { r: 1, c: 3 }
   ] }
 };

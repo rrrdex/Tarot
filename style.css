@@ -966,6 +966,12 @@ body {
 .form-field.full {
   grid-column: 1 / -1;
 }
+/* 兩欄時問題與主題並排，牌組與牌陣在下一列 */
+@media (min-width: 768px) {
+  #tabReading .form-field.full:has(+ .topic-field) {
+    grid-column: auto;
+  }
+}
 label {
   font-size: var(--text-sm);
   font-weight: var(--weight-medium);
@@ -1265,6 +1271,27 @@ select,
 }
 .spread-position-desc {
   display: block;
+}
+.spread-guide > .spread-positions-title {
+  margin-top: var(--space-6);
+}
+.spread-howto {
+  margin-bottom: 0;
+}
+.spread-examples {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.text-link.spread-example {
+  min-height: 32px;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  text-align: left;
+  line-height: var(--leading-snug);
 }
 .daily-card {
   display: flex;
@@ -4629,6 +4656,13 @@ button:focus-visible,
   margin-top: var(--space-4);
   line-height: var(--leading-relaxed);
 }
+.quiz-subject-text {
+  margin-top: var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: var(--leading-relaxed);
+  text-align: left;
+}
 .quiz-options {
   display: grid;
   gap: var(--space-3);
@@ -4936,6 +4970,61 @@ button:focus-visible,
 }
 .journal-block {
   margin-top: var(--space-5);
+}
+/* 情境分頁：六個情境底下收合的細分主題、代表的人與節奏的段落、身心面向的求助資源 */
+.ctx-sub {
+  grid-column: 1 / -1;
+  margin-top: var(--space-1);
+}
+.ctx-sub-title {
+  display: list-item;
+  list-style-position: inside;
+  padding-block: 6px;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--text);
+  cursor: pointer;
+}
+.ctx-sub-list {
+  margin: var(--space-2) 0 0;
+}
+.ctx-sub-row + .ctx-sub-row {
+  margin-top: var(--space-3);
+}
+.ctx-sub-row dt {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--text);
+}
+.ctx-sub-row dd {
+  margin: 2px 0 0;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: var(--leading-relaxed);
+}
+.ctx-para {
+  margin: 0;
+}
+.ctx-positions > .waite-terms-note {
+  margin-top: var(--space-2);
+}
+.care-note {
+  grid-column: 1 / -1;
+  margin-top: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+  color: var(--text-secondary);
+}
+.care-title {
+  font-weight: var(--weight-semibold);
+  color: var(--text);
+}
+.care-list {
+  margin: var(--space-1) 0;
+  padding-left: 1.25em;
 }
 .journal-list {
   margin: 0;

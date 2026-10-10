@@ -2,7 +2,7 @@ import { t } from './i18n.js';
 import { cryptoRandom, escapeHTML, keywordList, openConfirm, showToast, shuffle } from './utils.js';
 import { fullTarotCards, suitNames } from './data.js';
 import { cardMeaningText, cardMeanings, keywordsFor } from './meanings.js';
-import { loadLore, loadMeaningTexts, loadedLore, loadedMeaningTexts } from './lazy.js';
+import { loadContexts, loadLore, loadMeaningTexts, loadRefs, loadedContexts, loadedLore, loadedMeaningTexts, loadedRefs } from './lazy.js';
 import { cardThumb, visualStyle } from './render.js';
 import { haptic } from './haptics.js';
 import * as storage from './storage.js';
@@ -368,8 +368,55 @@ function learnCandidates(target, pool) {
 function kwOverlap(a, b) {
   return a.some(w => b.includes(w));
 }
+// 讀法題（情境、人物）的題目文字：牌名換成「這張牌」，免得題目直接把答案說出來
+function maskName(text, card) {
+  return card ? text.split(card.name).join(t('learn.quiz.thisCard')) : text;
+}
+// 選項是牌名的題目：干擾牌由 accept 決定能不能用（例如人物題只用也有人物描述的牌）
+function nameOptions(target, pool, orientation, accept = () => true) {
+  const options = [{ text: target.name, nameKey: target.nameKey, orientation, correct: true }];
+  for (const c of learnCandidates(target, pool)) {
+    if (options.length >= LEARN_QUIZ_OPTIONS) break;
+    if (options.some(o => o.text === c.name) || !accept(c)) continue;
+    options.push({ text: c.name, nameKey: c.nameKey, orientation, correct: false });
+  }
+  return options.length >= LEARN_QUIZ_OPTIONS ? shuffle(options) : null;
+}
+let quizDataTried = false;
+const QUIZ_DOMAINS = ['love', 'career', 'wealth', 'wellbeing', 'study', 'growth'];
+// D：情境題，看一段情境讀法選牌；E：人物題，看「當它代表一個人」選牌；F：符號題，看符號名選牌。
+// 資料另外打包，還沒載入（或這張牌沒有那段資料）就回傳 null，改出關鍵詞題
+function buildReadingQuestion(target, pool, type) {
+  const ctx = loadedContexts();
+  const orientation = cryptoRandom() < LEARN_REVERSED_RATE ? 'reversed' : 'upright';
+  const base = { nameKey: target.nameKey, orientation, answered: false, chosen: -1, correct: false, type };
+  if (type === 'D' && ctx) {
+    const domain = QUIZ_DOMAINS[Math.floor(cryptoRandom() * QUIZ_DOMAINS.length)];
+    const text = ctx.contextText(target, domain, orientation);
+    const options = text && nameOptions(target, pool, orientation);
+    if (!options) return null;
+    return { ...base, prompt: t('learn.quiz.promptSituation', { domain: t(`card.context.${domain}`), ori: oriLabel(orientation) }), subject: '', subjectText: maskName(text, target), options };
+  }
+  if (type === 'E' && ctx) {
+    const person = ctx.cardGuide?.[target.nameKey]?.person?.[orientation];
+    const options = person && nameOptions(target, pool, orientation, c => !!ctx.cardGuide?.[c.nameKey]?.person);
+    if (!options) return null;
+    return { ...base, prompt: t('learn.quiz.promptPerson', { ori: oriLabel(orientation) }), subject: '', subjectText: maskName(person, target), options };
+  }
+  const refs = loadedRefs();
+  if (type === 'F' && refs) {
+    const syms = shuffle((refs.symbolIndex || []).filter(s => s.cards.some(e => e.card === target.nameKey)));
+    for (const sym of syms) {
+      const has = new Set(sym.cards.map(e => e.card));
+      const options = nameOptions(target, pool, 'upright', c => !has.has(c.nameKey));
+      if (options) return { ...base, orientation: 'upright', prompt: t('learn.quiz.promptSymbol', { symbol: sym.title }), subject: '', options };
+    }
+  }
+  return null;
+}
 // 每個選項記下它屬於哪張牌、哪個正逆位，作答後才說得出「你選的是哪張牌」
 function buildLearnQuestion(target, pool, type) {
+  if (type === 'D' || type === 'E' || type === 'F') return buildReadingQuestion(target, pool, type) || buildLearnQuestion(target, pool, 'A');
   const m = cardMeanings[target.nameKey];
   if (!m) return null;
   const candidates = learnCandidates(target, pool);
@@ -438,15 +485,17 @@ function buildLearnQuiz() {
     targets.push(pick);
   }
   if (!targets.length) return null;
-  const nB = Math.floor(targets.length / 3);
-  const nC = Math.floor(targets.length / 3);
-  const typePool = [];
-  for (let i = 0; i < targets.length; i++) {
-    typePool.push(i < nC ? 'C' : (i < nC + nB ? 'B' : 'A'));
+  // 十題裡：看圖、看牌選關鍵詞、看關鍵詞選牌、情境讀法各兩題，人物與符號各一題；
+  // 人物題只能出給有人物描述的牌（大阿卡納與宮廷牌），其餘題型隨機分配
+  const typePool = shuffle(['C', 'C', 'B', 'B', 'A', 'A', 'D', 'D', 'F', 'E'].slice(0, Math.max(targets.length, 1)));
+  const eAt = typePool.indexOf('E');
+  if (eAt >= 0) {
+    const hasPerson = (c) => c.suit === 'Major Arcana' || ['Page', 'Knight', 'Queen', 'King'].includes(c.number);
+    const j = targets.findIndex(hasPerson);
+    if (j >= 0 && j !== eAt) [typePool[eAt], typePool[j]] = [typePool[j], typePool[eAt]];
   }
-  const types = shuffle(typePool);
   const questions = targets
-  .map((t, i) => buildLearnQuestion(t, pool, types[i]))
+  .map((t, i) => buildLearnQuestion(t, pool, typePool[i]))
   .filter(Boolean);
   if (!questions.length) return null;
   return { questions, index: 0, correctCount: 0, wrongKeys: [], finished: false };
@@ -488,7 +537,7 @@ function quizExplainHTML(q) {
   const pickCard = pick && pick.nameKey ? learnCardOf(pick.nameKey) : null;
   let pickLine = '';
   if (pickCard) {
-    pickLine = q.type === 'A'
+    pickLine = q.type !== 'B' && q.type !== 'C'
       ? t('learn.quiz.explain.pickCard', { name: pickCard.name, ori: oriLabel(pick.orientation), keywords: keywordsFor(pickCard.nameKey, pick.orientation).join('・') })
       : t('learn.quiz.explain.pickSet', { name: pickCard.name, ori: oriLabel(pick.orientation) });
   }
@@ -505,6 +554,19 @@ function renderLearnQuiz() {
   if (!stage) return;
   if (getLearnPool().length < LEARN_QUIZ_OPTIONS) {
     stage.innerHTML = `<div class="learn-empty">${escapeHTML(t('learn.empty.tooFew'))}</div>`;
+    return;
+  }
+  // 情境、人物與符號題要用另外打包的資料：第一次出題前等它們一下，載不到就只出關鍵詞題
+  if (!learnQuiz && !quizDataTried && (!loadedContexts() || !loadedRefs())) {
+    quizDataTried = true;
+    stage.innerHTML = `<div class="learn-empty">${escapeHTML(t('card.loading'))}</div>`;
+    Promise.allSettled([loadContexts(), loadRefs()]).then(() => {
+      if (learnMode !== 'quiz' || learnQuiz || !stage.isConnected) return;
+      const active = document.activeElement;
+      const refocus = !active || active === document.body || stage.contains(active);
+      renderLearnQuiz();
+      if (refocus) focusLearnStage('.quiz-option');
+    });
     return;
   }
   if (!learnQuiz) learnQuiz = buildLearnQuiz();
@@ -525,6 +587,7 @@ function renderLearnQuiz() {
 <div class="quiz-card">
 <div class="quiz-prompt">${escapeHTML(view.prompt)}</div>
 ${q.subject ? `<div class="quiz-subject">${keywordList(q.subject.split('・'))}</div>` : ''}
+${q.subjectText ? `<p class="quiz-subject-text">${escapeHTML(q.subjectText)}</p>` : ''}
 ${view.art}
 <div class="quiz-options" data-keynav="grid">
 ${q.options.map((o, i) => {

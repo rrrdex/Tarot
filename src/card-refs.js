@@ -38,7 +38,7 @@ export const cardRefs = {
     related: [
       { card: 'emperor', kind: 'contrast', note: '皇后讓事物生長，皇帝替它們立下秩序。前者問條件夠不夠好，後者問規則清不清楚，兩者缺一不可。' },
       { card: 'high_priestess', kind: 'sequence', note: '皇后的成果遲遲沒長出來時，可以回頭看女祭司：事情也許還在帷幕後醞釀，現在去催，只會打斷它生長。' },
-      { card: 'queen_of_pentacles', kind: 'similar', note: '皇后的課題是讓自己也被照顧，錢幣皇后卻最不習慣被照顧。並見時，問問你的照顧有沒有留一份給自己。' },
+      { card: 'queen_of_pentacles', kind: 'similar', note: '兩位都坐在豐饒的自然裡：皇后身邊是麥田與瀑布，錢幣皇后被花架與兔子圍著。並見時，滋養多半落在實際的照料上，像三餐、住處與手頭的錢。' },
       { card: 'nine_of_pentacles', kind: 'pair', note: '金星連起這兩張：皇后對應金星，錢幣九在黃金黎明裡是金星在處女座。皇后的園子與人共享，錢幣九留給自己。' }
     ]
   },
@@ -294,7 +294,8 @@ export const cardRefs = {
     related: [
       { card: 'six_of_wands', kind: 'sequence', note: '權杖六的騎者被持杖的同伴圍著，到了權杖七，只剩他一人在高處擋架；看看當初的同伴還在不在。' },
       { card: 'strength', kind: 'contrast', note: '黃金黎明把權杖七配給火星在獅子座，獅子座對應力量牌。七用擋架守住位置，力量用耐心化解敵意。' },
-      { card: 'five_of_wands', kind: 'similar', note: '都是以杖相爭。權杖五是同輩混戰，誰也不比誰高；權杖七是一個人站在高處，對著坡下好幾根杖。' }
+      { card: 'five_of_wands', kind: 'similar', note: '都是以杖相爭。權杖五是同輩混戰，誰也不比誰高；權杖七是一個人站在高處，對著坡下好幾根杖。' },
+      { card: 'nine_of_wands', kind: 'similar', note: '都在防守。權杖七的人正在交手，力氣還在；權杖九的人頭纏繃帶，守的是還沒來的下一仗。七問值不值得守，九問還剩多少力氣。' }
     ]
   },
   eight_of_wands: {
@@ -448,7 +449,7 @@ export const cardRefs = {
     names: { marseille: 'Neuf de Coupe', thoth: 'Happiness' },
     timing: { from: '03-01', to: '03-10', basis: 'decan', sign: 'Pisces', planet: 'Jupiter' },
     related: [
-      { card: 'four_of_cups', kind: 'pair', note: '同樣雙臂抱胸坐著：聖杯九心滿意足，聖杯四什麼都提不起勁。差別不在擁有多少，而在心裡要不要。' },
+      { card: 'four_of_cups', kind: 'similar', note: '同樣雙臂抱胸坐著：聖杯九心滿意足，聖杯四什麼都提不起勁。差別不在擁有多少，而在心裡要不要。' },
       { card: 'ten_of_cups', kind: 'sequence', note: '從九到十，滿足從一個人擴大到一家人；接著讀聖杯十，看這份好能不能分出去。' },
       { card: 'temperance', kind: 'contrast', note: '聖杯九逆位的問題常是過量；節制的天使在兩只杯之間調配分量，正好提醒享受要有比例。' },
       { card: 'wheel_of_fortune', kind: 'pair', note: '黃金黎明把聖杯九配給雙魚座的木星，命運之輪屬木星；好運來時盡情享受，也記得輪子還會再轉。' }
@@ -468,7 +469,7 @@ export const cardRefs = {
     names: { marseille: 'Valet de Coupe', thoth: 'Princess of Cups', aliases: ['聖杯侍從', '聖杯隨從'] },
     timing: null,
     related: [
-      { card: 'ace_of_cups', kind: 'similar', note: '逆位時卡住的地方不同：聖杯一是心門關著，感受流不出去；侍者是感受有了，卻因任性或怕被笑而停在想像。' },
+      { card: 'ace_of_cups', kind: 'contrast', note: '逆位時卡住的地方不同：聖杯一是心門關著，感受流不出去；侍者是感受有了，卻因任性或怕被笑而停在想像。' },
       { card: 'knight_of_cups', kind: 'sequence', note: '兩張同時出現，常是兩人走在不同階段：一方還在試探，另一方已捧著杯靠近；先看清你是哪一位，再決定步調。' },
       { card: 'page_of_swords', kind: 'contrast', note: '寶劍侍者舉劍戒備，凡事先查清楚；聖杯侍者則好奇地看著杯裡的魚。一個靠懷疑學習，一個靠感受學習。' },
       { card: 'fool', kind: 'similar', note: '愚者和聖杯侍者都帶著天真：愚者的天真是敢出發，侍者的天真是敢感受；前者往外走，後者往內看。' }
@@ -599,7 +600,7 @@ export const cardRefs = {
     timing: { from: '06-11', to: '06-21', basis: 'decan', sign: 'Gemini', planet: 'Sun' },
     related: [
       { card: 'ten_of_wands', kind: 'similar', note: '權杖十的重擔是自己攬上身的，寶劍十的劍從背後刺來。同現時先分清：哪些苦能放下，哪些只能承認它結束了。' },
-      { card: 'judgement', kind: 'contrast', note: '寶劍十的人俯臥在地，審判裡的人從石棺中站起、舉手回應號角。一個是倒下的最低點，一個是聽見召喚後起身。' },
+      { card: 'judgement', kind: 'contrast', note: '寶劍十的人俯臥在地，審判裡的人從棺木中站起、舉手回應號角。一個是倒下的最低點，一個是聽見召喚後起身。' },
       { card: 'sun', kind: 'pair', note: '黃金黎明把寶劍十配給太陽在雙子座；寶劍十只在地平線透出一道金光，太陽牌已是滿天日光。' },
       { card: 'ace_of_swords', kind: 'sequence', note: '十是一輪走完，接著回到寶劍一：一段被切斷的結束之後，常會接著出現一個新的、更清楚的想法。' }
     ]
@@ -798,7 +799,7 @@ export const symbolIndex = [
   { id: 'dog', title: '狗', cards: [
     { card: 'fool', where: '腳邊跳起、仰頭吠叫的白狗' },
     { card: 'moon', where: '左側朝月仰頭嚎叫的狗' },
-    { card: 'ten_of_pentacles', where: '老人身旁兩隻白色獵犬，他伸手撫著其中一隻' }
+    { card: 'ten_of_pentacles', where: '湊向老人的兩隻白色獵犬，原版裡孩子的手搭在其中一隻身上' }
   ] },
   { id: 'wolf', title: '狼', cards: [
     { card: 'moon', where: '右側朝月仰頭嚎叫的狼' }
@@ -840,6 +841,9 @@ export const symbolIndex = [
   { id: 'crayfish', title: '螯蝦', cards: [
     { card: 'moon', where: '正從前景水池爬上岸的螯蝦' }
   ] },
+  { id: 'snail', title: '蝸牛', cards: [
+    { card: 'nine_of_pentacles', where: '她長袍下擺前方、畫面底部地面上偏左的一隻小蝸牛', lineart: false }
+  ] },
   { id: 'butterfly', title: '蝴蝶', cards: [
     { card: 'knight_of_swords', where: '馬胸前掛帶上一排黃色的蝴蝶紋飾', lineart: false },
     { card: 'queen_of_swords', where: '王座上雕著的蝴蝶，原版王冠也由蝴蝶組成' },
@@ -852,6 +856,9 @@ export const symbolIndex = [
   ] },
   { id: 'ram', title: '公羊', cards: [
     { card: 'emperor', where: '石造王座椅背與扶手上的四個公羊頭' }
+  ] },
+  { id: 'rabbit', title: '兔子', cards: [
+    { card: 'queen_of_pentacles', where: '右下角草地上蹲著的一隻兔子' }
   ] },
   { id: 'salamander', title: '火蜥蜴', cards: [
     { card: 'page_of_wands', where: '侍者衣袍上印滿的蠑螈紋樣' },
@@ -875,7 +882,7 @@ export const symbolIndex = [
   { id: 'child', title: '孩童', cards: [
     { card: 'death', where: '馬前跪著仰望騎士的孩童' },
     { card: 'sun', where: '騎在白馬上張開手臂的裸身孩子' },
-    { card: 'judgement', where: '從中間石棺站起、舉起雙手的孩子' },
+    { card: 'judgement', where: '從前景中間的棺木站起、背對畫面舉起雙手的孩子' },
     { card: 'six_of_cups', where: '庭院裡遞出花杯與接杯的兩個孩子' },
     { card: 'ten_of_cups', where: '大人身旁牽著手跳舞的兩個孩子' },
     { card: 'six_of_swords', where: '船上依偎在披斗篷婦人身旁的孩子' },
@@ -951,7 +958,7 @@ export const symbolIndex = [
     { card: 'tower', where: '高塔所立的孤立岩峰' },
     { card: 'star', where: '遠方地平線上的山' },
     { card: 'moon', where: '小路盡頭遠方起伏的山巒' },
-    { card: 'judgement', where: '石棺後方遠處連綿的雪山' },
+    { card: 'judgement', where: '棺木後方遠處連綿的雪山' },
     { card: 'ace_of_wands', where: '地平線上遠方的一列山脈', lineart: false },
     { card: 'two_of_wands', where: '海灣對岸遠處的山峰' },
     { card: 'three_of_wands', where: '海灣盡頭遠方的一列山影' },
@@ -983,7 +990,7 @@ export const symbolIndex = [
     { card: 'temperance', where: '一腳踩進的水池，與兩杯之間倒流的水' },
     { card: 'star', where: '她一腳踩進的水池，與兩壺倒出的水' },
     { card: 'moon', where: '螯蝦正爬出的前景水池' },
-    { card: 'judgement', where: '石棺漂浮其上的水面' },
+    { card: 'judgement', where: '棺木漂浮其上的水面' },
     { card: 'ace_of_wands', where: '綠地上蜿蜒流過的河' },
     { card: 'two_of_wands', where: '城牆外的海面與海灣' },
     { card: 'three_of_wands', where: '崖下一片金黃色的海灣' },
@@ -1042,7 +1049,7 @@ export const symbolIndex = [
     { card: 'three_of_pentacles', where: '兩道尖拱交會處中央的石柱', lineart: false }
   ] },
   { id: 'veil', title: '帷幕', cards: [
-    { card: 'high_priestess', where: '身後繡滿石榴的帷幕' },
+    { card: 'high_priestess', where: '身後繡著棕櫚與石榴的帷幕' },
     { card: 'justice', where: '兩柱之間垂掛的帷幕' },
     { card: 'seven_of_cups', where: '上排中間杯上蒙著布的發光形體' },
     { card: 'nine_of_cups', where: '弧形長檯上垂下的藍色布幔' }
@@ -1133,11 +1140,11 @@ export const symbolIndex = [
     { card: 'judgement', where: '天使吹響、懸著十字旗的長號' }
   ] },
   { id: 'coffin', title: '棺木', cards: [
-    { card: 'judgement', where: '人們從中站起的敞開石棺' },
+    { card: 'judgement', where: '人們從中站起的敞開棺木，前景與後方水面上各有一組' },
     { card: 'four_of_swords', where: '他平躺其上的石棺，像墓上臥像' }
   ] },
   { id: 'skull', title: '骷髏', cards: [
-    { card: 'death', where: '騎在白馬上、身穿黑甲的骷髏' },
+    { card: 'death', where: '騎在白馬上、身穿黑甲的骷髏，與馬轡上一排骷髏交叉骨紋' },
     { card: 'seven_of_cups', where: '盛著桂冠那只杯，杯身上的骷髏頭', lineart: false }
   ] },
   { id: 'whiteRose', title: '白玫瑰', cards: [
@@ -1164,7 +1171,7 @@ export const symbolIndex = [
     { card: 'queen_of_wands', where: '女王手中拿著與王座上刻著的向日葵' }
   ] },
   { id: 'pomegranate', title: '石榴', cards: [
-    { card: 'high_priestess', where: '身後帷幕上繡滿的石榴' },
+    { card: 'high_priestess', where: '身後帷幕上與棕櫚交錯繡著的石榴' },
     { card: 'empress', where: '白色長袍上印滿的石榴紋樣' }
   ] },
   { id: 'grapes', title: '葡萄', cards: [
